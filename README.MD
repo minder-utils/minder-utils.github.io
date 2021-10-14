@@ -1,0 +1,1 @@
+Please see the installation instructions available [HERE](https://minder-utils.github.io)!
