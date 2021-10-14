@@ -51,10 +51,7 @@ class Downloader:
     from minder_utils.download import Downloader
     dl = Downloader()
     category_list = dl.get_category_names(&#39;activity&#39;)
-    
-    dl.export(categories = category_list, 
-              since= &#39;2021-10-05&#39;, 
-              save_path=&#39;./data/&#39;)
+    dl.export(categories = category_list, since= &#39;2021-10-05&#39;, save_path=&#39;./data/&#39;)
 
     ```
     This would download all of the activity data from the 5th October 2021, and save it
@@ -283,6 +280,22 @@ class Downloader:
 
     @staticmethod
     def convert_to_ISO(date):
+        &#39;&#39;&#39;
+        Converts the date to ISO.
+
+        Arguments
+        ---------
+        
+        - data: valid input to pd.to_datetime(.):
+            This is the date that you want to convert.
+
+        Returns
+        ---------
+
+        - out: date:
+            This is the date converted to ISO.
+
+        &#39;&#39;&#39;
         date = pd.to_datetime(date)
         return date.strftime(&#39;%Y-%m-%dT%H:%M:%S.000Z&#39;)
 
@@ -312,10 +325,7 @@ have internally saved your token before using this class (see the
 <pre><code>from minder_utils.download import Downloader
 dl = Downloader()
 category_list = dl.get_category_names('activity')
-
-dl.export(categories = category_list, 
-          since= '2021-10-05', 
-          save_path='./data/')
+dl.export(categories = category_list, since= '2021-10-05', save_path='./data/')
 
 </code></pre>
 <p>This would download all of the activity data from the 5th October 2021, and save it
@@ -337,10 +347,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
     from minder_utils.download import Downloader
     dl = Downloader()
     category_list = dl.get_category_names(&#39;activity&#39;)
-    
-    dl.export(categories = category_list, 
-              since= &#39;2021-10-05&#39;, 
-              save_path=&#39;./data/&#39;)
+    dl.export(categories = category_list, since= &#39;2021-10-05&#39;, save_path=&#39;./data/&#39;)
 
     ```
     This would download all of the activity data from the 5th October 2021, and save it
@@ -569,6 +576,22 @@ as a csv in the directory <code>'./data/'</code></p></div>
 
     @staticmethod
     def convert_to_ISO(date):
+        &#39;&#39;&#39;
+        Converts the date to ISO.
+
+        Arguments
+        ---------
+        
+        - data: valid input to pd.to_datetime(.):
+            This is the date that you want to convert.
+
+        Returns
+        ---------
+
+        - out: date:
+            This is the date converted to ISO.
+
+        &#39;&#39;&#39;
         date = pd.to_datetime(date)
         return date.strftime(&#39;%Y-%m-%dT%H:%M:%S.000Z&#39;)</code></pre>
 </details>
@@ -578,13 +601,39 @@ as a csv in the directory <code>'./data/'</code></p></div>
 <span>def <span class="ident">convert_to_ISO</span></span>(<span>date)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Converts the date to ISO.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>data: valid input to pd.to_datetime(.):
+This is the date that you want to convert.</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: date:
+This is the date converted to ISO.</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@staticmethod
 def convert_to_ISO(date):
+    &#39;&#39;&#39;
+    Converts the date to ISO.
+
+    Arguments
+    ---------
+    
+    - data: valid input to pd.to_datetime(.):
+        This is the date that you want to convert.
+
+    Returns
+    ---------
+
+    - out: date:
+        This is the date converted to ISO.
+
+    &#39;&#39;&#39;
     date = pd.to_datetime(date)
     return date.strftime(&#39;%Y-%m-%dT%H:%M:%S.000Z&#39;)</code></pre>
 </details>
