@@ -211,12 +211,15 @@ This class will
     @staticmethod
     def get_dates():
         &#39;&#39;&#39;
-        This function returns the current dates.
+        This function returns the current dates saved in the configurations folder.
+        This is an internal function.
 
         Returns
         ---------
 
         - dates: dict:
+            This dictionary holds the state (&#39;gap&#39;, &#39;current&#39;, etc) and the dates.
+
         &#39;&#39;&#39;
         with open(dates_path) as json_file:
             date_dict = json.load(json_file)
@@ -231,10 +234,12 @@ This class will
 <span>def <span class="ident">get_dates</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>This function returns the current dates.</p>
+<div class="desc"><p>This function returns the current dates saved in the configurations folder.
+This is an internal function.</p>
 <h2 id="returns">Returns</h2>
 <ul>
-<li>dates: dict:</li>
+<li>dates: dict:
+This dictionary holds the state ('gap', 'current', etc) and the dates.</li>
 </ul></div>
 <details class="source">
 <summary>
@@ -243,12 +248,15 @@ This class will
 <pre><code class="python">@staticmethod
 def get_dates():
     &#39;&#39;&#39;
-    This function returns the current dates.
+    This function returns the current dates saved in the configurations folder.
+    This is an internal function.
 
     Returns
     ---------
 
     - dates: dict:
+        This dictionary holds the state (&#39;gap&#39;, &#39;current&#39;, etc) and the dates.
+
     &#39;&#39;&#39;
     with open(dates_path) as json_file:
         date_dict = json.load(json_file)
