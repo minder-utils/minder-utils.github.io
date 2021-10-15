@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>minder_utils API documentation</title>
+<title>minder_utils.evaluate.eval_utils API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,69 +20,110 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Package <code>minder_utils</code></h1>
+<h1 class="title">Module <code>minder_utils.evaluate.eval_utils</code></h1>
 </header>
 <section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from sklearn.metrics import f1_score, accuracy_score
+from sklearn.metrics import confusion_matrix
+import numpy as np
+from sklearn.model_selection import train_test_split
+from ..formatting.format_util import y_to_categorical
+
+
+def get_scores(y_true, y_pred):
+    if y_true.ndim &gt; 1:
+        y_true = np.argmax(y_true, axis=1)
+    if y_pred.ndim &gt; 1:
+        y_pred = np.argmax(y_pred, axis=1)
+    try:
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    except ValueError:
+        return None, None, None, None
+    specificity = tn / (tn + fp)
+    sensitivity = tp / (tp + fn)
+
+    acc = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+    return sensitivity, specificity, acc, f1
+
+
+def split_by_ids(X, y, patient_ids, cat=True, valid_only=True, seed=0):
+    train_ids, test_ids = train_test_split(np.unique(patient_ids), test_size=0.33, random_state=seed)
+    test_y = y[np.isin(patient_ids, test_ids)]
+    if valid_only:
+        test_filter = np.isin(test_y, [-1, 1])
+    else:
+        test_filter = np.isin(test_y, np.unique(test_y))
+    if cat:
+        return X[np.isin(patient_ids, train_ids)], np.argmax(y_to_categorical(y[np.isin(patient_ids, train_ids)]), axis=1), \
+               X[np.isin(patient_ids, test_ids)][test_filter], y_to_categorical(y[np.isin(patient_ids, test_ids)][
+                   test_filter])
+    return X[np.isin(patient_ids, train_ids)], y[np.isin(patient_ids, train_ids)], \
+           X[np.isin(patient_ids, test_ids)][test_filter], y[np.isin(patient_ids, test_ids)][test_filter]</code></pre>
+</details>
 </section>
-
-<section id="installation-instructions">
-<h2 class="section-title" id="header-installation-instructions">Installation Instructions</h2>
-<p>
-
-
-<p>If you are on Windows 10 and use the conda environment manager, then you may want to use the <code>environment.yml</code> file that is supplied within the package, located here: <a href="https://github.com/ImperialCollegeLondon/minder_utils">minder_utils package</a>. Otherwise, please follow the instructions below.</p>
-<p>If attempting to install this package on MacOS with M1 silicon then please follow the instructions here: <a href="https://github.com/apple/tensorflow_macos/issues/153">Installing Tensorflow on MacOS</a> (Please ask Alex if you need help because this is quite unfriendly). Then you may move to step 1. If you are installing on windows, move to step 1.</p>
-<ol>
-<li><p>Install tensorflow 2 using the command here: <a href="https://www.tensorflow.org/install">Tensorflow Installation Guide</a></p>
-<ul>
-<li>The package has been tested with tensorflow 2.6.0 on windows and 2.4.0 on MacOS.</li>
-</ul>
-</li>
-<li><p>Install pytorch, using the command here: <a href="https://pytorch.org/get-started/locally/">Pyorch Installation Guide</a></p>
-<ul>
-<li>The package has been tested with pytorch 1.9.1 with cuda 10.2 on windows and 1.9.1 on MacOS.</li>
-</ul>
-</li>
-<li><p>Install scikit-learn using the command here: <a href="https://scikit-learn.org/stable/install.html">Scikit-Learn Installation Guide</a></p>
-<ul>
-<li>The package has been tested with scikit-learn 1.0 on windows and 1.0 on MacOS.</li>
-</ul>
-</li>
-<li><p>Install the minder_utils package using the following command:</p>
-<font size="-1"><p><code>pip install -e git+https://github.com/ImperialCollegeLondon/minder_utils.git#egg=minder_utils</code></p></font>
-</li>
-</ol>
-<p>Then, you should be up and running! If you have any issues, please consult the troubleshooting below.</p>
-
-
-
-</p>
+<section>
 </section>
-
-<section id="troubleshooting-instructions">
-<h2 class="section-title" id="header-troubleshooting-instructions">Troubleshooting Instructions</h2>
-<p>
-
-<p>There are many issues that arise from incompatibilities with Apple&#39;s M1 silicon.</p>
-<ul>
-<li>If you are a MacOS M1 user and ran <code>conda install jupyterlab</code> and it won&#39;t work when you run <code>jupyter lab</code>. You also might need to run: <code>conda install nbclassic==0.2.8</code> to reinstall part of the Jupyter package that is broken.</li>
-<li>If scikit-learn keeps erroring, uninstall it and then do the following:<ul>
-<li><code>conda install scikit-learn</code></li>
-<li><code>conda install scipy</code></li>
-</ul>
-</li>
-<li>After installing the packages on Windows 10, I had to install <code>six==1.15.0</code>, <code>typing-extensions==3.7.4</code> and <code>scipy</code>, because tensorflow was erroring.</li>
-</ul>
-
-
-</p>
-</section>	
-
-
-
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="minder_utils.evaluate.eval_utils.get_scores"><code class="name flex">
+<span>def <span class="ident">get_scores</span></span>(<span>y_true, y_pred)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_scores(y_true, y_pred):
+    if y_true.ndim &gt; 1:
+        y_true = np.argmax(y_true, axis=1)
+    if y_pred.ndim &gt; 1:
+        y_pred = np.argmax(y_pred, axis=1)
+    try:
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    except ValueError:
+        return None, None, None, None
+    specificity = tn / (tn + fp)
+    sensitivity = tp / (tp + fn)
+
+    acc = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+    return sensitivity, specificity, acc, f1</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.evaluate.eval_utils.split_by_ids"><code class="name flex">
+<span>def <span class="ident">split_by_ids</span></span>(<span>X, y, patient_ids, cat=True, valid_only=True, seed=0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def split_by_ids(X, y, patient_ids, cat=True, valid_only=True, seed=0):
+    train_ids, test_ids = train_test_split(np.unique(patient_ids), test_size=0.33, random_state=seed)
+    test_y = y[np.isin(patient_ids, test_ids)]
+    if valid_only:
+        test_filter = np.isin(test_y, [-1, 1])
+    else:
+        test_filter = np.isin(test_y, np.unique(test_y))
+    if cat:
+        return X[np.isin(patient_ids, train_ids)], np.argmax(y_to_categorical(y[np.isin(patient_ids, train_ids)]), axis=1), \
+               X[np.isin(patient_ids, test_ids)][test_filter], y_to_categorical(y[np.isin(patient_ids, test_ids)][
+                   test_filter])
+    return X[np.isin(patient_ids, train_ids)], y[np.isin(patient_ids, train_ids)], \
+           X[np.isin(patient_ids, test_ids)][test_filter], y[np.isin(patient_ids, test_ids)][test_filter]</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -98,20 +139,15 @@
 <ul></ul>
 </div>
 <ul id="index">
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<li><h3>Super-module</h3>
 <ul>
-<li><code><a title="minder_utils.configurations" href="configurations/index.html">minder_utils.configurations</a></code></li>
-<li><code><a title="minder_utils.dataloader" href="dataloader/index.html">minder_utils.dataloader</a></code></li>
-<li><code><a title="minder_utils.download" href="download/index.html">minder_utils.download</a></code></li>
-<li><code><a title="minder_utils.evaluate" href="evaluate/index.html">minder_utils.evaluate</a></code></li>
-<li><code><a title="minder_utils.formatting" href="formatting/index.html">minder_utils.formatting</a></code></li>
-<li><code><a title="minder_utils.main" href="main.html">minder_utils.main</a></code></li>
-<li><code><a title="minder_utils.models" href="models/index.html">minder_utils.models</a></code></li>
-<li><code><a title="minder_utils.scirpts" href="scirpts/index.html">minder_utils.scirpts</a></code></li>
-<li><code><a title="minder_utils.settings" href="settings.html">minder_utils.settings</a></code></li>
-<li><code><a title="minder_utils.util" href="util.html">minder_utils.util</a></code></li>
-<li><code><a title="minder_utils.visualisation" href="visualisation/index.html">minder_utils.visualisation</a></code></li>
-<li><code><a title="minder_utils.weekly_run" href="weekly_run.html">minder_utils.weekly_run</a></code></li>
+<li><code><a title="minder_utils.evaluate" href="index.html">minder_utils.evaluate</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="minder_utils.evaluate.eval_utils.get_scores" href="#minder_utils.evaluate.eval_utils.get_scores">get_scores</a></code></li>
+<li><code><a title="minder_utils.evaluate.eval_utils.split_by_ids" href="#minder_utils.evaluate.eval_utils.split_by_ids">split_by_ids</a></code></li>
 </ul>
 </li>
 </ul>

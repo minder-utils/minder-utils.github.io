@@ -15,6 +15,14 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
 <style>.homelink{display:block;font-size:2em;font-weight:bold;color:#555;padding-bottom:.5em;border-bottom:1px solid silver}.homelink:hover{color:inherit}.homelink img{max-width:20%;max-height:5em;margin:auto;margin-bottom:.3em}</style>
+<style>
+iframe{
+    width: 120%;
+    height: 90%;
+    border: 2px solid #ccc;
+}
+</style>
+
 </head>
 
 
@@ -32,110 +40,69 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Package <code>minder_utils</code></h1>
+<h1 class="title">Example of <code>minder_utils_lite</code></h1>
 </header>
 <section id="section-intro">
 </section>
 
 
+<iframe id="myIframe" src="minder_utils_instructions.html" width="100%" height="100%" scrolling = "yes"></iframe>
 
 
-<section>
+<script>
+// Selecting the iframe element
+var iframe = document.getElementById("myIframe");
 
-<section>
-<h2 id="how-to-use">How to use this website</h2>
-<p>
-The documentation for each of the packages can be found in the toolbar on the left. The toolbar also holds some information about some of the IDs. 
-</p>
-<p>
-To return to this page at any point, click on the title and image in the top left corner.
-</p>
-<p>
-The installation instructions and information about which package to install can be found below:
-</p>
-</section>
-
-<section>
-<h2 id="which-version-is-right-for-me-">Which version is right for me?</h2>
-<p>Here, we have two versions of minder-utils. You only need one version!</p>
-<ol>
-<li>The first, is <code>minder-utils-lite</code>. This package just allows you to download the raw data from <a href="https://research.minder.care">The Research Portal</a>. This includes initial downloads and refreshes of the data on your machine. This version requires considerably less dependencies and is for those users that don&#39;t need extra models, pre-processing and visualisation packages.</li>
-<li>The second, is <code>minder-utils</code> and is the full version of the above. This package includes more dependencies because it is also packaged up with some machine learning models and visualisation functions. It also applied pre-processing to some of the data and downloads the raw data as well as saves <code>.npy</code> files. It also allows you to download the raw data from <a href="https://research.minder.care">The Research Portal</a>.
-</li>
-</ol>
-</section>
-
-
-<section>
-<p>The installation instructions are as follows:</p>
+// Adjusting the iframe height onload event
+iframe.onload = function(){
+    iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
+    iframe.style.width = iframe.contentWindow.document.body.scrollWidth + 'px';
+}
+</script>
 
 
 
-<h2 id="installation-instructions">Installation instructions</h2>
-<h3 id="minder-utils-lite">minder-utils-lite</h3>
-<p>To install minder-utils-lite, simply run the following command:</p>
-<font size="-1"><p><code>pip install -e git+https://github.com/minder-utils/minder_utils_lite.git#egg=minder_utils</code></p></font>
-
-<p>This will save a folder containing the package in our current working directory, with the name <code>src</code>. Please do not delete this!</p>
-<p>The package will be installed under the name <code>minder_utils</code>. To import it, please run <code>import minder_utils</code></p>
-</section>
 
 
-<h3 id="minder-utils">minder-utils</h3>
-<p>If you are on Windows 10 and use the <code>conda</code> environment manager, then you may want to use the <code>environment.yml</code> file that is supplied within the package, located here: <a href="https://github.com/ImperialCollegeLondon/minder_utils">minder_utils package</a>. Otherwise, please follow the instructions below.</p>
-<p>If attempting to install this package on MacOS with M1 silicon then please first follow the instructions here: <a href="https://github.com/apple/tensorflow_macos/issues/153">Installing Tensorflow on MacOS</a> (Please ask Alex if you need help because this is quite unfriendly). Then you may move to step 1. If you are installing on Windows, move to step 1.</p>
-<ol>
-<li><p>Install tensorflow 2 using the command here: <a href="https://www.tensorflow.org/install">Tensorflow Installation Guide</a></p>
-<ul>
-<li>The package has been tested with tensorflow 2.6.0 on windows and 2.4.0 on MacOS.</li>
-</ul>
-</li>
-<li><p>Install pytorch, using the command here: <a href="https://pytorch.org/get-started/locally/">Pyorch Installation Guide</a></p>
-<ul>
-<li>The package has been tested with pytorch 1.9.1 with cuda 10.2 on windows and 1.9.1 on MacOS.</li>
-</ul>
-</li>
-<li><p>Install scikit-learn using the command here: <a href="https://scikit-learn.org/stable/install.html">Scikit-Learn Installation Guide</a></p>
-<ul>
-<li>The package has been tested with scikit-learn 1.0 on windows and 1.0 on MacOS.</li>
-</ul>
-</li>
-<li><p>Install the minder_utils package using the following command:</p>
-<font size="-1"><p><code>pip install -e git+https://github.com/ImperialCollegeLondon/minder_utils.git#egg=minder_utils</code></p></font>
-</li>
-</ol>
-<p>Then, you should be up and running! To import the package, please use <code>import minder_utils</code>.</p>
-
-<p>
-If you have any issues, please consult the troubleshooting below. If your answer can not be solved here, then please contact Alex or create an issue on our github for the corresponding package:</p>
-
-<ul>
-<li><code><a title="minder_utils_lite" href="https://github.com/minder-utils/minder_utils_lite">minder-utils-lite</a></code></li>
-<li><code><a title="minder_utils" href="https://github.com/ImperialCollegeLondon/minder_utils">minder-utils</a></code></li>
-</ul>
-
-</p>
 
 
-</section>
 
-<section id="troubleshooting-instructions">
-<h2 class="section-title" id="header-troubleshooting-instructions">Troubleshooting instructions</h2>
-<p>
 
-<p>There are many issues that arise from incompatibilities with Apple&#39;s M1 silicon.</p>
-<ul>
-<li>If you are a MacOS M1 user and ran <code>conda install jupyterlab</code> and it won&#39;t work when you run <code>jupyter lab</code>. You also might need to run: <code>conda install nbclassic==0.2.8</code> to reinstall part of the Jupyter package that is broken.</li>
-<li>If scikit-learn keeps erroring, uninstall it and then do the following:<ul>
-<li><code>conda install scikit-learn</code></li>
-<li><code>conda install scipy</code></li>
-</ul>
-</li>
-<li>After installing the packages on Windows 10, I had to install <code>six==1.15.0</code>, <code>typing-extensions==3.7.4</code> and <code>scipy</code>, because tensorflow was erroring.</li>
-</ul>
-</p>
-</section>
-</section>	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -177,30 +144,6 @@ If you have any issues, please consult the troubleshooting below. If your answer
 </ul>
 </li>
 </ul>
-
-
-
-
-<ul id="index">
-<li><h3><a>ID Info</a></h3>
-<ul>
-<li><h4><a>Living Lab</a></h4>
-<li><code class="name">SURX1xE2iymy4aexFE34yv</code></li>
-</li>
-<li><h4><a>IDs To Ignore</a></h4>
-<li><code class="name">WrXiKEAY93k5DhEinCTC6y</code></li>
-<li><code class="name">BqMbAVbdzRKf5SBZitwpug</code></li>
-<li><code class="name">Dr1tnvKDk2bHG8YS21nwiR</code></li>
-<li><code class="name">R8amTSvAQkobnkeuWybkWL</code></li>
-<li><code class="name">BLDnFyF4xzynLB7BhRd9XL</code></li>
-</li>
-</ul>
-</li>
-</ul>
-
-
-
-
 
 
 
