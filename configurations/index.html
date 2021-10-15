@@ -28,6 +28,12 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import os
+from pathlib import Path
+
+p = Path(os.path.join(os.path.dirname(__file__), &#39;confidential/&#39;))
+if not p.exists():
+        os.mkdir(p)
+
 
 data_path = os.path.join(os.path.dirname(__file__), &#39;confidential/data_path.txt&#39;)
 token_path = os.path.join(os.path.dirname(__file__), &#39;confidential/token_real.json&#39;)
