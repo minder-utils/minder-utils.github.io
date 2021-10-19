@@ -35,7 +35,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn import tree
 from sklearn.neighbors import KNeighborsClassifier
-from ...formatting.format_util import y_to_categorical
+from minder_utils.formatting.format_util import y_to_categorical
 
 
 class Classifiers:
@@ -46,7 +46,7 @@ class Classifiers:
         self.epochs = 50
         self.batch_size = 10
 
-    def re_initialise(self):
+    def reset(self):
         self.model = getattr(self, self.model_type)()
 
     def nn(self):
@@ -133,7 +133,7 @@ class Classifiers:
         self.epochs = 50
         self.batch_size = 10
 
-    def re_initialise(self):
+    def reset(self):
         self.model = getattr(self, self.model_type)()
 
     def nn(self):
@@ -340,8 +340,8 @@ class Classifiers:
         return self.model.predict_proba(data)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.models.classifiers.classifiers.Classifiers.re_initialise"><code class="name flex">
-<span>def <span class="ident">re_initialise</span></span>(<span>self)</span>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.reset"><code class="name flex">
+<span>def <span class="ident">reset</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -349,7 +349,7 @@ class Classifiers:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def re_initialise(self):
+<pre><code class="python">def reset(self):
     self.model = getattr(self, self.model_type)()</code></pre>
 </details>
 </dd>
@@ -388,7 +388,7 @@ class Classifiers:
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.nn" href="#minder_utils.models.classifiers.classifiers.Classifiers.nn">nn</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.predict" href="#minder_utils.models.classifiers.classifiers.Classifiers.predict">predict</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.predict_probs" href="#minder_utils.models.classifiers.classifiers.Classifiers.predict_probs">predict_probs</a></code></li>
-<li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.re_initialise" href="#minder_utils.models.classifiers.classifiers.Classifiers.re_initialise">re_initialise</a></code></li>
+<li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.reset" href="#minder_utils.models.classifiers.classifiers.Classifiers.reset">reset</a></code></li>
 </ul>
 </li>
 </ul>

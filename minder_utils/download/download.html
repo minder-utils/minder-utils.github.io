@@ -40,6 +40,7 @@ from minder_utils.configurations import token_path
 import numpy as np
 import datetime
 
+
 class Downloader:
     &#39;&#39;&#39;
     This class allows you to download and save the data from minder. Make sure that you 
@@ -60,6 +61,7 @@ class Downloader:
     as a csv in the directory ```&#39;./data/&#39;```
 
     &#39;&#39;&#39;
+
     def __init__(self):
         self.url = &#39;https://research.minder.care/api/&#39;
         self.params = {&#39;Authorization&#39;: self.token(), &#39;Content-Type&#39;: &#39;application/json&#39;}
@@ -124,13 +126,13 @@ class Downloader:
         response = requests.get(job_id, headers=self.params).json()
         waiting = True
         while waiting:
-            
+
             if response[&#39;status&#39;] == 202:
                 response = requests.get(job_id, headers=self.params).json()
                 # the following waits for x seconds and runs an animation in the 
                 # mean time to make sure the user doesn&#39;t think the code is broken
-                progress_spinner(3, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
-                
+                progress_spinner(30, &#39;Waiting for the sever to complete the job&#39;, new_line_after=False)
+
             elif response[&#39;status&#39;] == 500:
                 sys.stdout.write(&#39;\r&#39;)
                 sys.stdout.write(&#34;Request failed&#34;)
@@ -141,7 +143,7 @@ class Downloader:
                 print(&#34;Job is completed, start to download the data&#34;)
                 waiting = False
 
-    def _export_request_parallel(self,export_dict):
+    def _export_request_parallel(self, export_dict):
         &#39;&#39;&#39;
         This function allows the user to make parallel export requests. This is useful 
         when the requests have difference since and until dates for the different datasets in 
@@ -161,15 +163,14 @@ class Downloader:
 
         &#39;&#39;&#39;
         categories_list = list(export_dict.keys())
-        
-        available_categories_list = self.get_category_names(measurement_name = &#39;all&#39;)
+
+        available_categories_list = self.get_category_names(measurement_name=&#39;all&#39;)
 
         for category in categories_list:
             if not category in available_categories_list:
                 raise TypeError(&#39;Category {} is not available to download. Please check the name.&#39;.format(category))
 
         print(&#39;Creating new parallel export requests&#39;)
-        
 
         # the following creates a list of export keys to be called by the API
         export_key_list = {}
@@ -177,11 +178,11 @@ class Downloader:
             since = export_dict[category][0]
             until = export_dict[category][1]
             export_keys = {&#39;datasets&#39;: {category: {}}}
-            if not since is None: 
+            if not since is None:
                 export_keys[&#39;since&#39;] = self.convert_to_ISO(since)
             if not until is None:
                 export_keys[&#39;until&#39;] = self.convert_to_ISO(until)
-            
+
             export_key_list[category] = export_keys
 
         # scheduling jobs for each of the requests:
@@ -193,7 +194,7 @@ class Downloader:
             schedule_job_dict[category] = schedule_job
             request_url = schedule_job.headers[&#39;Content-Location&#39;]
             request_url_dict[category] = request_url
-        
+
         # checking whether the jobs have been completed:
         waiting = True
         waiting_for = {category: True for category in categories_list}
@@ -221,14 +222,13 @@ class Downloader:
 
             # if we are no longer waiting for a job to complete, move onto the downloads
             if True in list(waiting_for.values()):
-                progress_spinner(3, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
+                progress_spinner(30, &#39;Waiting for the sever to complete the job&#39;, new_line_after=False)
             else:
                 sys.stdout.write(&#39;\n&#39;)
                 sys.stdout.write(&#34;The server has finished processing the requests&#34;)
                 sys.stdout.flush()
                 sys.stdout.write(&#39;\n&#39;)
                 waiting = False
-
 
         return job_id_dict
 
@@ -274,7 +274,6 @@ class Downloader:
 
         &#39;&#39;&#39;
 
-
         p = Path(save_path)
         if not p.exists():
             print(&#39;Target directory does not exist, creating a new folder&#39;)
@@ -308,9 +307,10 @@ class Downloader:
                 print(&#39;Fail, Response code {}&#39;.format(content.status_code))
             else:
                 pd.read_csv(io.StringIO(content.text)).to_csv(save_path + record[&#39;type&#39;] + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                                              header=not Path(save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
+                                                              header=not Path(
+                                                                  save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
                 print(&#39;Success&#39;)
-    
+
     def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
         &#39;&#39;&#39;
         This function allows for the user to refresh the data currently saved in the 
@@ -343,7 +343,7 @@ class Downloader:
             categories = [categories]
 
         export_dict = {}
-        
+
         print(&#39;Checking current files...&#39;)
         last_rows = {}
         for category in categories:
@@ -354,13 +354,12 @@ class Downloader:
             else:
                 data = pd.read_csv(file_path + &#39;.csv&#39;)
                 # add the following to avoid a duplicate of the last and first row
-                last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1,:].to_numpy()
-                since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1,0])
-            
+                last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
+                since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1, 0])
+
             export_dict[category] = (since, until)
 
-        
-        job_id_dict = self._export_request_parallel(export_dict = export_dict)
+        job_id_dict = self._export_request_parallel(export_dict=export_dict)
 
         data = requests.get(self.url + &#39;export&#39;, headers=self.params).json()
 
@@ -370,7 +369,7 @@ class Downloader:
                 if previous_job[&#39;id&#39;] == job_id:
                     output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
                     break
-            
+
             for data_chunk in output:
                 content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
                 if content.status_code != 200:
@@ -378,18 +377,19 @@ class Downloader:
                 else:
                     current_data = pd.read_csv(io.StringIO(content.text))
                     # checking whether the first line is a duplicate of the end of the previous file
-                    if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0,:] == last_rows[category]):
-                        current_data.iloc[1:,:].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                            header=not Path(save_path + category + &#39;.csv&#39;).exists())
-                    else:    
+                    if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0, :] == last_rows[category]):
+                        current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
+                                                                               header=not Path(
+                                                                                   save_path + category + &#39;.csv&#39;).exists())
+                    else:
                         current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
                                             header=not Path(save_path + category + &#39;.csv&#39;).exists())
-        
+
         print(&#39;Success&#39;)
 
         return
 
-    def get_category_names(self, measurement_name = &#39;all&#39;):
+    def get_category_names(self, measurement_name=&#39;all&#39;):
         &#39;&#39;&#39;
         This function allows you to get the category names from a given measurement name.
 
@@ -408,7 +408,7 @@ class Downloader:
             export function.
 
         &#39;&#39;&#39;
-        
+
         if measurement_name == &#39;all&#39;:
             out = []
             for value in self.get_info()[&#39;Categories&#39;].values():
@@ -416,9 +416,8 @@ class Downloader:
 
         else:
             out = list(self.get_info()[&#39;Categories&#39;][measurement_name].keys())
-        
-        return out
 
+        return out
 
     def get_group_names(self):
         &#39;&#39;&#39;
@@ -432,12 +431,10 @@ class Downloader:
             This is a list that contains the names of the sets of measurements.
 
         &#39;&#39;&#39;
-        
+
         out = self.get_info()[&#39;Categories&#39;].keys()
-        
+
         return list(out)
-
-
 
     @staticmethod
     def token():
@@ -454,9 +451,9 @@ class Downloader:
         &#39;&#39;&#39;
         token_dir = token_path
         with open(token_dir) as json_file:
-            api_keys = json.load(json_file)  
-        #with open(&#39;./token_real.json&#39;, &#39;r&#39;) as f:
-            #api_keys = json.loads(f.read())
+            api_keys = json.load(json_file)
+            # with open(&#39;./token_real.json&#39;, &#39;r&#39;) as f:
+            # api_keys = json.loads(f.read())
         return api_keys[&#39;token&#39;]
 
     @staticmethod
@@ -535,6 +532,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
     as a csv in the directory ```&#39;./data/&#39;```
 
     &#39;&#39;&#39;
+
     def __init__(self):
         self.url = &#39;https://research.minder.care/api/&#39;
         self.params = {&#39;Authorization&#39;: self.token(), &#39;Content-Type&#39;: &#39;application/json&#39;}
@@ -599,13 +597,13 @@ as a csv in the directory <code>'./data/'</code></p></div>
         response = requests.get(job_id, headers=self.params).json()
         waiting = True
         while waiting:
-            
+
             if response[&#39;status&#39;] == 202:
                 response = requests.get(job_id, headers=self.params).json()
                 # the following waits for x seconds and runs an animation in the 
                 # mean time to make sure the user doesn&#39;t think the code is broken
-                progress_spinner(3, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
-                
+                progress_spinner(30, &#39;Waiting for the sever to complete the job&#39;, new_line_after=False)
+
             elif response[&#39;status&#39;] == 500:
                 sys.stdout.write(&#39;\r&#39;)
                 sys.stdout.write(&#34;Request failed&#34;)
@@ -616,7 +614,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
                 print(&#34;Job is completed, start to download the data&#34;)
                 waiting = False
 
-    def _export_request_parallel(self,export_dict):
+    def _export_request_parallel(self, export_dict):
         &#39;&#39;&#39;
         This function allows the user to make parallel export requests. This is useful 
         when the requests have difference since and until dates for the different datasets in 
@@ -636,15 +634,14 @@ as a csv in the directory <code>'./data/'</code></p></div>
 
         &#39;&#39;&#39;
         categories_list = list(export_dict.keys())
-        
-        available_categories_list = self.get_category_names(measurement_name = &#39;all&#39;)
+
+        available_categories_list = self.get_category_names(measurement_name=&#39;all&#39;)
 
         for category in categories_list:
             if not category in available_categories_list:
                 raise TypeError(&#39;Category {} is not available to download. Please check the name.&#39;.format(category))
 
         print(&#39;Creating new parallel export requests&#39;)
-        
 
         # the following creates a list of export keys to be called by the API
         export_key_list = {}
@@ -652,11 +649,11 @@ as a csv in the directory <code>'./data/'</code></p></div>
             since = export_dict[category][0]
             until = export_dict[category][1]
             export_keys = {&#39;datasets&#39;: {category: {}}}
-            if not since is None: 
+            if not since is None:
                 export_keys[&#39;since&#39;] = self.convert_to_ISO(since)
             if not until is None:
                 export_keys[&#39;until&#39;] = self.convert_to_ISO(until)
-            
+
             export_key_list[category] = export_keys
 
         # scheduling jobs for each of the requests:
@@ -668,7 +665,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
             schedule_job_dict[category] = schedule_job
             request_url = schedule_job.headers[&#39;Content-Location&#39;]
             request_url_dict[category] = request_url
-        
+
         # checking whether the jobs have been completed:
         waiting = True
         waiting_for = {category: True for category in categories_list}
@@ -696,14 +693,13 @@ as a csv in the directory <code>'./data/'</code></p></div>
 
             # if we are no longer waiting for a job to complete, move onto the downloads
             if True in list(waiting_for.values()):
-                progress_spinner(3, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
+                progress_spinner(30, &#39;Waiting for the sever to complete the job&#39;, new_line_after=False)
             else:
                 sys.stdout.write(&#39;\n&#39;)
                 sys.stdout.write(&#34;The server has finished processing the requests&#34;)
                 sys.stdout.flush()
                 sys.stdout.write(&#39;\n&#39;)
                 waiting = False
-
 
         return job_id_dict
 
@@ -749,7 +745,6 @@ as a csv in the directory <code>'./data/'</code></p></div>
 
         &#39;&#39;&#39;
 
-
         p = Path(save_path)
         if not p.exists():
             print(&#39;Target directory does not exist, creating a new folder&#39;)
@@ -783,9 +778,10 @@ as a csv in the directory <code>'./data/'</code></p></div>
                 print(&#39;Fail, Response code {}&#39;.format(content.status_code))
             else:
                 pd.read_csv(io.StringIO(content.text)).to_csv(save_path + record[&#39;type&#39;] + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                                              header=not Path(save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
+                                                              header=not Path(
+                                                                  save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
                 print(&#39;Success&#39;)
-    
+
     def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
         &#39;&#39;&#39;
         This function allows for the user to refresh the data currently saved in the 
@@ -818,7 +814,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
             categories = [categories]
 
         export_dict = {}
-        
+
         print(&#39;Checking current files...&#39;)
         last_rows = {}
         for category in categories:
@@ -829,13 +825,12 @@ as a csv in the directory <code>'./data/'</code></p></div>
             else:
                 data = pd.read_csv(file_path + &#39;.csv&#39;)
                 # add the following to avoid a duplicate of the last and first row
-                last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1,:].to_numpy()
-                since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1,0])
-            
+                last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
+                since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1, 0])
+
             export_dict[category] = (since, until)
 
-        
-        job_id_dict = self._export_request_parallel(export_dict = export_dict)
+        job_id_dict = self._export_request_parallel(export_dict=export_dict)
 
         data = requests.get(self.url + &#39;export&#39;, headers=self.params).json()
 
@@ -845,7 +840,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
                 if previous_job[&#39;id&#39;] == job_id:
                     output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
                     break
-            
+
             for data_chunk in output:
                 content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
                 if content.status_code != 200:
@@ -853,18 +848,19 @@ as a csv in the directory <code>'./data/'</code></p></div>
                 else:
                     current_data = pd.read_csv(io.StringIO(content.text))
                     # checking whether the first line is a duplicate of the end of the previous file
-                    if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0,:] == last_rows[category]):
-                        current_data.iloc[1:,:].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                            header=not Path(save_path + category + &#39;.csv&#39;).exists())
-                    else:    
+                    if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0, :] == last_rows[category]):
+                        current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
+                                                                               header=not Path(
+                                                                                   save_path + category + &#39;.csv&#39;).exists())
+                    else:
                         current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
                                             header=not Path(save_path + category + &#39;.csv&#39;).exists())
-        
+
         print(&#39;Success&#39;)
 
         return
 
-    def get_category_names(self, measurement_name = &#39;all&#39;):
+    def get_category_names(self, measurement_name=&#39;all&#39;):
         &#39;&#39;&#39;
         This function allows you to get the category names from a given measurement name.
 
@@ -883,7 +879,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
             export function.
 
         &#39;&#39;&#39;
-        
+
         if measurement_name == &#39;all&#39;:
             out = []
             for value in self.get_info()[&#39;Categories&#39;].values():
@@ -891,9 +887,8 @@ as a csv in the directory <code>'./data/'</code></p></div>
 
         else:
             out = list(self.get_info()[&#39;Categories&#39;][measurement_name].keys())
-        
-        return out
 
+        return out
 
     def get_group_names(self):
         &#39;&#39;&#39;
@@ -907,12 +902,10 @@ as a csv in the directory <code>'./data/'</code></p></div>
             This is a list that contains the names of the sets of measurements.
 
         &#39;&#39;&#39;
-        
+
         out = self.get_info()[&#39;Categories&#39;].keys()
-        
+
         return list(out)
-
-
 
     @staticmethod
     def token():
@@ -929,9 +922,9 @@ as a csv in the directory <code>'./data/'</code></p></div>
         &#39;&#39;&#39;
         token_dir = token_path
         with open(token_dir) as json_file:
-            api_keys = json.load(json_file)  
-        #with open(&#39;./token_real.json&#39;, &#39;r&#39;) as f:
-            #api_keys = json.loads(f.read())
+            api_keys = json.load(json_file)
+            # with open(&#39;./token_real.json&#39;, &#39;r&#39;) as f:
+            # api_keys = json.loads(f.read())
         return api_keys[&#39;token&#39;]
 
     @staticmethod
@@ -1028,9 +1021,9 @@ def token():
     &#39;&#39;&#39;
     token_dir = token_path
     with open(token_dir) as json_file:
-        api_keys = json.load(json_file)  
-    #with open(&#39;./token_real.json&#39;, &#39;r&#39;) as f:
-        #api_keys = json.loads(f.read())
+        api_keys = json.load(json_file)
+        # with open(&#39;./token_real.json&#39;, &#39;r&#39;) as f:
+        # api_keys = json.loads(f.read())
     return api_keys[&#39;token&#39;]</code></pre>
 </details>
 </dd>
@@ -1127,7 +1120,6 @@ Default: <code>'./data/raw_data/'</code></p>
 
     &#39;&#39;&#39;
 
-
     p = Path(save_path)
     if not p.exists():
         print(&#39;Target directory does not exist, creating a new folder&#39;)
@@ -1161,7 +1153,8 @@ Default: <code>'./data/raw_data/'</code></p>
             print(&#39;Fail, Response code {}&#39;.format(content.status_code))
         else:
             pd.read_csv(io.StringIO(content.text)).to_csv(save_path + record[&#39;type&#39;] + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                                          header=not Path(save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
+                                                          header=not Path(
+                                                              save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
             print(&#39;Success&#39;)</code></pre>
 </details>
 </dd>
@@ -1186,7 +1179,7 @@ export function.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_category_names(self, measurement_name = &#39;all&#39;):
+<pre><code class="python">def get_category_names(self, measurement_name=&#39;all&#39;):
     &#39;&#39;&#39;
     This function allows you to get the category names from a given measurement name.
 
@@ -1205,7 +1198,7 @@ export function.</li>
         export function.
 
     &#39;&#39;&#39;
-    
+
     if measurement_name == &#39;all&#39;:
         out = []
         for value in self.get_info()[&#39;Categories&#39;].values():
@@ -1213,7 +1206,7 @@ export function.</li>
 
     else:
         out = list(self.get_info()[&#39;Categories&#39;][measurement_name].keys())
-    
+
     return out</code></pre>
 </details>
 </dd>
@@ -1244,9 +1237,9 @@ This is a list that contains the names of the sets of measurements.</li>
         This is a list that contains the names of the sets of measurements.
 
     &#39;&#39;&#39;
-    
+
     out = self.get_info()[&#39;Categories&#39;].keys()
-    
+
     return list(out)</code></pre>
 </details>
 </dd>
@@ -1345,7 +1338,7 @@ Default: <code>'./data/raw_data/'</code></p>
         categories = [categories]
 
     export_dict = {}
-    
+
     print(&#39;Checking current files...&#39;)
     last_rows = {}
     for category in categories:
@@ -1356,13 +1349,12 @@ Default: <code>'./data/raw_data/'</code></p>
         else:
             data = pd.read_csv(file_path + &#39;.csv&#39;)
             # add the following to avoid a duplicate of the last and first row
-            last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1,:].to_numpy()
-            since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1,0])
-        
+            last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
+            since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1, 0])
+
         export_dict[category] = (since, until)
 
-    
-    job_id_dict = self._export_request_parallel(export_dict = export_dict)
+    job_id_dict = self._export_request_parallel(export_dict=export_dict)
 
     data = requests.get(self.url + &#39;export&#39;, headers=self.params).json()
 
@@ -1372,7 +1364,7 @@ Default: <code>'./data/raw_data/'</code></p>
             if previous_job[&#39;id&#39;] == job_id:
                 output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
                 break
-        
+
         for data_chunk in output:
             content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
             if content.status_code != 200:
@@ -1380,13 +1372,14 @@ Default: <code>'./data/raw_data/'</code></p>
             else:
                 current_data = pd.read_csv(io.StringIO(content.text))
                 # checking whether the first line is a duplicate of the end of the previous file
-                if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0,:] == last_rows[category]):
-                    current_data.iloc[1:,:].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                        header=not Path(save_path + category + &#39;.csv&#39;).exists())
-                else:    
+                if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0, :] == last_rows[category]):
+                    current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
+                                                                           header=not Path(
+                                                                               save_path + category + &#39;.csv&#39;).exists())
+                else:
                     current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
                                         header=not Path(save_path + category + &#39;.csv&#39;).exists())
-    
+
     print(&#39;Success&#39;)
 
     return</code></pre>

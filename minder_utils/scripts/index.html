@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>minder_utils.scirpts.weekly_loader API documentation</title>
+<title>minder_utils.scripts API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,191 +20,29 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>minder_utils.scirpts.weekly_loader</code></h1>
+<h1 class="title">Module <code>minder_utils.scripts</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from ..formatting.format_util import iter_dir
-import os
-import datetime as DT
-from ..download.download import Downloader
-from ..formatting.formatting import Formatting
-from ..dataloader.dataloader import Dataloader
-from ..formatting.standardisation import standardise_activity_data
-import numpy as np
-from ..util import save_mkdir, delete_dir
-import json
-from ..settings import dates_save
-import pandas as pd
-from minder_utils.configurations import dates_path
-
-
-class Weekly_dataloader:
-    &#34;&#34;&#34;
-    Support UTI only
-    This class will
-        - download all previous data if it have not been downloaded before
-            - will be saved as labelled data and unlabelled data
-        - download the latest weekly data
-        - reformat all the data into following (N is the number of samples)
-            - activity data: N * 3 * 8 * 20
-            - environmental data: #TODO
-            - physiological data: #TODO
-    &#34;&#34;&#34;
-
-    def __init__(self, data_type=&#39;activity&#39;, save_dir=os.path.join(&#39;data&#39;, &#39;weekly_test&#39;), num_days_extended=3):
-        &#39;&#39;&#39;
-
-        @param data_type: activity, #TODO environmental, physiological
-        @param num_days_extended: for uti only, how many consecutive days to be labelled
-        &#39;&#39;&#39;
-        self.data_type = data_type
-        self.num_days_extended = num_days_extended
-        self.downloader = Downloader()
-        self.default_dir = save_dir
-        save_mkdir(self.default_dir)
-
-    @property
-    def previous_data(self):
-        return os.path.join(self.default_dir, &#39;previous&#39;, &#39;npy&#39;)
-
-    @property
-    def current_data(self):
-        return os.path.join(self.default_dir, &#39;current&#39;, &#39;npy&#39;)
-
-    @property
-    def current_csv_data(self):
-        return os.path.join(self.default_dir, &#39;current&#39;, &#39;csv&#39;)
-
-    @property
-    def previous_csv_data(self):
-        return os.path.join(self.default_dir, &#39;previous&#39;, &#39;csv&#39;)
-
-    @property
-    def gap_csv_data(self):
-        return os.path.join(self.default_dir, &#39;gap&#39;, &#39;csv&#39;)
-
-    def initialise(self):
-        dates_save(refresh=True)
-        for folder in [&#39;current&#39;, &#39;previous&#39;]:
-            delete_dir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
-            delete_dir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
-            save_mkdir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
-            save_mkdir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
-            self.download(folder, &#39;activity&#39;, include_devices=True)
-            self.format(folder)
-
-    def check_exist(self, path):
-        check_list = {
-            &#39;.csv&#39;: {&#39;activity&#39;: [&#39;raw_door_sensor&#39;, &#39;raw_appliance_use&#39;, &#39;raw_activity_pir&#39;, &#39;device_types&#39;]},
-            &#39;.npy&#39;: {&#39;activity&#39;: {&#39;current&#39;: [&#39;unlabelled&#39;, &#39;patient_id&#39;, &#39;dates&#39;],
-                                  &#39;previous&#39;: [&#39;unlabelled&#39;, &#39;patient_id&#39;, &#39;dates&#39;, &#39;X&#39;, &#39;y&#39;]}},
-        }
-        folder_type = &#39;previous&#39; if &#39;previous&#39; in path else &#39;current&#39;
-        reformat_flag = False
-        for data_type in [&#39;activity&#39;]:
-            # Check the csv file
-            if not set([ele + &#39;.csv&#39; for ele in check_list[&#39;.csv&#39;][data_type]]) \
-                   &lt;= set(iter_dir(os.path.join(path, &#39;csv&#39;), &#39;.csv&#39;, False)):
-                print(data_type, folder_type, &#39;raw data does not exist, start to download&#39;)
-                self.download(folder_type, data_type)
-                reformat_flag = True
-            else:
-                print(data_type, folder_type, &#39;is already downloaded&#39;)
-
-            # Check the npy file
-            if not set([ele + &#39;.npy&#39; for ele in check_list[&#39;.npy&#39;][data_type][folder_type]]) \
-                   &lt;= set(iter_dir(os.path.join(path, &#39;npy&#39;), &#39;.npy&#39;, False)) or reformat_flag:
-                print(&#39;formatting the data: &#39;, data_type, folder_type)
-                self.format(folder_type)
-            else:
-                print(data_type, folder_type, &#39;has been processed&#39;)
-
-    def download(self, period, data_type=&#39;activity&#39;, include_devices=False):
-        categories = {
-            &#39;activity&#39;: [&#39;raw_door_sensor&#39;, &#39;raw_appliance_use&#39;, &#39;raw_activity_pir&#39;]
-        }
-        if include_devices:
-            categories[data_type].append(&#39;device_types&#39;)
-        date_dict = self.get_dates()
-        self.downloader.export(since=date_dict[period][&#39;since&#39;], until=date_dict[period][&#39;until&#39;], reload=True,
-                               save_path=os.path.join(self.default_dir, &#39;previous&#39; if period == &#39;gap&#39; else period,
-                                                      &#39;csv/&#39;),
-                               categories=categories[data_type])
-
-    def format(self, period):
-        loader = Formatting(os.path.join(self.default_dir, period, &#39;csv&#39;))
-        dataloader = Dataloader(standardise_activity_data(loader.activity_data),
-                                self.num_days_extended, period == &#39;previous&#39;)
-        save_path = os.path.join(self.default_dir, period, &#39;npy&#39;)
-
-        data, p_ids, dates = dataloader.get_unlabelled_data()
-        np.save(os.path.join(save_path, &#39;unlabelled.npy&#39;), data)
-        np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
-        np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
-        if period == &#39;previous&#39;:
-            x, y, z = [], [], []
-            for i, j, k in dataloader.iterate_data():
-                x.append(i)
-                y.append(j)
-                z.append(k)
-            np.save(os.path.join(save_path, &#39;X.npy&#39;), np.concatenate(x))
-            np.save(os.path.join(save_path, &#39;y.npy&#39;), np.concatenate(y))
-            np.save(os.path.join(save_path, &#39;label_ids.npy&#39;), np.concatenate(z))
-
-    def refresh(self):
-        date_dict = self.get_dates()
-        if date_dict[&#39;current&#39;][&#39;until&#39;] == DT.date.today() - DT.timedelta(days=1):
-            print(&#39;Data is up-to-date&#39;)
-            return
-        dates_save(refresh=False)
-        date_dict = self.get_dates()
-        if date_dict[&#39;gap&#39;][&#39;until&#39;] &gt; date_dict[&#39;gap&#39;][&#39;since&#39;]:
-            self.download(&#39;gap&#39;)
-        self.download(&#39;current&#39;)
-        self.collate()
-        return
-
-    def collate(self):
-        date_dict = self.get_dates()
-        for filename in iter_dir(self.previous_csv_data, split=False):
-            if filename not in [&#39;device_types.csv&#39;]:
-                previous_data = pd.read_csv(os.path.join(self.previous_csv_data, filename))
-                current_data = pd.read_csv(os.path.join(self.current_csv_data, filename))
-
-                current_data.start_date = pd.to_datetime(current_data.start_date)
-                current_mask = current_data.start_date.dt.date &lt; date_dict[&#39;gap&#39;][&#39;until&#39;]
-                previous_data = pd.concat([previous_data, current_data[current_mask]])
-                current_data = current_data[~current_mask]
-
-                current_data.drop_duplicates().to_csv(os.path.join(self.current_csv_data, filename))
-                previous_data.drop_duplicates().to_csv(os.path.join(self.previous_csv_data, filename))
-
-    @staticmethod
-    def get_dates():
-        &#39;&#39;&#39;
-        This function returns the current dates saved in the configurations folder.
-        This is an internal function.
-
-        Returns
-        ---------
-
-        - dates: dict:
-            This dictionary holds the state (&#39;gap&#39;, &#39;current&#39;, etc) and the dates.
-
-        &#39;&#39;&#39;
-        with open(dates_path) as json_file:
-            date_dict = json.load(json_file)
-        for state in date_dict:
-            for time in date_dict[state]:
-                date_dict[state][time] = pd.to_datetime(date_dict[state][time])
-        return date_dict</code></pre>
+<pre><code class="python">from .weekly_loader import *
+__all__ = [&#39;Weekly_dataloader&#39;]</code></pre>
 </details>
 </section>
 <section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="minder_utils.scripts.feature_selection" href="feature_selection.html">minder_utils.scripts.feature_selection</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.scripts.weekly_loader" href="weekly_loader.html">minder_utils.scripts.weekly_loader</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -213,9 +51,9 @@ class Weekly_dataloader:
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader"><code class="flex name class">
+<dt id="minder_utils.scripts.Weekly_dataloader"><code class="flex name class">
 <span>class <span class="ident">Weekly_dataloader</span></span>
-<span>(</span><span>data_type='activity', save_dir='data\\weekly_test', num_days_extended=3)</span>
+<span>(</span><span>categories=None, save_dir='data/weekly_test', num_days_extended=3)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Support UTI only
@@ -246,13 +84,17 @@ This class will
             - physiological data: #TODO
     &#34;&#34;&#34;
 
-    def __init__(self, data_type=&#39;activity&#39;, save_dir=os.path.join(&#39;data&#39;, &#39;weekly_test&#39;), num_days_extended=3):
+    def __init__(self, categories=None, save_dir=os.path.join(&#39;data&#39;, &#39;weekly_test&#39;), num_days_extended=3):
         &#39;&#39;&#39;
 
         @param data_type: activity, #TODO environmental, physiological
         @param num_days_extended: for uti only, how many consecutive days to be labelled
         &#39;&#39;&#39;
-        self.data_type = data_type
+        default_categories = [&#39;activity&#39;, &#39;environmental&#39;, &#39;physiological&#39;]
+        self.categories = default_categories if categories is None else categories
+        assert all(data_type in default_categories for data_type in categories), &#39;available categories: &#39; \
+                                                                                 &#39;activity, environmental, &#39; \
+                                                                                 &#39;physiological&#39;
         self.num_days_extended = num_days_extended
         self.downloader = Downloader()
         self.default_dir = save_dir
@@ -285,7 +127,7 @@ This class will
             delete_dir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
             save_mkdir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
             save_mkdir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
-            self.download(folder, &#39;activity&#39;, include_devices=True)
+            self.download(folder, include_devices=True)
             self.format(folder)
 
     def check_exist(self, path):
@@ -314,17 +156,17 @@ This class will
             else:
                 print(data_type, folder_type, &#39;has been processed&#39;)
 
-    def download(self, period, data_type=&#39;activity&#39;, include_devices=False):
-        categories = {
-            &#39;activity&#39;: [&#39;raw_door_sensor&#39;, &#39;raw_appliance_use&#39;, &#39;raw_activity_pir&#39;]
-        }
+    def download(self, period, include_devices=False):
+        categories = []
+        for data_type in self.categories:
+            categories.extend(config[data_type][&#39;type&#39;].copy())
         if include_devices:
-            categories[data_type].append(&#39;device_types&#39;)
+            categories.append(&#39;device_types&#39;)
         date_dict = self.get_dates()
         self.downloader.export(since=date_dict[period][&#39;since&#39;], until=date_dict[period][&#39;until&#39;], reload=True,
                                save_path=os.path.join(self.default_dir, &#39;previous&#39; if period == &#39;gap&#39; else period,
                                                       &#39;csv/&#39;),
-                               categories=categories[data_type])
+                               categories=categories)
 
     def format(self, period):
         loader = Formatting(os.path.join(self.default_dir, period, &#39;csv&#39;))
@@ -396,7 +238,7 @@ This class will
 </details>
 <h3>Static methods</h3>
 <dl>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.get_dates"><code class="name flex">
+<dt id="minder_utils.scripts.Weekly_dataloader.get_dates"><code class="name flex">
 <span>def <span class="ident">get_dates</span></span>(<span>)</span>
 </code></dt>
 <dd>
@@ -435,7 +277,7 @@ def get_dates():
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.current_csv_data"><code class="name">var <span class="ident">current_csv_data</span></code></dt>
+<dt id="minder_utils.scripts.Weekly_dataloader.current_csv_data"><code class="name">var <span class="ident">current_csv_data</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -447,7 +289,7 @@ def current_csv_data(self):
     return os.path.join(self.default_dir, &#39;current&#39;, &#39;csv&#39;)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.current_data"><code class="name">var <span class="ident">current_data</span></code></dt>
+<dt id="minder_utils.scripts.Weekly_dataloader.current_data"><code class="name">var <span class="ident">current_data</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -459,7 +301,7 @@ def current_data(self):
     return os.path.join(self.default_dir, &#39;current&#39;, &#39;npy&#39;)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.gap_csv_data"><code class="name">var <span class="ident">gap_csv_data</span></code></dt>
+<dt id="minder_utils.scripts.Weekly_dataloader.gap_csv_data"><code class="name">var <span class="ident">gap_csv_data</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -471,7 +313,7 @@ def gap_csv_data(self):
     return os.path.join(self.default_dir, &#39;gap&#39;, &#39;csv&#39;)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.previous_csv_data"><code class="name">var <span class="ident">previous_csv_data</span></code></dt>
+<dt id="minder_utils.scripts.Weekly_dataloader.previous_csv_data"><code class="name">var <span class="ident">previous_csv_data</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -483,7 +325,7 @@ def previous_csv_data(self):
     return os.path.join(self.default_dir, &#39;previous&#39;, &#39;csv&#39;)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.previous_data"><code class="name">var <span class="ident">previous_data</span></code></dt>
+<dt id="minder_utils.scripts.Weekly_dataloader.previous_data"><code class="name">var <span class="ident">previous_data</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -498,7 +340,7 @@ def previous_data(self):
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.check_exist"><code class="name flex">
+<dt id="minder_utils.scripts.Weekly_dataloader.check_exist"><code class="name flex">
 <span>def <span class="ident">check_exist</span></span>(<span>self, path)</span>
 </code></dt>
 <dd>
@@ -534,7 +376,7 @@ def previous_data(self):
             print(data_type, folder_type, &#39;has been processed&#39;)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.collate"><code class="name flex">
+<dt id="minder_utils.scripts.Weekly_dataloader.collate"><code class="name flex">
 <span>def <span class="ident">collate</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -559,8 +401,8 @@ def previous_data(self):
             previous_data.drop_duplicates().to_csv(os.path.join(self.previous_csv_data, filename))</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.download"><code class="name flex">
-<span>def <span class="ident">download</span></span>(<span>self, period, data_type='activity', include_devices=False)</span>
+<dt id="minder_utils.scripts.Weekly_dataloader.download"><code class="name flex">
+<span>def <span class="ident">download</span></span>(<span>self, period, include_devices=False)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -568,20 +410,20 @@ def previous_data(self):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def download(self, period, data_type=&#39;activity&#39;, include_devices=False):
-    categories = {
-        &#39;activity&#39;: [&#39;raw_door_sensor&#39;, &#39;raw_appliance_use&#39;, &#39;raw_activity_pir&#39;]
-    }
+<pre><code class="python">def download(self, period, include_devices=False):
+    categories = []
+    for data_type in self.categories:
+        categories.extend(config[data_type][&#39;type&#39;].copy())
     if include_devices:
-        categories[data_type].append(&#39;device_types&#39;)
+        categories.append(&#39;device_types&#39;)
     date_dict = self.get_dates()
     self.downloader.export(since=date_dict[period][&#39;since&#39;], until=date_dict[period][&#39;until&#39;], reload=True,
                            save_path=os.path.join(self.default_dir, &#39;previous&#39; if period == &#39;gap&#39; else period,
                                                   &#39;csv/&#39;),
-                           categories=categories[data_type])</code></pre>
+                           categories=categories)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.format"><code class="name flex">
+<dt id="minder_utils.scripts.Weekly_dataloader.format"><code class="name flex">
 <span>def <span class="ident">format</span></span>(<span>self, period)</span>
 </code></dt>
 <dd>
@@ -611,7 +453,7 @@ def previous_data(self):
         np.save(os.path.join(save_path, &#39;label_ids.npy&#39;), np.concatenate(z))</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.initialise"><code class="name flex">
+<dt id="minder_utils.scripts.Weekly_dataloader.initialise"><code class="name flex">
 <span>def <span class="ident">initialise</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -627,11 +469,11 @@ def previous_data(self):
         delete_dir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
         save_mkdir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
         save_mkdir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
-        self.download(folder, &#39;activity&#39;, include_devices=True)
+        self.download(folder, include_devices=True)
         self.format(folder)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scirpts.weekly_loader.Weekly_dataloader.refresh"><code class="name flex">
+<dt id="minder_utils.scripts.Weekly_dataloader.refresh"><code class="name flex">
 <span>def <span class="ident">refresh</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -672,26 +514,32 @@ def previous_data(self):
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="minder_utils.scirpts" href="index.html">minder_utils.scirpts</a></code></li>
+<li><code><a title="minder_utils" href="../index.html">minder_utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="minder_utils.scripts.feature_selection" href="feature_selection.html">minder_utils.scripts.feature_selection</a></code></li>
+<li><code><a title="minder_utils.scripts.weekly_loader" href="weekly_loader.html">minder_utils.scripts.weekly_loader</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader">Weekly_dataloader</a></code></h4>
+<h4><code><a title="minder_utils.scripts.Weekly_dataloader" href="#minder_utils.scripts.Weekly_dataloader">Weekly_dataloader</a></code></h4>
 <ul class="two-column">
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.check_exist" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.check_exist">check_exist</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.collate" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.collate">collate</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.current_csv_data" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.current_csv_data">current_csv_data</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.current_data" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.current_data">current_data</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.download" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.download">download</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.format" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.format">format</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.gap_csv_data" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.gap_csv_data">gap_csv_data</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.get_dates" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.get_dates">get_dates</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.initialise" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.initialise">initialise</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.previous_csv_data" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.previous_csv_data">previous_csv_data</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.previous_data" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.previous_data">previous_data</a></code></li>
-<li><code><a title="minder_utils.scirpts.weekly_loader.Weekly_dataloader.refresh" href="#minder_utils.scirpts.weekly_loader.Weekly_dataloader.refresh">refresh</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.check_exist" href="#minder_utils.scripts.Weekly_dataloader.check_exist">check_exist</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.collate" href="#minder_utils.scripts.Weekly_dataloader.collate">collate</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.current_csv_data" href="#minder_utils.scripts.Weekly_dataloader.current_csv_data">current_csv_data</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.current_data" href="#minder_utils.scripts.Weekly_dataloader.current_data">current_data</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.download" href="#minder_utils.scripts.Weekly_dataloader.download">download</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.format" href="#minder_utils.scripts.Weekly_dataloader.format">format</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.gap_csv_data" href="#minder_utils.scripts.Weekly_dataloader.gap_csv_data">gap_csv_data</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.get_dates" href="#minder_utils.scripts.Weekly_dataloader.get_dates">get_dates</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.initialise" href="#minder_utils.scripts.Weekly_dataloader.initialise">initialise</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.previous_csv_data" href="#minder_utils.scripts.Weekly_dataloader.previous_csv_data">previous_csv_data</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.previous_data" href="#minder_utils.scripts.Weekly_dataloader.previous_data">previous_data</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.refresh" href="#minder_utils.scripts.Weekly_dataloader.refresh">refresh</a></code></li>
 </ul>
 </li>
 </ul>

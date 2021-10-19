@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>minder_utils.configurations API documentation</title>
+<title>minder_utils.models.feature_selectors.supervised API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,53 +20,26 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>minder_utils.configurations</code></h1>
+<h1 class="title">Namespace <code>minder_utils.models.feature_selectors.supervised</code></h1>
 </header>
 <section id="section-intro">
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">import os
-from pathlib import Path
-
-p = Path(os.path.join(os.path.dirname(__file__), &#39;confidential/&#39;))
-if not p.exists():
-    os.mkdir(p)
-
-data_path = os.path.join(os.path.dirname(__file__), &#39;confidential/data_path.txt&#39;)
-token_path = os.path.join(os.path.dirname(__file__), &#39;confidential/token_real.json&#39;)
-dates_path = os.path.join(os.path.dirname(__file__), &#39;confidential/dates.json&#39;)
-delta_path = os.path.join(os.path.dirname(__file__), &#39;confidential/delta.txt&#39;)
-
-config = {
-    &#39;physiological&#39;: {
-        &#39;type&#39;: [&#39;raw_body_weight&#39;, &#39;raw_skin_temperature&#39;,
-                 &#39;raw_body_temperature&#39;, &#39;raw_body_muscle_mass&#39;,
-                 &#39;raw_heart_rate&#39;, &#39;raw_oxygen_saturation&#39;,
-                 &#39;raw_total_body_fat&#39;, &#39;raw_body_mass_index&#39;,
-                 &#39;raw_blood_pressure&#39;, &#39;raw_total_body_water&#39;,
-                 &#39;raw_total_bone_mass&#39;],
-        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;type&#39;, &#39;value&#39;, &#39;unit&#39;]
-    },
-    &#39;activity&#39;: {
-        &#39;type&#39;: [&#39;raw_door_sensor&#39;, &#39;raw_appliance_use&#39;, &#39;raw_activity_pir&#39;],
-        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;]
-    },
-    &#39;environmental&#39;: {
-        &#39;type&#39;: [&#39;raw_ambient_temperature&#39;, &#39;raw_light&#39;],
-        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;type&#39;, &#39;value&#39;, &#39;unit&#39;]
-    },
-    &#39;individuals&#39;: {
-        &#39;text&#39;: [&#39;homes&#39;, &#39;raw_sleep_mat&#39;, &#39;raw_behavioural&#39;,
-                 &#39;procedure&#39;, &#39;observation_notes&#39;, &#39;encounter&#39;,
-                 &#39;issue&#39;],
-        &#39;measure&#39;: [&#39;raw_sleep_event&#39;, &#39;raw_wearable_walking&#39;]
-    }
-}</code></pre>
-</details>
 </section>
 <section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="minder_utils.models.feature_selectors.supervised.filter" href="filter.html">minder_utils.models.feature_selectors.supervised.filter</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.models.feature_selectors.supervised.intrinsic" href="intrinsic.html">minder_utils.models.feature_selectors.supervised.intrinsic</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.models.feature_selectors.supervised.wrapper" href="wrapper.html">minder_utils.models.feature_selectors.supervised.wrapper</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -88,7 +61,14 @@ config = {
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="minder_utils" href="../index.html">minder_utils</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors" href="../index.html">minder_utils.models.feature_selectors</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.filter" href="filter.html">minder_utils.models.feature_selectors.supervised.filter</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic" href="intrinsic.html">minder_utils.models.feature_selectors.supervised.intrinsic</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.wrapper" href="wrapper.html">minder_utils.models.feature_selectors.supervised.wrapper</a></code></li>
 </ul>
 </li>
 </ul>

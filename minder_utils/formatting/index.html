@@ -89,45 +89,21 @@ __all__ = [&#39;Formatting&#39;]</code></pre>
         self.path = path
         self.device_type = \
         pd.read_csv(os.path.join(self.path, &#39;device_types.csv&#39;))[[&#39;id&#39;, &#39;type&#39;]].set_index(&#39;id&#39;).to_dict()[&#39;type&#39;]
-        self.config = {
-            &#39;physiological_data&#39;: {
-                &#39;type&#39;: [&#39;raw_body_weight&#39;, &#39;raw_skin_temperature&#39;,
-                         &#39;raw_body_temperature&#39;, &#39;raw_body_muscle_mass&#39;,
-                         &#39;raw_heart_rate&#39;, &#39;raw_oxygen_saturation&#39;,
-                         &#39;raw_total_body_fat&#39;, &#39;raw_body_mass_index&#39;,
-                         &#39;raw_blood_pressure&#39;, &#39;raw_total_body_water&#39;,
-                         &#39;raw_total_bone_mass&#39;],
-                &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;type&#39;, &#39;value&#39;, &#39;unit&#39;]
-            },
-            &#39;activity_data&#39;: {
-                &#39;type&#39;: [&#39;raw_door_sensor&#39;, &#39;raw_appliance_use&#39;, &#39;raw_activity_pir&#39;],
-                &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;]
-            },
-            &#39;environmental_data&#39;: {
-                &#39;type&#39;: [&#39;raw_ambient_temperature&#39;, &#39;raw_light&#39;],
-                &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;type&#39;, &#39;value&#39;, &#39;unit&#39;]
-            },
-            &#39;individuals&#39;: {
-                &#39;text&#39;: [&#39;homes&#39;, &#39;raw_sleep_mat&#39;, &#39;raw_behavioural&#39;,
-                         &#39;procedure&#39;, &#39;observation_notes&#39;, &#39;encounter&#39;,
-                         &#39;issue&#39;],
-                &#39;measure&#39;: [&#39;raw_sleep_event&#39;, &#39;raw_wearable_walking&#39;]
-            }
-        }
-        self.physiological_data = pd.DataFrame(columns=self.config[&#39;physiological_data&#39;][&#39;columns&#39;])
-        self.activity_data = pd.DataFrame(columns=self.config[&#39;activity_data&#39;][&#39;columns&#39;])
-        self.environmental_data = pd.DataFrame(columns=self.config[&#39;environmental_data&#39;][&#39;columns&#39;])
+        self.config = config
+        self.physiological_data = pd.DataFrame(columns=self.config[&#39;physiological&#39;][&#39;columns&#39;])
+        self.activity_data = pd.DataFrame(columns=self.config[&#39;activity&#39;][&#39;columns&#39;])
+        self.environmental_data = pd.DataFrame(columns=self.config[&#39;environmental&#39;][&#39;columns&#39;])
         self.process_data()
 
     def process_data(self):
         for name in iter_dir(self.path):
             start_time = time.time()
             print(&#39;Processing: {}&#39;.format(name).ljust(50, &#39; &#39;), end=&#39;&#39;)
-            if name in self.config[&#39;physiological_data&#39;][&#39;type&#39;]:
+            if name in self.config[&#39;physiological&#39;][&#39;type&#39;]:
                 self.process_physiological_data(name)
-            elif name in self.config[&#39;activity_data&#39;][&#39;type&#39;]:
+            elif name in self.config[&#39;activity&#39;][&#39;type&#39;]:
                 self.process_activity_data(name)
-            elif name in self.config[&#39;environmental_data&#39;][&#39;type&#39;]:
+            elif name in self.config[&#39;environmental&#39;][&#39;type&#39;]:
                 self.process_environmental_data(name)
             elif name in self.config[&#39;individuals&#39;][&#39;text&#39;] or name in self.config[&#39;individuals&#39;][&#39;measure&#39;]:
                 print(&#39;TODO&#39;)
@@ -156,7 +132,7 @@ __all__ = [&#39;Formatting&#39;]</code></pre>
         data.start_date = pd.to_datetime(data.start_date).dt.date
         data = data[col_filter]
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;unit&#39;]).mean().reset_index()
-        data.columns = self.config[&#39;physiological_data&#39;][&#39;columns&#39;]
+        data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
         self.physiological_data = self.physiological_data.append(data)
 
     def process_activity_data(self, name):
@@ -175,7 +151,7 @@ __all__ = [&#39;Formatting&#39;]</code></pre>
         data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
         data = data[data[&#39;location_name&#39;] != &#39;location_name&#39;]
         data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
-        data.columns = self.config[&#39;activity_data&#39;][&#39;columns&#39;]
+        data.columns = self.config[&#39;activity&#39;][&#39;columns&#39;]
         self.activity_data = self.activity_data.append(data)
 
     def process_environmental_data(self, name):
@@ -196,7 +172,7 @@ __all__ = [&#39;Formatting&#39;]</code></pre>
         data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
         data.value = data.value.astype(float)
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;unit&#39;]).mean().reset_index()
-        data.columns = self.config[&#39;environmental_data&#39;][&#39;columns&#39;]
+        data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
         self.environmental_data = self.environmental_data.append(data)
 
     def process_raw_door_sensor(self, data):
@@ -306,7 +282,7 @@ the data must contains ['patient_id', 'start_date', 'location_name', 'value']
     data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
     data = data[data[&#39;location_name&#39;] != &#39;location_name&#39;]
     data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
-    data.columns = self.config[&#39;activity_data&#39;][&#39;columns&#39;]
+    data.columns = self.config[&#39;activity&#39;][&#39;columns&#39;]
     self.activity_data = self.activity_data.append(data)</code></pre>
 </details>
 </dd>
@@ -323,11 +299,11 @@ the data must contains ['patient_id', 'start_date', 'location_name', 'value']
     for name in iter_dir(self.path):
         start_time = time.time()
         print(&#39;Processing: {}&#39;.format(name).ljust(50, &#39; &#39;), end=&#39;&#39;)
-        if name in self.config[&#39;physiological_data&#39;][&#39;type&#39;]:
+        if name in self.config[&#39;physiological&#39;][&#39;type&#39;]:
             self.process_physiological_data(name)
-        elif name in self.config[&#39;activity_data&#39;][&#39;type&#39;]:
+        elif name in self.config[&#39;activity&#39;][&#39;type&#39;]:
             self.process_activity_data(name)
-        elif name in self.config[&#39;environmental_data&#39;][&#39;type&#39;]:
+        elif name in self.config[&#39;environmental&#39;][&#39;type&#39;]:
             self.process_environmental_data(name)
         elif name in self.config[&#39;individuals&#39;][&#39;text&#39;] or name in self.config[&#39;individuals&#39;][&#39;measure&#39;]:
             print(&#39;TODO&#39;)
@@ -386,7 +362,7 @@ data: the data must contains ['patient_id', 'start_date', 'location_name', 'devi
     data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
     data.value = data.value.astype(float)
     data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;unit&#39;]).mean().reset_index()
-    data.columns = self.config[&#39;environmental_data&#39;][&#39;columns&#39;]
+    data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
     self.environmental_data = self.environmental_data.append(data)</code></pre>
 </details>
 </dd>
@@ -485,7 +461,7 @@ data: the data must contains ['patient_id', 'start_date', 'device_type', 'value'
     data.start_date = pd.to_datetime(data.start_date).dt.date
     data = data[col_filter]
     data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;unit&#39;]).mean().reset_index()
-    data.columns = self.config[&#39;physiological_data&#39;][&#39;columns&#39;]
+    data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
     self.physiological_data = self.physiological_data.append(data)</code></pre>
 </details>
 </dd>

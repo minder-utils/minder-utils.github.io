@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>minder_utils.formatting.format_util API documentation</title>
+<title>minder_utils.models.feature_selectors API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,181 +20,195 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>minder_utils.formatting.format_util</code></h1>
+<h1 class="title">Module <code>minder_utils.models.feature_selectors</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import numpy as np
-import os
-from sklearn.preprocessing import Normalizer
+<pre><code class="python">from abc import ABC, abstractmethod
 
 
-def iter_dir(directory, endwith=&#39;.csv&#39;, split=True):
-    &#34;&#34;&#34;
-    iterate csv files in a given directory
-    :param directory: path to the folder
-    :@param endwith:
-    :return: list of file names end with csv
-    &#34;&#34;&#34;
-    filenames = []
-    for name in os.listdir(directory):
-        if name.endswith(endwith):
-            if split:
-                filenames.append(name.split(&#39;.&#39;)[0])
-            else:
-                filenames.append(name)
-    return filenames
+class Feature_selector_template(ABC):
+    def __init__(self, model):
+        self.name = self.methods[model]
+        self.model = getattr(self, model)
 
-
-def y_to_categorical(y, smooth=False):
-    positives = y &gt; 0
-    labels = np.zeros((y.shape[0], 2))
-    if smooth:
-        labels[:, 1][positives.reshape(-1, )] = y[y &gt; 0]
-        labels[:, 0][~positives.reshape(-1, )] = np.abs(y[y &lt; 0])
-    else:
-        labels[:, 1][positives.reshape(-1, )] = 1
-        labels[:, 0][~positives.reshape(-1, )] = 1
-    return labels
-
-
-def normalise(X, technique=&#39;l2&#39;):
-    assert technique in [&#39;z-score&#39;, &#39;max-min&#39;, &#39;l2&#39;, &#39;l1&#39;, &#39;max&#39;, None], &#39;not implemented ...&#39;
-    if technique is None:
+    @property
+    @abstractmethod
+    def methods(self):
         pass
-    elif technique == &#39;z-score&#39;:
-        for i in range(X.shape[1]):
-            data = X[:, i]
-            std = 1 if np.std(data) == 0 else np.std(data)
-            X[:, i] = (data - np.mean(data)) / std
-    elif technique == &#39;max-min&#39;:
-        for i in range(X.shape[1]):
-            data = X[:, i]
-            std = 1 if np.max(data) == np.min(data) else np.max(data) - np.min(data)
-            X[:, i] = (data - np.min(data)) / std
-    elif technique in [&#39;l1&#39;, &#39;l2&#39;, &#39;max&#39;]:
-        X = X.reshape(X.shape[0], -1)
-        X = Normalizer(technique).fit_transform(X.transpose(1, 0)).transpose(0, 1)
-        # for i in range(X.shape[2]):
-        # data = X[:, i].reshape(-1, 1)
-        # X[:, i] = Normalizer(technique).fit_transform(data).reshape(-1)
-        #   X[:, :, i] = Normalizer(technique).fit_transform(X[:, :, i])
-    return X
 
+    def reset_model(self, model):
+        self.name = self.methods[model]
+        self.model = getattr(self, model)()
 
-def format_mean_std(values):
-    return str(np.mean(values))[:6] + &#34; +/- &#34; + str(np.std(values))[:6]</code></pre>
+    def get_info(self, verbose=False):
+        if verbose:
+            print(&#39;Available methods:&#39;)
+            for idx, key in enumerate(self.methods):
+                print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
+        return self.methods
+
+    @abstractmethod
+    def fit(self, X, y):
+        pass
+
+    @abstractmethod
+    def transform(self, X):
+        pass</code></pre>
 </details>
 </section>
 <section>
-</section>
-<section>
-</section>
-<section>
-<h2 class="section-title" id="header-functions">Functions</h2>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
-<dt id="minder_utils.formatting.format_util.format_mean_std"><code class="name flex">
-<span>def <span class="ident">format_mean_std</span></span>(<span>values)</span>
-</code></dt>
+<dt><code class="name"><a title="minder_utils.models.feature_selectors.supervised" href="supervised/index.html">minder_utils.models.feature_selectors.supervised</a></code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def format_mean_std(values):
-    return str(np.mean(values))[:6] + &#34; +/- &#34; + str(np.std(values))[:6]</code></pre>
-</details>
 </dd>
-<dt id="minder_utils.formatting.format_util.iter_dir"><code class="name flex">
-<span>def <span class="ident">iter_dir</span></span>(<span>directory, endwith='.csv', split=True)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>iterate csv files in a given directory
-:param directory: path to the folder
-:@param endwith:
-:return: list of file names end with csv</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def iter_dir(directory, endwith=&#39;.csv&#39;, split=True):
-    &#34;&#34;&#34;
-    iterate csv files in a given directory
-    :param directory: path to the folder
-    :@param endwith:
-    :return: list of file names end with csv
-    &#34;&#34;&#34;
-    filenames = []
-    for name in os.listdir(directory):
-        if name.endswith(endwith):
-            if split:
-                filenames.append(name.split(&#39;.&#39;)[0])
-            else:
-                filenames.append(name)
-    return filenames</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.formatting.format_util.normalise"><code class="name flex">
-<span>def <span class="ident">normalise</span></span>(<span>X, technique='l2')</span>
-</code></dt>
+<dt><code class="name"><a title="minder_utils.models.feature_selectors.unsupervised" href="unsupervised/index.html">minder_utils.models.feature_selectors.unsupervised</a></code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def normalise(X, technique=&#39;l2&#39;):
-    assert technique in [&#39;z-score&#39;, &#39;max-min&#39;, &#39;l2&#39;, &#39;l1&#39;, &#39;max&#39;, None], &#39;not implemented ...&#39;
-    if technique is None:
-        pass
-    elif technique == &#39;z-score&#39;:
-        for i in range(X.shape[1]):
-            data = X[:, i]
-            std = 1 if np.std(data) == 0 else np.std(data)
-            X[:, i] = (data - np.mean(data)) / std
-    elif technique == &#39;max-min&#39;:
-        for i in range(X.shape[1]):
-            data = X[:, i]
-            std = 1 if np.max(data) == np.min(data) else np.max(data) - np.min(data)
-            X[:, i] = (data - np.min(data)) / std
-    elif technique in [&#39;l1&#39;, &#39;l2&#39;, &#39;max&#39;]:
-        X = X.reshape(X.shape[0], -1)
-        X = Normalizer(technique).fit_transform(X.transpose(1, 0)).transpose(0, 1)
-        # for i in range(X.shape[2]):
-        # data = X[:, i].reshape(-1, 1)
-        # X[:, i] = Normalizer(technique).fit_transform(data).reshape(-1)
-        #   X[:, :, i] = Normalizer(technique).fit_transform(X[:, :, i])
-    return X</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.formatting.format_util.y_to_categorical"><code class="name flex">
-<span>def <span class="ident">y_to_categorical</span></span>(<span>y, smooth=False)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def y_to_categorical(y, smooth=False):
-    positives = y &gt; 0
-    labels = np.zeros((y.shape[0], 2))
-    if smooth:
-        labels[:, 1][positives.reshape(-1, )] = y[y &gt; 0]
-        labels[:, 0][~positives.reshape(-1, )] = np.abs(y[y &lt; 0])
-    else:
-        labels[:, 1][positives.reshape(-1, )] = 1
-        labels[:, 0][~positives.reshape(-1, )] = 1
-    return labels</code></pre>
-</details>
 </dd>
 </dl>
 </section>
 <section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Feature_selector_template"><code class="flex name class">
+<span>class <span class="ident">Feature_selector_template</span></span>
+<span>(</span><span>model)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Feature_selector_template(ABC):
+    def __init__(self, model):
+        self.name = self.methods[model]
+        self.model = getattr(self, model)
+
+    @property
+    @abstractmethod
+    def methods(self):
+        pass
+
+    def reset_model(self, model):
+        self.name = self.methods[model]
+        self.model = getattr(self, model)()
+
+    def get_info(self, verbose=False):
+        if verbose:
+            print(&#39;Available methods:&#39;)
+            for idx, key in enumerate(self.methods):
+                print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
+        return self.methods
+
+    @abstractmethod
+    def fit(self, X, y):
+        pass
+
+    @abstractmethod
+    def transform(self, X):
+        pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter" href="supervised/filter.html#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter">Supervised_Filter</a></li>
+<li><a title="minder_utils.models.feature_selectors.unsupervised.filter.Unsupervised_Filter" href="unsupervised/filter.html#minder_utils.models.feature_selectors.unsupervised.filter.Unsupervised_Filter">Unsupervised_Filter</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Feature_selector_template.methods"><code class="name">var <span class="ident">methods</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@abstractmethod
+def methods(self):
+    pass</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Feature_selector_template.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, X, y)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def fit(self, X, y):
+    pass</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Feature_selector_template.get_info"><code class="name flex">
+<span>def <span class="ident">get_info</span></span>(<span>self, verbose=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_info(self, verbose=False):
+    if verbose:
+        print(&#39;Available methods:&#39;)
+        for idx, key in enumerate(self.methods):
+            print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
+    return self.methods</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Feature_selector_template.reset_model"><code class="name flex">
+<span>def <span class="ident">reset_model</span></span>(<span>self, model)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_model(self, model):
+    self.name = self.methods[model]
+    self.model = getattr(self, model)()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Feature_selector_template.transform"><code class="name flex">
+<span>def <span class="ident">transform</span></span>(<span>self, X)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def transform(self, X):
+    pass</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -210,15 +224,27 @@ def format_mean_std(values):
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="minder_utils.formatting" href="index.html">minder_utils.formatting</a></code></li>
+<li><code><a title="minder_utils.models" href="../index.html">minder_utils.models</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-functions">Functions</a></h3>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="minder_utils.models.feature_selectors.supervised" href="supervised/index.html">minder_utils.models.feature_selectors.supervised</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.unsupervised" href="unsupervised/index.html">minder_utils.models.feature_selectors.unsupervised</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.models.feature_selectors.Feature_selector_template" href="#minder_utils.models.feature_selectors.Feature_selector_template">Feature_selector_template</a></code></h4>
 <ul class="">
-<li><code><a title="minder_utils.formatting.format_util.format_mean_std" href="#minder_utils.formatting.format_util.format_mean_std">format_mean_std</a></code></li>
-<li><code><a title="minder_utils.formatting.format_util.iter_dir" href="#minder_utils.formatting.format_util.iter_dir">iter_dir</a></code></li>
-<li><code><a title="minder_utils.formatting.format_util.normalise" href="#minder_utils.formatting.format_util.normalise">normalise</a></code></li>
-<li><code><a title="minder_utils.formatting.format_util.y_to_categorical" href="#minder_utils.formatting.format_util.y_to_categorical">y_to_categorical</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.fit" href="#minder_utils.models.feature_selectors.Feature_selector_template.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.get_info" href="#minder_utils.models.feature_selectors.Feature_selector_template.get_info">get_info</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.methods" href="#minder_utils.models.feature_selectors.Feature_selector_template.methods">methods</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.reset_model" href="#minder_utils.models.feature_selectors.Feature_selector_template.reset_model">reset_model</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.transform" href="#minder_utils.models.feature_selectors.Feature_selector_template.transform">transform</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
