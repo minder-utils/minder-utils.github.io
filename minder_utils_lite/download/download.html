@@ -129,7 +129,7 @@ class Downloader:
                 response = requests.get(job_id, headers=self.params).json()
                 # the following waits for x seconds and runs an animation in the 
                 # mean time to make sure the user doesn&#39;t think the code is broken
-                progress_spinner(3, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
+                progress_spinner(30, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
                 
             elif response[&#39;status&#39;] == 500:
                 sys.stdout.write(&#39;\r&#39;)
@@ -154,9 +154,9 @@ class Downloader:
             and until as values in a tuple.
             For example:
             ```
-            { category         : (since, until),
-             &#39;raw_activity_pir&#39;: (&#39;2021-10-06&#39;,&#39;2021-10-10&#39;),
-             &#39;raw_door_sensor&#39; : (&#39;2021-10-06&#39;,&#39;2021-10-10&#39;)}
+            { category         : (since                       , until),
+             &#39;raw_activity_pir&#39;: (pd.to_datetime(&#39;2021-10-06&#39;), pd.to_datetime(&#39;2021-10-10&#39;)),
+             &#39;raw_door_sensor&#39; : (pd.to_datetime(&#39;2021-10-06&#39;), pd.to_datetime(&#39;2021-10-10&#39;))}
             ```
 
         &#39;&#39;&#39;
@@ -221,7 +221,7 @@ class Downloader:
 
             # if we are no longer waiting for a job to complete, move onto the downloads
             if True in list(waiting_for.values()):
-                progress_spinner(3, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
+                progress_spinner(30, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
             else:
                 sys.stdout.write(&#39;\n&#39;)
                 sys.stdout.write(&#34;The server has finished processing the requests&#34;)
@@ -311,61 +311,7 @@ class Downloader:
                                                               header=not Path(save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
                 print(&#39;Success&#39;)
     
-    def get_category_names(self, measurement_name = &#39;all&#39;):
-        &#39;&#39;&#39;
-        This function allows you to get the category names from a given measurement name.
-
-        Arguments
-        ---------
-
-        - measurement_name: str: 
-            This is the name of the measurement that you want to get the categories for.
-            The default &#39;all&#39; returns all the possible measurement names.
-
-        Returns
-        ---------
-
-        - out: list of strings: 
-            This is a list that contains the category names that can be used in the 
-            export function.
-
-        &#39;&#39;&#39;
-        
-        if measurement_name == &#39;all&#39;:
-            out = []
-            for value in self.get_info()[&#39;Categories&#39;].values():
-                out.extend(list(value.keys()))
-
-        else:
-            out = list(self.get_info()[&#39;Categories&#39;][measurement_name].keys())
-        
-        return out
-
-    def get_measurement_names(self):
-        &#39;&#39;&#39;
-        Please do not use this function. It is a legacy function and will be deleted in the 
-        future.
-        &#39;&#39;&#39;
-        return self.get_group_names()
-
-    def get_group_names(self):
-        &#39;&#39;&#39;
-        This function allows you to view the names of the sets of measurements
-        that can be downloaded from minder.
-
-        Returns
-        ---------
-
-        - out: list of strings: 
-            This is a list that contains the names of the sets of measurements.
-
-        &#39;&#39;&#39;
-        
-        out = self.get_info()[&#39;Categories&#39;].keys()
-        
-        return list(out)
-
-    def refresh(self, until=None, categories = None, save_path=&#39;./data/raw_data/&#39;):
+    def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
         &#39;&#39;&#39;
         This function allows for the user to refresh the data currently saved in the 
         save path. It will download the data missing between the saved files and the
@@ -382,6 +328,7 @@ class Downloader:
         - categories: list or string: 
             If a list, this is the datasets that will be downloaded. Please use the
             dataset names that can be returned by using the get_category_names function.
+            If a string is given, only this dataset will be refreshed.
 
         - save_path: string: 
             This is the save path for the data that is downloaded from minder.
@@ -441,6 +388,56 @@ class Downloader:
         print(&#39;Success&#39;)
 
         return
+
+    def get_category_names(self, measurement_name = &#39;all&#39;):
+        &#39;&#39;&#39;
+        This function allows you to get the category names from a given measurement name.
+
+        Arguments
+        ---------
+
+        - measurement_name: str: 
+            This is the name of the measurement that you want to get the categories for.
+            The default &#39;all&#39; returns all the possible measurement names.
+
+        Returns
+        ---------
+
+        - out: list of strings: 
+            This is a list that contains the category names that can be used in the 
+            export function.
+
+        &#39;&#39;&#39;
+        
+        if measurement_name == &#39;all&#39;:
+            out = []
+            for value in self.get_info()[&#39;Categories&#39;].values():
+                out.extend(list(value.keys()))
+
+        else:
+            out = list(self.get_info()[&#39;Categories&#39;][measurement_name].keys())
+        
+        return out
+
+
+    def get_group_names(self):
+        &#39;&#39;&#39;
+        This function allows you to view the names of the sets of measurements
+        that can be downloaded from minder.
+
+        Returns
+        ---------
+
+        - out: list of strings: 
+            This is a list that contains the names of the sets of measurements.
+
+        &#39;&#39;&#39;
+        
+        out = self.get_info()[&#39;Categories&#39;].keys()
+        
+        return list(out)
+
+
 
     @staticmethod
     def token():
@@ -607,7 +604,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
                 response = requests.get(job_id, headers=self.params).json()
                 # the following waits for x seconds and runs an animation in the 
                 # mean time to make sure the user doesn&#39;t think the code is broken
-                progress_spinner(3, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
+                progress_spinner(30, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
                 
             elif response[&#39;status&#39;] == 500:
                 sys.stdout.write(&#39;\r&#39;)
@@ -632,9 +629,9 @@ as a csv in the directory <code>'./data/'</code></p></div>
             and until as values in a tuple.
             For example:
             ```
-            { category         : (since, until),
-             &#39;raw_activity_pir&#39;: (&#39;2021-10-06&#39;,&#39;2021-10-10&#39;),
-             &#39;raw_door_sensor&#39; : (&#39;2021-10-06&#39;,&#39;2021-10-10&#39;)}
+            { category         : (since                       , until),
+             &#39;raw_activity_pir&#39;: (pd.to_datetime(&#39;2021-10-06&#39;), pd.to_datetime(&#39;2021-10-10&#39;)),
+             &#39;raw_door_sensor&#39; : (pd.to_datetime(&#39;2021-10-06&#39;), pd.to_datetime(&#39;2021-10-10&#39;))}
             ```
 
         &#39;&#39;&#39;
@@ -699,7 +696,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
 
             # if we are no longer waiting for a job to complete, move onto the downloads
             if True in list(waiting_for.values()):
-                progress_spinner(3, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
+                progress_spinner(30, &#39;Waiting for the sever to complete the job&#39;, new_line_after = False)
             else:
                 sys.stdout.write(&#39;\n&#39;)
                 sys.stdout.write(&#34;The server has finished processing the requests&#34;)
@@ -789,61 +786,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
                                                               header=not Path(save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
                 print(&#39;Success&#39;)
     
-    def get_category_names(self, measurement_name = &#39;all&#39;):
-        &#39;&#39;&#39;
-        This function allows you to get the category names from a given measurement name.
-
-        Arguments
-        ---------
-
-        - measurement_name: str: 
-            This is the name of the measurement that you want to get the categories for.
-            The default &#39;all&#39; returns all the possible measurement names.
-
-        Returns
-        ---------
-
-        - out: list of strings: 
-            This is a list that contains the category names that can be used in the 
-            export function.
-
-        &#39;&#39;&#39;
-        
-        if measurement_name == &#39;all&#39;:
-            out = []
-            for value in self.get_info()[&#39;Categories&#39;].values():
-                out.extend(list(value.keys()))
-
-        else:
-            out = list(self.get_info()[&#39;Categories&#39;][measurement_name].keys())
-        
-        return out
-
-    def get_measurement_names(self):
-        &#39;&#39;&#39;
-        Please do not use this function. It is a legacy function and will be deleted in the 
-        future.
-        &#39;&#39;&#39;
-        return self.get_group_names()
-
-    def get_group_names(self):
-        &#39;&#39;&#39;
-        This function allows you to view the names of the sets of measurements
-        that can be downloaded from minder.
-
-        Returns
-        ---------
-
-        - out: list of strings: 
-            This is a list that contains the names of the sets of measurements.
-
-        &#39;&#39;&#39;
-        
-        out = self.get_info()[&#39;Categories&#39;].keys()
-        
-        return list(out)
-
-    def refresh(self, until=None, categories = None, save_path=&#39;./data/raw_data/&#39;):
+    def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
         &#39;&#39;&#39;
         This function allows for the user to refresh the data currently saved in the 
         save path. It will download the data missing between the saved files and the
@@ -860,6 +803,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
         - categories: list or string: 
             If a list, this is the datasets that will be downloaded. Please use the
             dataset names that can be returned by using the get_category_names function.
+            If a string is given, only this dataset will be refreshed.
 
         - save_path: string: 
             This is the save path for the data that is downloaded from minder.
@@ -919,6 +863,56 @@ as a csv in the directory <code>'./data/'</code></p></div>
         print(&#39;Success&#39;)
 
         return
+
+    def get_category_names(self, measurement_name = &#39;all&#39;):
+        &#39;&#39;&#39;
+        This function allows you to get the category names from a given measurement name.
+
+        Arguments
+        ---------
+
+        - measurement_name: str: 
+            This is the name of the measurement that you want to get the categories for.
+            The default &#39;all&#39; returns all the possible measurement names.
+
+        Returns
+        ---------
+
+        - out: list of strings: 
+            This is a list that contains the category names that can be used in the 
+            export function.
+
+        &#39;&#39;&#39;
+        
+        if measurement_name == &#39;all&#39;:
+            out = []
+            for value in self.get_info()[&#39;Categories&#39;].values():
+                out.extend(list(value.keys()))
+
+        else:
+            out = list(self.get_info()[&#39;Categories&#39;][measurement_name].keys())
+        
+        return out
+
+
+    def get_group_names(self):
+        &#39;&#39;&#39;
+        This function allows you to view the names of the sets of measurements
+        that can be downloaded from minder.
+
+        Returns
+        ---------
+
+        - out: list of strings: 
+            This is a list that contains the names of the sets of measurements.
+
+        &#39;&#39;&#39;
+        
+        out = self.get_info()[&#39;Categories&#39;].keys()
+        
+        return list(out)
+
+
 
     @staticmethod
     def token():
@@ -1288,24 +1282,6 @@ This returns a dictionary of the available datasets.</li>
         print(&#39;Get response &#39;, requests.get(self.url + &#39;info/datasets&#39;, headers=self.params))</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.download.download.Downloader.get_measurement_names"><code class="name flex">
-<span>def <span class="ident">get_measurement_names</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Please do not use this function. It is a legacy function and will be deleted in the
-future.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_measurement_names(self):
-    &#39;&#39;&#39;
-    Please do not use this function. It is a legacy function and will be deleted in the 
-    future.
-    &#39;&#39;&#39;
-    return self.get_group_names()</code></pre>
-</details>
-</dd>
 <dt id="minder_utils.download.download.Downloader.refresh"><code class="name flex">
 <span>def <span class="ident">refresh</span></span>(<span>self, until=None, categories=None, save_path='./data/raw_data/')</span>
 </code></dt>
@@ -1324,7 +1300,8 @@ Default: <code>None</code></p>
 <li>
 <p>categories: list or string:
 If a list, this is the datasets that will be downloaded. Please use the
-dataset names that can be returned by using the get_category_names function.</p>
+dataset names that can be returned by using the get_category_names function.
+If a string is given, only this dataset will be refreshed.</p>
 </li>
 <li>
 <p>save_path: string:
@@ -1336,7 +1313,7 @@ Default: <code>'./data/raw_data/'</code></p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def refresh(self, until=None, categories = None, save_path=&#39;./data/raw_data/&#39;):
+<pre><code class="python">def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
     &#39;&#39;&#39;
     This function allows for the user to refresh the data currently saved in the 
     save path. It will download the data missing between the saved files and the
@@ -1353,6 +1330,7 @@ Default: <code>'./data/raw_data/'</code></p>
     - categories: list or string: 
         If a list, this is the datasets that will be downloaded. Please use the
         dataset names that can be returned by using the get_category_names function.
+        If a string is given, only this dataset will be refreshed.
 
     - save_path: string: 
         This is the save path for the data that is downloaded from minder.
@@ -1439,13 +1417,12 @@ Default: <code>'./data/raw_data/'</code></p>
 <ul>
 <li>
 <h4><code><a title="minder_utils.download.download.Downloader" href="#minder_utils.download.download.Downloader">Downloader</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="minder_utils.download.download.Downloader.convert_to_ISO" href="#minder_utils.download.download.Downloader.convert_to_ISO">convert_to_ISO</a></code></li>
 <li><code><a title="minder_utils.download.download.Downloader.export" href="#minder_utils.download.download.Downloader.export">export</a></code></li>
 <li><code><a title="minder_utils.download.download.Downloader.get_category_names" href="#minder_utils.download.download.Downloader.get_category_names">get_category_names</a></code></li>
 <li><code><a title="minder_utils.download.download.Downloader.get_group_names" href="#minder_utils.download.download.Downloader.get_group_names">get_group_names</a></code></li>
 <li><code><a title="minder_utils.download.download.Downloader.get_info" href="#minder_utils.download.download.Downloader.get_info">get_info</a></code></li>
-<li><code><a title="minder_utils.download.download.Downloader.get_measurement_names" href="#minder_utils.download.download.Downloader.get_measurement_names">get_measurement_names</a></code></li>
 <li><code><a title="minder_utils.download.download.Downloader.refresh" href="#minder_utils.download.download.Downloader.refresh">refresh</a></code></li>
 <li><code><a title="minder_utils.download.download.Downloader.token" href="#minder_utils.download.download.Downloader.token">token</a></code></li>
 </ul>
