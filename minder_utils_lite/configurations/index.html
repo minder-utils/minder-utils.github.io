@@ -32,13 +32,38 @@ from pathlib import Path
 
 p = Path(os.path.join(os.path.dirname(__file__), &#39;confidential/&#39;))
 if not p.exists():
-        os.mkdir(p)
-
+    os.mkdir(p)
 
 data_path = os.path.join(os.path.dirname(__file__), &#39;confidential/data_path.txt&#39;)
 token_path = os.path.join(os.path.dirname(__file__), &#39;confidential/token_real.json&#39;)
 dates_path = os.path.join(os.path.dirname(__file__), &#39;confidential/dates.json&#39;)
-delta_path = os.path.join(os.path.dirname(__file__), &#39;confidential/delta.txt&#39;)</code></pre>
+delta_path = os.path.join(os.path.dirname(__file__), &#39;confidential/delta.txt&#39;)
+
+config = {
+    &#39;physiological&#39;: {
+        &#39;type&#39;: [&#39;raw_body_weight&#39;, &#39;raw_skin_temperature&#39;,
+                 &#39;raw_body_temperature&#39;, &#39;raw_body_muscle_mass&#39;,
+                 &#39;raw_heart_rate&#39;, &#39;raw_oxygen_saturation&#39;,
+                 &#39;raw_total_body_fat&#39;, &#39;raw_body_mass_index&#39;,
+                 &#39;raw_blood_pressure&#39;, &#39;raw_total_body_water&#39;,
+                 &#39;raw_total_bone_mass&#39;],
+        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;type&#39;, &#39;value&#39;, &#39;unit&#39;]
+    },
+    &#39;activity&#39;: {
+        &#39;type&#39;: [&#39;raw_door_sensor&#39;, &#39;raw_appliance_use&#39;, &#39;raw_activity_pir&#39;],
+        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;]
+    },
+    &#39;environmental&#39;: {
+        &#39;type&#39;: [&#39;raw_ambient_temperature&#39;, &#39;raw_light&#39;],
+        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;type&#39;, &#39;value&#39;, &#39;unit&#39;]
+    },
+    &#39;individuals&#39;: {
+        &#39;text&#39;: [&#39;homes&#39;, &#39;raw_sleep_mat&#39;, &#39;raw_behavioural&#39;,
+                 &#39;procedure&#39;, &#39;observation_notes&#39;, &#39;encounter&#39;,
+                 &#39;issue&#39;],
+        &#39;measure&#39;: [&#39;raw_sleep_event&#39;, &#39;raw_wearable_walking&#39;]
+    }
+}</code></pre>
 </details>
 </section>
 <section>
