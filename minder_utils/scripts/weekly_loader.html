@@ -27,17 +27,16 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from ..formatting.format_util import iter_dir
+<pre><code class="python">from minder_utils.formatting.format_util import iter_dir
 import os
 import datetime as DT
-from ..download.download import Downloader
-from ..formatting.formatting import Formatting
-from ..dataloader.dataloader import Dataloader
-from ..formatting.standardisation import standardise_activity_data
+from minder_utils.download.download import Downloader
+from minder_utils.formatting.formatting import Formatting
+from minder_utils.dataloader.dataloader import Dataloader
 import numpy as np
-from ..util import save_mkdir, delete_dir
+from minder_utils.util import save_mkdir, delete_dir
 import json
-from ..settings import dates_save
+from minder_utils.settings import dates_save
 import pandas as pd
 from minder_utils.configurations import dates_path
 from minder_utils.configurations import config
@@ -52,8 +51,8 @@ class Weekly_dataloader:
         - download the latest weekly data
         - reformat all the data into following (N is the number of samples)
             - activity data: N * 3 * 8 * 20
-            - environmental data: #TODO
-            - physiological data: #TODO
+            - environmental data: N * 19
+            - physiological data: N * 12
     &#34;&#34;&#34;
 
     def __init__(self, categories=None, save_dir=os.path.join(&#39;data&#39;, &#39;weekly_test&#39;), num_days_extended=3):
@@ -62,9 +61,9 @@ class Weekly_dataloader:
         @param data_type: activity, #TODO environmental, physiological
         @param num_days_extended: for uti only, how many consecutive days to be labelled
         &#39;&#39;&#39;
-        default_categories = [&#39;activity&#39;, &#39;environmental&#39;, &#39;physiological&#39;]
-        self.categories = default_categories if categories is None else categories
-        assert all(data_type in default_categories for data_type in categories), &#39;available categories: &#39; \
+        self.default_categories = [&#39;activity&#39;, &#39;environmental&#39;, &#39;physiological&#39;]
+        self.categories = self.default_categories if categories is None else categories
+        assert all(data_type in self.default_categories for data_type in self.categories), &#39;available categories: &#39; \
                                                                                  &#39;activity, environmental, &#39; \
                                                                                  &#39;physiological&#39;
         self.num_days_extended = num_days_extended
@@ -96,8 +95,8 @@ class Weekly_dataloader:
         dates_save(refresh=True)
         for folder in [&#39;current&#39;, &#39;previous&#39;]:
             delete_dir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
-            delete_dir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
             save_mkdir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
+            delete_dir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
             save_mkdir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
             self.download(folder, include_devices=True)
             self.format(folder)
@@ -142,23 +141,22 @@ class Weekly_dataloader:
 
     def format(self, period):
         loader = Formatting(os.path.join(self.default_dir, period, &#39;csv&#39;))
-        dataloader = Dataloader(standardise_activity_data(loader.activity_data),
+        dataloader = Dataloader(loader.activity_data,
+                                loader.physiological_data,
+                                loader.environmental_data,
                                 self.num_days_extended, period == &#39;previous&#39;)
-        save_path = os.path.join(self.default_dir, period, &#39;npy&#39;)
 
-        data, p_ids, dates = dataloader.get_unlabelled_data()
-        np.save(os.path.join(save_path, &#39;unlabelled.npy&#39;), data)
-        np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
-        np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
-        if period == &#39;previous&#39;:
-            x, y, z = [], [], []
-            for i, j, k in dataloader.iterate_data():
-                x.append(i)
-                y.append(j)
-                z.append(k)
-            np.save(os.path.join(save_path, &#39;X.npy&#39;), np.concatenate(x))
-            np.save(os.path.join(save_path, &#39;y.npy&#39;), np.concatenate(y))
-            np.save(os.path.join(save_path, &#39;label_ids.npy&#39;), np.concatenate(z))
+        categories = [&#39;labelled&#39;, &#39;unlabelled&#39;] if period == &#39;previous&#39; else [&#39;unlabelled&#39;]
+        for data_type in categories:
+            save_path = os.path.join(self.default_dir, period, &#39;npy&#39;, data_type)
+            save_mkdir(save_path)
+            attr = &#39;get_{}_data&#39;.format(data_type)
+            activity_data, physiological_data, environmental_data, p_ids, dates = getattr(dataloader, attr)()
+            np.save(os.path.join(save_path, &#39;activity.npy&#39;.format(data_type)), activity_data)
+            np.save(os.path.join(save_path, &#39;physiological.npy&#39;.format(data_type)), physiological_data)
+            np.save(os.path.join(save_path, &#39;environmental.npy&#39;.format(data_type)), environmental_data)
+            np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
+            np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
 
     def refresh(self):
         date_dict = self.get_dates()
@@ -171,6 +169,8 @@ class Weekly_dataloader:
             self.download(&#39;gap&#39;)
         self.download(&#39;current&#39;)
         self.collate()
+        for folder in [&#39;current&#39;, &#39;previous&#39;]:
+            self.format(folder)
         return
 
     def collate(self):
@@ -187,6 +187,7 @@ class Weekly_dataloader:
 
                 current_data.drop_duplicates().to_csv(os.path.join(self.current_csv_data, filename))
                 previous_data.drop_duplicates().to_csv(os.path.join(self.previous_csv_data, filename))
+        return
 
     @staticmethod
     def get_dates():
@@ -230,8 +231,8 @@ This class will
 - download the latest weekly data
 - reformat all the data into following (N is the number of samples)
 - activity data: N * 3 * 8 * 20
-- environmental data: #TODO
-- physiological data: #TODO</p>
+- environmental data: N * 19
+- physiological data: N * 12</p>
 <p>@param data_type: activity, #TODO environmental, physiological
 @param num_days_extended: for uti only, how many consecutive days to be labelled</p></div>
 <details class="source">
@@ -247,8 +248,8 @@ This class will
         - download the latest weekly data
         - reformat all the data into following (N is the number of samples)
             - activity data: N * 3 * 8 * 20
-            - environmental data: #TODO
-            - physiological data: #TODO
+            - environmental data: N * 19
+            - physiological data: N * 12
     &#34;&#34;&#34;
 
     def __init__(self, categories=None, save_dir=os.path.join(&#39;data&#39;, &#39;weekly_test&#39;), num_days_extended=3):
@@ -257,9 +258,9 @@ This class will
         @param data_type: activity, #TODO environmental, physiological
         @param num_days_extended: for uti only, how many consecutive days to be labelled
         &#39;&#39;&#39;
-        default_categories = [&#39;activity&#39;, &#39;environmental&#39;, &#39;physiological&#39;]
-        self.categories = default_categories if categories is None else categories
-        assert all(data_type in default_categories for data_type in categories), &#39;available categories: &#39; \
+        self.default_categories = [&#39;activity&#39;, &#39;environmental&#39;, &#39;physiological&#39;]
+        self.categories = self.default_categories if categories is None else categories
+        assert all(data_type in self.default_categories for data_type in self.categories), &#39;available categories: &#39; \
                                                                                  &#39;activity, environmental, &#39; \
                                                                                  &#39;physiological&#39;
         self.num_days_extended = num_days_extended
@@ -291,8 +292,8 @@ This class will
         dates_save(refresh=True)
         for folder in [&#39;current&#39;, &#39;previous&#39;]:
             delete_dir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
-            delete_dir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
             save_mkdir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
+            delete_dir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
             save_mkdir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
             self.download(folder, include_devices=True)
             self.format(folder)
@@ -337,23 +338,22 @@ This class will
 
     def format(self, period):
         loader = Formatting(os.path.join(self.default_dir, period, &#39;csv&#39;))
-        dataloader = Dataloader(standardise_activity_data(loader.activity_data),
+        dataloader = Dataloader(loader.activity_data,
+                                loader.physiological_data,
+                                loader.environmental_data,
                                 self.num_days_extended, period == &#39;previous&#39;)
-        save_path = os.path.join(self.default_dir, period, &#39;npy&#39;)
 
-        data, p_ids, dates = dataloader.get_unlabelled_data()
-        np.save(os.path.join(save_path, &#39;unlabelled.npy&#39;), data)
-        np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
-        np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
-        if period == &#39;previous&#39;:
-            x, y, z = [], [], []
-            for i, j, k in dataloader.iterate_data():
-                x.append(i)
-                y.append(j)
-                z.append(k)
-            np.save(os.path.join(save_path, &#39;X.npy&#39;), np.concatenate(x))
-            np.save(os.path.join(save_path, &#39;y.npy&#39;), np.concatenate(y))
-            np.save(os.path.join(save_path, &#39;label_ids.npy&#39;), np.concatenate(z))
+        categories = [&#39;labelled&#39;, &#39;unlabelled&#39;] if period == &#39;previous&#39; else [&#39;unlabelled&#39;]
+        for data_type in categories:
+            save_path = os.path.join(self.default_dir, period, &#39;npy&#39;, data_type)
+            save_mkdir(save_path)
+            attr = &#39;get_{}_data&#39;.format(data_type)
+            activity_data, physiological_data, environmental_data, p_ids, dates = getattr(dataloader, attr)()
+            np.save(os.path.join(save_path, &#39;activity.npy&#39;.format(data_type)), activity_data)
+            np.save(os.path.join(save_path, &#39;physiological.npy&#39;.format(data_type)), physiological_data)
+            np.save(os.path.join(save_path, &#39;environmental.npy&#39;.format(data_type)), environmental_data)
+            np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
+            np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
 
     def refresh(self):
         date_dict = self.get_dates()
@@ -366,6 +366,8 @@ This class will
             self.download(&#39;gap&#39;)
         self.download(&#39;current&#39;)
         self.collate()
+        for folder in [&#39;current&#39;, &#39;previous&#39;]:
+            self.format(folder)
         return
 
     def collate(self):
@@ -382,6 +384,7 @@ This class will
 
                 current_data.drop_duplicates().to_csv(os.path.join(self.current_csv_data, filename))
                 previous_data.drop_duplicates().to_csv(os.path.join(self.previous_csv_data, filename))
+        return
 
     @staticmethod
     def get_dates():
@@ -565,7 +568,8 @@ def previous_data(self):
             current_data = current_data[~current_mask]
 
             current_data.drop_duplicates().to_csv(os.path.join(self.current_csv_data, filename))
-            previous_data.drop_duplicates().to_csv(os.path.join(self.previous_csv_data, filename))</code></pre>
+            previous_data.drop_duplicates().to_csv(os.path.join(self.previous_csv_data, filename))
+    return</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.scripts.weekly_loader.Weekly_dataloader.download"><code class="name flex">
@@ -601,23 +605,22 @@ def previous_data(self):
 </summary>
 <pre><code class="python">def format(self, period):
     loader = Formatting(os.path.join(self.default_dir, period, &#39;csv&#39;))
-    dataloader = Dataloader(standardise_activity_data(loader.activity_data),
+    dataloader = Dataloader(loader.activity_data,
+                            loader.physiological_data,
+                            loader.environmental_data,
                             self.num_days_extended, period == &#39;previous&#39;)
-    save_path = os.path.join(self.default_dir, period, &#39;npy&#39;)
 
-    data, p_ids, dates = dataloader.get_unlabelled_data()
-    np.save(os.path.join(save_path, &#39;unlabelled.npy&#39;), data)
-    np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
-    np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
-    if period == &#39;previous&#39;:
-        x, y, z = [], [], []
-        for i, j, k in dataloader.iterate_data():
-            x.append(i)
-            y.append(j)
-            z.append(k)
-        np.save(os.path.join(save_path, &#39;X.npy&#39;), np.concatenate(x))
-        np.save(os.path.join(save_path, &#39;y.npy&#39;), np.concatenate(y))
-        np.save(os.path.join(save_path, &#39;label_ids.npy&#39;), np.concatenate(z))</code></pre>
+    categories = [&#39;labelled&#39;, &#39;unlabelled&#39;] if period == &#39;previous&#39; else [&#39;unlabelled&#39;]
+    for data_type in categories:
+        save_path = os.path.join(self.default_dir, period, &#39;npy&#39;, data_type)
+        save_mkdir(save_path)
+        attr = &#39;get_{}_data&#39;.format(data_type)
+        activity_data, physiological_data, environmental_data, p_ids, dates = getattr(dataloader, attr)()
+        np.save(os.path.join(save_path, &#39;activity.npy&#39;.format(data_type)), activity_data)
+        np.save(os.path.join(save_path, &#39;physiological.npy&#39;.format(data_type)), physiological_data)
+        np.save(os.path.join(save_path, &#39;environmental.npy&#39;.format(data_type)), environmental_data)
+        np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
+        np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.scripts.weekly_loader.Weekly_dataloader.initialise"><code class="name flex">
@@ -633,8 +636,8 @@ def previous_data(self):
     dates_save(refresh=True)
     for folder in [&#39;current&#39;, &#39;previous&#39;]:
         delete_dir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
-        delete_dir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
         save_mkdir(os.path.join(self.default_dir, folder, &#39;csv&#39;))
+        delete_dir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
         save_mkdir(os.path.join(self.default_dir, folder, &#39;npy&#39;))
         self.download(folder, include_devices=True)
         self.format(folder)</code></pre>
@@ -660,6 +663,8 @@ def previous_data(self):
         self.download(&#39;gap&#39;)
     self.download(&#39;current&#39;)
     self.collate()
+    for folder in [&#39;current&#39;, &#39;previous&#39;]:
+        self.format(folder)
     return</code></pre>
 </details>
 </dd>

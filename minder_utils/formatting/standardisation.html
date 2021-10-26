@@ -93,6 +93,16 @@ def standardise_activity_data(df):
     return table_df
 
 
+def standardise_physiological_environmental(df, date_range, shared_id=None):
+    if shared_id is not None:
+        df = df[df.id.isin(shared_id)]
+    df.time = pd.to_datetime(df.time)
+    df = df.groupby([&#39;id&#39;, &#39;location&#39;]).apply(lambda x: x.set_index(&#39;time&#39;)
+                                                                  .resample(&#39;D&#39;).mean()).reset_index().fillna(0)
+    idx = pd.MultiIndex.from_product((df.id.unique(), date_range, df.location.unique()), names=[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;])
+    return df.set_index([&#39;id&#39;, &#39;time&#39;, &#39;location&#39;]).reindex(idx, fill_value=0).reset_index()
+
+
 def normalized(a, axis=-1, order=2):
     l2 = np.atleast_1d(np.linalg.norm(a, order, axis))
     l2[l2==0] = 1
@@ -180,6 +190,25 @@ def normalized(a, axis=-1, order=2):
     return table_df</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.formatting.standardisation.standardise_physiological_environmental"><code class="name flex">
+<span>def <span class="ident">standardise_physiological_environmental</span></span>(<span>df, date_range, shared_id=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def standardise_physiological_environmental(df, date_range, shared_id=None):
+    if shared_id is not None:
+        df = df[df.id.isin(shared_id)]
+    df.time = pd.to_datetime(df.time)
+    df = df.groupby([&#39;id&#39;, &#39;location&#39;]).apply(lambda x: x.set_index(&#39;time&#39;)
+                                                                  .resample(&#39;D&#39;).mean()).reset_index().fillna(0)
+    idx = pd.MultiIndex.from_product((df.id.unique(), date_range, df.location.unique()), names=[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;])
+    return df.set_index([&#39;id&#39;, &#39;time&#39;, &#39;location&#39;]).reindex(idx, fill_value=0).reset_index()</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -205,6 +234,7 @@ def normalized(a, axis=-1, order=2):
 <ul class="">
 <li><code><a title="minder_utils.formatting.standardisation.normalized" href="#minder_utils.formatting.standardisation.normalized">normalized</a></code></li>
 <li><code><a title="minder_utils.formatting.standardisation.standardise_activity_data" href="#minder_utils.formatting.standardisation.standardise_activity_data">standardise_activity_data</a></code></li>
+<li><code><a title="minder_utils.formatting.standardisation.standardise_physiological_environmental" href="#minder_utils.formatting.standardisation.standardise_physiological_environmental">standardise_physiological_environmental</a></code></li>
 </ul>
 </li>
 </ul>

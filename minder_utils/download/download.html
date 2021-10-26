@@ -306,9 +306,9 @@ class Downloader:
             if content.status_code != 200:
                 print(&#39;Fail, Response code {}&#39;.format(content.status_code))
             else:
-                pd.read_csv(io.StringIO(content.text)).to_csv(save_path + record[&#39;type&#39;] + &#39;.csv&#39;, mode=&#39;a&#39;,
+                pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;), mode=&#39;a&#39;,
                                                               header=not Path(
-                                                                  save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
+                                                                  os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists())
                 print(&#39;Success&#39;)
 
     def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
@@ -370,10 +370,17 @@ class Downloader:
                     output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
                     break
 
-            for data_chunk in output:
+            for n_output, data_chunk in enumerate(output):
                 content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
+                sys.stdout.write(&#39;\r&#39;)
+                sys.stdout.write(&#34;For {}, exporting {}/{}&#34;.format(category, n_output+1,len(output)))
+                sys.stdout.flush()
                 if content.status_code != 200:
-                    print(&#39;Fail, Response code {} for category {}&#39;.format(content.status_code, category))
+                    sys.stdout.write(&#39;\n&#39;)
+                    sys.stdout.write(&#39;\r&#39;)
+                    sys.stdout.write(&#39;Fail, Response code {} for category {}&#39;.format(content.status_code, category))
+                    sys.stdout.write(&#39;\n&#39;)
+                    sys.stdout.flush()
                 else:
                     current_data = pd.read_csv(io.StringIO(content.text))
                     # checking whether the first line is a duplicate of the end of the previous file
@@ -384,6 +391,7 @@ class Downloader:
                     else:
                         current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
                                             header=not Path(save_path + category + &#39;.csv&#39;).exists())
+            sys.stdout.write(&#39;\n&#39;)
 
         print(&#39;Success&#39;)
 
@@ -777,9 +785,9 @@ as a csv in the directory <code>'./data/'</code></p></div>
             if content.status_code != 200:
                 print(&#39;Fail, Response code {}&#39;.format(content.status_code))
             else:
-                pd.read_csv(io.StringIO(content.text)).to_csv(save_path + record[&#39;type&#39;] + &#39;.csv&#39;, mode=&#39;a&#39;,
+                pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;), mode=&#39;a&#39;,
                                                               header=not Path(
-                                                                  save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
+                                                                  os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists())
                 print(&#39;Success&#39;)
 
     def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
@@ -841,10 +849,17 @@ as a csv in the directory <code>'./data/'</code></p></div>
                     output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
                     break
 
-            for data_chunk in output:
+            for n_output, data_chunk in enumerate(output):
                 content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
+                sys.stdout.write(&#39;\r&#39;)
+                sys.stdout.write(&#34;For {}, exporting {}/{}&#34;.format(category, n_output+1,len(output)))
+                sys.stdout.flush()
                 if content.status_code != 200:
-                    print(&#39;Fail, Response code {} for category {}&#39;.format(content.status_code, category))
+                    sys.stdout.write(&#39;\n&#39;)
+                    sys.stdout.write(&#39;\r&#39;)
+                    sys.stdout.write(&#39;Fail, Response code {} for category {}&#39;.format(content.status_code, category))
+                    sys.stdout.write(&#39;\n&#39;)
+                    sys.stdout.flush()
                 else:
                     current_data = pd.read_csv(io.StringIO(content.text))
                     # checking whether the first line is a duplicate of the end of the previous file
@@ -855,6 +870,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
                     else:
                         current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
                                             header=not Path(save_path + category + &#39;.csv&#39;).exists())
+            sys.stdout.write(&#39;\n&#39;)
 
         print(&#39;Success&#39;)
 
@@ -1152,9 +1168,9 @@ Default: <code>'./data/raw_data/'</code></p>
         if content.status_code != 200:
             print(&#39;Fail, Response code {}&#39;.format(content.status_code))
         else:
-            pd.read_csv(io.StringIO(content.text)).to_csv(save_path + record[&#39;type&#39;] + &#39;.csv&#39;, mode=&#39;a&#39;,
+            pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;), mode=&#39;a&#39;,
                                                           header=not Path(
-                                                              save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
+                                                              os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists())
             print(&#39;Success&#39;)</code></pre>
 </details>
 </dd>
@@ -1365,10 +1381,17 @@ Default: <code>'./data/raw_data/'</code></p>
                 output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
                 break
 
-        for data_chunk in output:
+        for n_output, data_chunk in enumerate(output):
             content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
+            sys.stdout.write(&#39;\r&#39;)
+            sys.stdout.write(&#34;For {}, exporting {}/{}&#34;.format(category, n_output+1,len(output)))
+            sys.stdout.flush()
             if content.status_code != 200:
-                print(&#39;Fail, Response code {} for category {}&#39;.format(content.status_code, category))
+                sys.stdout.write(&#39;\n&#39;)
+                sys.stdout.write(&#39;\r&#39;)
+                sys.stdout.write(&#39;Fail, Response code {} for category {}&#39;.format(content.status_code, category))
+                sys.stdout.write(&#39;\n&#39;)
+                sys.stdout.flush()
             else:
                 current_data = pd.read_csv(io.StringIO(content.text))
                 # checking whether the first line is a duplicate of the end of the previous file
@@ -1379,6 +1402,7 @@ Default: <code>'./data/raw_data/'</code></p>
                 else:
                     current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
                                         header=not Path(save_path + category + &#39;.csv&#39;).exists())
+        sys.stdout.write(&#39;\n&#39;)
 
     print(&#39;Success&#39;)
 

@@ -49,10 +49,21 @@ __all__ = [&#39;Dataloader&#39;]</code></pre>
 <dl>
 <dt id="minder_utils.dataloader.Dataloader"><code class="flex name class">
 <span>class <span class="ident">Dataloader</span></span>
-<span>(</span><span>csv_file='table.csv', max_days=3, label_data=False)</span>
+<span>(</span><span>activity, physiological=None, environmental=None, max_days=3, label_data=False)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Load the formatted data</p>
+<div class="desc"><p>Categorise the data into labelled &amp; unlabelled data.
+This dataloader should be used combined with minder_utils.formatting.Formatting.</p>
+<p>After initialising <code>formater = Formatting()</code></p>
+<h2 id="parameters">Parameters</h2>
+<ul>
+<li>activity: activity data, <code>formater.activity</code></li>
+<li>physiological: physiological data, <code>formater.physiological</code></li>
+<li>environmental: environmental data, <code>formater.environmental</code></li>
+<li>max_days: Default 3. How many consecutive days to extended as UTI, if <code>max_days = n</code>, <code>n</code> days before &amp; after
+the validated date will be labelled as UTI</li>
+<li>label_data: Default False. label the data or not. If False, <code>get_labelled_data()</code> cannot be used.</li>
+</ul>
 <p>csv_file: string or dataframe, the resulting dataframe must contains
 [id, time, &hellip;, valid]
 max_days: the number of days to augment the labelled data</p></div>
@@ -62,22 +73,45 @@ max_days: the number of days to augment the labelled data</p></div>
 </summary>
 <pre><code class="python">class Dataloader:
     &#34;&#34;&#34;
-    Load the formatted data
+    Categorise the data into labelled &amp; unlabelled data.
+    This dataloader should be used combined with minder_utils.formatting.Formatting.
+
+    After initialising ```formater = Formatting()```
+    Parameters:
+        - activity: activity data, ```formater.activity```
+        - physiological: physiological data, ```formater.physiological```
+        - environmental: environmental data, ```formater.environmental```
+        - max_days: Default 3. How many consecutive days to extended as UTI, if ```max_days = n```, ```n``` days before &amp; after
+            the validated date will be labelled as UTI
+        - label_data: Default False. label the data or not. If False, ```get_labelled_data()``` cannot be used.
     &#34;&#34;&#34;
 
-    def __init__(self, csv_file=&#39;table.csv&#39;, max_days=3, label_data=False):
+    def __init__(self, activity, physiological=None, environmental=None,  max_days=3, label_data=False):
         &#34;&#34;&#34;
         csv_file: string or dataframe, the resulting dataframe must contains
                     [id, time, ..., valid]
         max_days: the number of days to augment the labelled data
         &#34;&#34;&#34;
-        df = pd.read_csv(csv_file) if type(csv_file) == str else csv_file
-        df.time = pd.to_datetime(df.time)
-        df[&#39;Date&#39;] = df.time.dt.date
+        activity = pd.read_csv(activity) if type(activity) == str else activity
+        shared_id = None
+        for data in [activity, physiological, environmental]:
+            if data is None:
+                continue
+            shared_id = set(data.id.unique()) if shared_id is None else shared_id.intersection(set(data.id.unique()))
+        activity = activity[activity.id.isin(shared_id)]
+        activity = standardise_activity_data(activity)
+        activity.time = pd.to_datetime(activity.time)
+        activity.loc[:, &#39;Date&#39;] = activity.time.dt.date
+        date_range = pd.date_range(activity.Date.min(), activity.Date.max())
+
+        self.physiological = standardise_physiological_environmental(physiological, date_range, shared_id)\
+            .set_index([&#39;id&#39;, &#39;time&#39;]) if physiological is not None else physiological
+        self.environmental = standardise_physiological_environmental(environmental, date_range, shared_id)\
+            .set_index([&#39;id&#39;, &#39;time&#39;]) if environmental is not None else environmental
 
         if label_data:
-            df = label_dataframe(df)
-            self.labelled_df = df[~df.valid.isna()]
+            activity = label_dataframe(activity)
+            self.labelled_df = activity[~activity.valid.isna()]
             self.labelled_df.set_index([&#39;id&#39;, &#39;valid&#39;, &#39;Date&#39;], inplace=True)
             if len(self.labelled_df) &gt; 0:
                 self.true_p_ids = self.labelled_df.loc[:, True, :].index.get_level_values(0).unique()
@@ -85,8 +119,8 @@ max_days: the number of days to augment the labelled data</p></div>
             else:
                 print(&#39;no data is labelled&#39;)
 
-        df.set_index([&#39;id&#39;, &#39;Date&#39;], inplace=True)
-        self.df = df
+        activity.set_index([&#39;id&#39;, &#39;Date&#39;], inplace=True)
+        self.activity = activity
         self.max_days = max_days
 
         self.transfer_sensors = [&#39;back door&#39;, &#39;bathroom1&#39;, &#39;bedroom1&#39;, &#39;dining room&#39;,
@@ -94,8 +128,8 @@ max_days: the number of days to augment the labelled data</p></div>
                                  &#39;living room&#39;, &#39;lounge&#39;, &#39;microwave&#39;, &#39;study&#39;, &#39;toaster&#39;]
         self.select_sensors = [&#39;WC1&#39;, &#39;back door&#39;, &#39;bathroom1&#39;, &#39;bedroom1&#39;,
                                &#39;conservatory&#39;, &#39;dining room&#39;, &#39;fridge door&#39;, &#39;front door&#39;,
-                               &#39;hallway&#39;, &#39;iron&#39;, &#39;kettle&#39;, &#39;kitchen&#39;, &#39;living room&#39;,
-                               &#39;lounge&#39;, &#39;main door&#39;, &#39;microwave&#39;, &#39;multi&#39;, &#39;office&#39;]
+                               &#39;hallway&#39;, &#39;kettle&#39;, &#39;kitchen&#39;, &#39;living room&#39;,
+                               &#39;lounge&#39;, &#39;main door&#39;, &#39;microwave&#39;, &#39;office&#39;]
 
     def __len__(self):
         return int(len(self.labelled_df) / 24)
@@ -118,7 +152,7 @@ max_days: the number of days to augment the labelled data</p></div>
         for i in range(1, self.max_days):
             date = date - datetime.timedelta(1)
             try:
-                outputs.append(self.df.loc[(p_ids[idx], date), &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1))
+                outputs.append(self.activity.loc[(p_ids[idx], date), &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1))
             except KeyError:
                 break
         outputs = np.array(outputs)
@@ -127,18 +161,20 @@ max_days: the number of days to augment the labelled data</p></div>
 
         return outputs, label
 
-    def iterate_data(self, p_ids=None, normalise=True):
+    def get_labelled_data(self, normalise=True):
         # get p ids
-        p_ids = self.labelled_df.index.get_level_values(0).unique() if p_ids is None else p_ids
+        p_ids = self.labelled_df.index.get_level_values(0).unique()
+        outputs = []
+        labels = []
+        patient_ids = []
+        phy_data = []
+        env_data = []
         for idx in range(len(p_ids)):
             # get data of patient
             data = self.labelled_df.loc[p_ids[idx]]
             for valid in data.index.get_level_values(0).unique():
                 dates = data.loc[valid].index.get_level_values(0).unique()
                 for date in dates:
-                    outputs = []
-                    labels = []
-                    patient_ids = []
                     # validated data
                     p_date = date
                     p_data = data.loc[(valid, p_date), self.select_sensors].to_numpy().reshape(3, 8, -1)
@@ -146,35 +182,42 @@ max_days: the number of days to augment the labelled data</p></div>
                         p_data = normalized(np.array(p_data)).reshape(3, 8, -1)
                         # p_data = normalized(np.array(p_data))
                     outputs.append(p_data)
+                    phy_data.append(self.get_data(self.physiological, p_ids[idx], p_date))
+                    env_data.append(self.get_data(self.environmental, p_ids[idx], p_date))
                     labels.append(int(valid) if valid else -1)
                     patient_ids.append(p_ids[idx])
                     for i in range(1, self.max_days + 1):
                         for symbol in [-1, 1]:
                             f_date = p_date - datetime.timedelta(i) * symbol
                             try:
-                                p_data = self.df.loc[(p_ids[idx], f_date), self.select_sensors].to_numpy()
+                                p_data = self.activity.loc[(p_ids[idx], f_date), self.select_sensors].to_numpy()
                                 if normalise:
                                     p_data = normalized(np.array(p_data)).reshape(3, 8, -1)
                                     #p_data = normalized(np.array(p_data), axis=-1).reshape(3, 8, -1)
                                 outputs.append(p_data)
+                                phy_data.append(self.get_data(self.physiological, p_ids[idx], f_date))
+                                env_data.append(self.get_data(self.environmental, p_ids[idx], f_date))
                                 labels.append(self.laplace_smooth(i) * symbol)
                                 patient_ids.append(p_ids[idx])
                             except KeyError:
                                 break
 
-                    outputs = np.array(outputs)
-                    label = np.array(labels)
-                    patient_ids = np.array(patient_ids)
+        outputs = np.array(outputs)
+        phy_data = np.array(phy_data)
+        env_data = np.array(env_data)
+        label = np.array(labels)
+        patient_ids = np.array(patient_ids)
 
-                    yield outputs, label, patient_ids
+        return outputs, phy_data, env_data, label, patient_ids
 
     def get_unlabelled_data(self, normalise=True, date=None):
         # get p ids
-        df = self.df.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
+        df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
         if date is not None:
             df = df[df.index.get_level_values(1) &gt; date]
         p_ids = df.index.get_level_values(0).unique()
         outputs = []
+        phy_data, env_data = [], []
         outputs_p_ids = []
         outputs_dates = []
         for idx in range(len(p_ids)):
@@ -191,20 +234,41 @@ max_days: the number of days to augment the labelled data</p></div>
                     # p_data = np.array(p_data)
                     # p_data = normalize(p_data, axis=2)
                 outputs.append(p_data)
+                phy_data.append(self.get_data(self.physiological, p_ids[idx], date))
+                env_data.append(self.get_data(self.environmental, p_ids[idx], date))
                 outputs_p_ids.append(p_ids[idx])
                 outputs_dates.append(date)
-        if normalise:
-            # return torch.stack(outputs)
-            return np.stack(outputs), np.array(outputs_p_ids), np.array(outputs_dates)
-        # return torch.Tensor(np.array(outputs))
-        return np.array(outputs), np.array(outputs_p_ids), np.array(outputs_dates)
+        return np.array(outputs), np.array(phy_data), np.array(env_data), \
+               np.array(outputs_p_ids), np.array(outputs_dates)
 
     @staticmethod
     def laplace_smooth(i, lam=3, denominator=1):
-        return np.exp(- np.abs(i) / lam) / denominator</code></pre>
+        return np.exp(- np.abs(i) / lam) / denominator
+
+    @staticmethod
+    def get_data(df, p_id, date):
+        if df is None:
+            return
+        return df.loc[(p_id, date)].sort_values(&#39;location&#39;)[&#39;value&#39;].to_numpy()</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
+<dt id="minder_utils.dataloader.Dataloader.get_data"><code class="name flex">
+<span>def <span class="ident">get_data</span></span>(<span>df, p_id, date)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def get_data(df, p_id, date):
+    if df is None:
+        return
+    return df.loc[(p_id, date)].sort_values(&#39;location&#39;)[&#39;value&#39;].to_numpy()</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.dataloader.Dataloader.laplace_smooth"><code class="name flex">
 <span>def <span class="ident">laplace_smooth</span></span>(<span>i, lam=3, denominator=1)</span>
 </code></dt>
@@ -249,7 +313,7 @@ def laplace_smooth(i, lam=3, denominator=1):
     for i in range(1, self.max_days):
         date = date - datetime.timedelta(1)
         try:
-            outputs.append(self.df.loc[(p_ids[idx], date), &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1))
+            outputs.append(self.activity.loc[(p_ids[idx], date), &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1))
         except KeyError:
             break
     outputs = np.array(outputs)
@@ -257,6 +321,65 @@ def laplace_smooth(i, lam=3, denominator=1):
     label = np.array([int(valid)])
 
     return outputs, label</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.dataloader.Dataloader.get_labelled_data"><code class="name flex">
+<span>def <span class="ident">get_labelled_data</span></span>(<span>self, normalise=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_labelled_data(self, normalise=True):
+    # get p ids
+    p_ids = self.labelled_df.index.get_level_values(0).unique()
+    outputs = []
+    labels = []
+    patient_ids = []
+    phy_data = []
+    env_data = []
+    for idx in range(len(p_ids)):
+        # get data of patient
+        data = self.labelled_df.loc[p_ids[idx]]
+        for valid in data.index.get_level_values(0).unique():
+            dates = data.loc[valid].index.get_level_values(0).unique()
+            for date in dates:
+                # validated data
+                p_date = date
+                p_data = data.loc[(valid, p_date), self.select_sensors].to_numpy().reshape(3, 8, -1)
+                if normalise:
+                    p_data = normalized(np.array(p_data)).reshape(3, 8, -1)
+                    # p_data = normalized(np.array(p_data))
+                outputs.append(p_data)
+                phy_data.append(self.get_data(self.physiological, p_ids[idx], p_date))
+                env_data.append(self.get_data(self.environmental, p_ids[idx], p_date))
+                labels.append(int(valid) if valid else -1)
+                patient_ids.append(p_ids[idx])
+                for i in range(1, self.max_days + 1):
+                    for symbol in [-1, 1]:
+                        f_date = p_date - datetime.timedelta(i) * symbol
+                        try:
+                            p_data = self.activity.loc[(p_ids[idx], f_date), self.select_sensors].to_numpy()
+                            if normalise:
+                                p_data = normalized(np.array(p_data)).reshape(3, 8, -1)
+                                #p_data = normalized(np.array(p_data), axis=-1).reshape(3, 8, -1)
+                            outputs.append(p_data)
+                            phy_data.append(self.get_data(self.physiological, p_ids[idx], f_date))
+                            env_data.append(self.get_data(self.environmental, p_ids[idx], f_date))
+                            labels.append(self.laplace_smooth(i) * symbol)
+                            patient_ids.append(p_ids[idx])
+                        except KeyError:
+                            break
+
+    outputs = np.array(outputs)
+    phy_data = np.array(phy_data)
+    env_data = np.array(env_data)
+    label = np.array(labels)
+    patient_ids = np.array(patient_ids)
+
+    return outputs, phy_data, env_data, label, patient_ids</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.dataloader.Dataloader.get_unlabelled_data"><code class="name flex">
@@ -270,11 +393,12 @@ def laplace_smooth(i, lam=3, denominator=1):
 </summary>
 <pre><code class="python">def get_unlabelled_data(self, normalise=True, date=None):
     # get p ids
-    df = self.df.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
+    df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
     if date is not None:
         df = df[df.index.get_level_values(1) &gt; date]
     p_ids = df.index.get_level_values(0).unique()
     outputs = []
+    phy_data, env_data = [], []
     outputs_p_ids = []
     outputs_dates = []
     for idx in range(len(p_ids)):
@@ -291,64 +415,12 @@ def laplace_smooth(i, lam=3, denominator=1):
                 # p_data = np.array(p_data)
                 # p_data = normalize(p_data, axis=2)
             outputs.append(p_data)
+            phy_data.append(self.get_data(self.physiological, p_ids[idx], date))
+            env_data.append(self.get_data(self.environmental, p_ids[idx], date))
             outputs_p_ids.append(p_ids[idx])
             outputs_dates.append(date)
-    if normalise:
-        # return torch.stack(outputs)
-        return np.stack(outputs), np.array(outputs_p_ids), np.array(outputs_dates)
-    # return torch.Tensor(np.array(outputs))
-    return np.array(outputs), np.array(outputs_p_ids), np.array(outputs_dates)</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.dataloader.Dataloader.iterate_data"><code class="name flex">
-<span>def <span class="ident">iterate_data</span></span>(<span>self, p_ids=None, normalise=True)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def iterate_data(self, p_ids=None, normalise=True):
-    # get p ids
-    p_ids = self.labelled_df.index.get_level_values(0).unique() if p_ids is None else p_ids
-    for idx in range(len(p_ids)):
-        # get data of patient
-        data = self.labelled_df.loc[p_ids[idx]]
-        for valid in data.index.get_level_values(0).unique():
-            dates = data.loc[valid].index.get_level_values(0).unique()
-            for date in dates:
-                outputs = []
-                labels = []
-                patient_ids = []
-                # validated data
-                p_date = date
-                p_data = data.loc[(valid, p_date), self.select_sensors].to_numpy().reshape(3, 8, -1)
-                if normalise:
-                    p_data = normalized(np.array(p_data)).reshape(3, 8, -1)
-                    # p_data = normalized(np.array(p_data))
-                outputs.append(p_data)
-                labels.append(int(valid) if valid else -1)
-                patient_ids.append(p_ids[idx])
-                for i in range(1, self.max_days + 1):
-                    for symbol in [-1, 1]:
-                        f_date = p_date - datetime.timedelta(i) * symbol
-                        try:
-                            p_data = self.df.loc[(p_ids[idx], f_date), self.select_sensors].to_numpy()
-                            if normalise:
-                                p_data = normalized(np.array(p_data)).reshape(3, 8, -1)
-                                #p_data = normalized(np.array(p_data), axis=-1).reshape(3, 8, -1)
-                            outputs.append(p_data)
-                            labels.append(self.laplace_smooth(i) * symbol)
-                            patient_ids.append(p_ids[idx])
-                        except KeyError:
-                            break
-
-                outputs = np.array(outputs)
-                label = np.array(labels)
-                patient_ids = np.array(patient_ids)
-
-                yield outputs, label, patient_ids</code></pre>
+    return np.array(outputs), np.array(phy_data), np.array(env_data), \
+           np.array(outputs_p_ids), np.array(outputs_dates)</code></pre>
 </details>
 </dd>
 </dl>
@@ -383,8 +455,9 @@ def laplace_smooth(i, lam=3, denominator=1):
 <h4><code><a title="minder_utils.dataloader.Dataloader" href="#minder_utils.dataloader.Dataloader">Dataloader</a></code></h4>
 <ul class="">
 <li><code><a title="minder_utils.dataloader.Dataloader.get" href="#minder_utils.dataloader.Dataloader.get">get</a></code></li>
+<li><code><a title="minder_utils.dataloader.Dataloader.get_data" href="#minder_utils.dataloader.Dataloader.get_data">get_data</a></code></li>
+<li><code><a title="minder_utils.dataloader.Dataloader.get_labelled_data" href="#minder_utils.dataloader.Dataloader.get_labelled_data">get_labelled_data</a></code></li>
 <li><code><a title="minder_utils.dataloader.Dataloader.get_unlabelled_data" href="#minder_utils.dataloader.Dataloader.get_unlabelled_data">get_unlabelled_data</a></code></li>
-<li><code><a title="minder_utils.dataloader.Dataloader.iterate_data" href="#minder_utils.dataloader.Dataloader.iterate_data">iterate_data</a></code></li>
 <li><code><a title="minder_utils.dataloader.Dataloader.laplace_smooth" href="#minder_utils.dataloader.Dataloader.laplace_smooth">laplace_smooth</a></code></li>
 </ul>
 </li>

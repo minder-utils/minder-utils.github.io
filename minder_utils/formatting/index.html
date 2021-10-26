@@ -87,6 +87,15 @@ __all__ = [&#39;Formatting&#39;]</code></pre>
 
     def __init__(self, path=&#39;./data/raw_data/&#39;):
         self.path = path
+
+        categories_check = [&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;]
+        if not np.all([os.path.exists(os.path.join(path, category + &#39;.csv&#39;)) for category in categories_check]):
+            print(&#39;Downloading required files for formatting&#39;)
+            dl = Downloader()
+            dl.export(categories=[&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;],
+                      reload=True, since = None, until = None, save_path=path)
+            print(&#39;Required files downloaded&#39;)
+
         self.device_type = \
         pd.read_csv(os.path.join(self.path, &#39;device_types.csv&#39;))[[&#39;id&#39;, &#39;type&#39;]].set_index(&#39;id&#39;).to_dict()[&#39;type&#39;]
         self.config = config
@@ -122,7 +131,7 @@ __all__ = [&#39;Formatting&#39;]</code></pre>
             data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
         :return: append to the self.physiological_data
         &#34;&#34;&#34;
-        col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+        col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;]
         data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
         data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
         try:
@@ -131,8 +140,9 @@ __all__ = [&#39;Formatting&#39;]</code></pre>
             data.device_type += &#39;-&gt;&#39; + name[4:]
         data.start_date = pd.to_datetime(data.start_date).dt.date
         data = data[col_filter]
-        data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;unit&#39;]).mean().reset_index()
+        data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;]).mean().reset_index()
         data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
+        data.location = data.location.apply(lambda x: x.split(&#39;-&gt;&#39;)[-1])
         self.physiological_data = self.physiological_data.append(data)
 
     def process_activity_data(self, name):
@@ -164,14 +174,14 @@ __all__ = [&#39;Formatting&#39;]</code></pre>
             data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
         :return: append to the self.environmental_data
         &#34;&#34;&#34;
-        col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+        col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
         data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
         data = data[data.start_date != &#39;start_date&#39;]
         data.start_date = pd.to_datetime(data.start_date).dt.date
         data = data[col_filter]
-        data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
+        # data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
         data.value = data.value.astype(float)
-        data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;unit&#39;]).mean().reset_index()
+        data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;]).mean().reset_index()
         data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
         self.environmental_data = self.environmental_data.append(data)
 
@@ -354,14 +364,14 @@ data: the data must contains ['patient_id', 'start_date', 'location_name', 'devi
         data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
     :return: append to the self.environmental_data
     &#34;&#34;&#34;
-    col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+    col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
     data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
     data = data[data.start_date != &#39;start_date&#39;]
     data.start_date = pd.to_datetime(data.start_date).dt.date
     data = data[col_filter]
-    data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
+    # data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
     data.value = data.value.astype(float)
-    data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;unit&#39;]).mean().reset_index()
+    data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;]).mean().reset_index()
     data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
     self.environmental_data = self.environmental_data.append(data)</code></pre>
 </details>
@@ -451,7 +461,7 @@ data: the data must contains ['patient_id', 'start_date', 'device_type', 'value'
         data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
     :return: append to the self.physiological_data
     &#34;&#34;&#34;
-    col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+    col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;]
     data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
     data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
     try:
@@ -460,8 +470,9 @@ data: the data must contains ['patient_id', 'start_date', 'device_type', 'value'
         data.device_type += &#39;-&gt;&#39; + name[4:]
     data.start_date = pd.to_datetime(data.start_date).dt.date
     data = data[col_filter]
-    data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;unit&#39;]).mean().reset_index()
+    data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;]).mean().reset_index()
     data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
+    data.location = data.location.apply(lambda x: x.split(&#39;-&gt;&#39;)[-1])
     self.physiological_data = self.physiological_data.append(data)</code></pre>
 </details>
 </dd>
