@@ -29,45 +29,108 @@
 </summary>
 <pre><code class="python">import pandas as pd
 import os
+from pathlib import Path
 from .map_utils import map_numeric_ids, map_url_to_flag
 from importlib.machinery import SourceFileLoader
 from ..download.download import Downloader
 from minder_utils.configurations import data_path
 
-
 # import python function from path:
 with open(data_path, &#39;r&#39;) as file_read:
     path = file_read.read()
-dri_data_util_validate = SourceFileLoader(&#39;dri_data_util_validate&#39;, path + &#39;/validated_date.py&#39;).load_module()
-from dri_data_util_validate import validated_date
+    path_path = Path(path + &#39;/validated_date.py&#39;)
 
+if path_path.exists():
+    dri_data_util_validate = SourceFileLoader(&#39;dri_data_util_validate&#39;, path + &#39;/validated_date.py&#39;).load_module()
+    from dri_data_util_validate import validated_date
+else:
+    print(&#39;Please add a mappings folder file path.&#39;)
+    pass
 
-def label_dataframe(unlabelled_df):
-    &#34;&#34;&#34;
-    unlabelled_df: contains id, time but no label information
-    &#34;&#34;&#34;
-    unlabelled_df[&#39;valid&#39;] = unlabelled_df.id.astype(str) + unlabelled_df.time.dt.date.astype(str)
+def label_dataframe(unlabelled_df, save_path=&#39;./data/raw_data/&#39;):
+    &#39;&#39;&#39;
+    This function will label the input dataframe based on the information in ```procedure.csv``` and
+    manual labels from TIHM.
     
+    Arguments
+    ----------
+    
+    - unlabelled_df: pandas dataframe:
+        Unlabelled dataframe, must contain columns ```[id, time]```, where ```id``` is the
+        ids of participants, ```time``` is the time of the sensors.
+
+    - save_path: str:
+        This is the path that points to the ```procedure.csv``` file. If this 
+        file does not exist, it will be downloaded to this path.
+
+    Returns
+    ---------
+    
+    - unlabelled_df: pandas dataframe:
+        This is a dataframe containing the original data along with a new column, ```&#39;labels&#39;```,
+        which contains the labels.
+
+    &#39;&#39;&#39;
     try:
-        df = pd.read_csv(&#39;./data/raw_data/procedure.csv&#39;)
+        df = pd.read_csv(save_path + &#39;procedure.csv&#39;)
     except FileNotFoundError:
-        Downloader().export(categories=[&#39;procedure&#39;])
-        df = pd.read_csv(&#39;./data/raw_data/procedure.csv&#39;)
-    
+        Downloader().export(categories=[&#39;procedure&#39;], save_path=save_path)
+        df = pd.read_csv(save_path + &#39;procedure.csv&#39;)
+
     df.notes = df.notes.apply(lambda x: str(x).lower())
-    df = df[df.notes.str.contains(&#39;urinalysis&#39;) | df.notes.str.contains(&#39;uti&#39;) | df.notes.str.contains(&#39;positive&#39;)|df.notes.str.contains(&#39;negative&#39;)]
+    df = df[df.notes.str.contains(&#39;urinalysis&#39;) | df.notes.str.contains(&#39;uti&#39;) | df.notes.str.contains(
+        &#39;positive&#39;) | df.notes.str.contains(&#39;negative&#39;)]
     df = df[[&#39;patient_id&#39;, &#39;start_date&#39;, &#39;outcome&#39;]]
     df.columns = [&#39;patient id&#39;, &#39;date&#39;, &#39;valid&#39;]
     df.valid = map_url_to_flag(df.valid)
     df.date = pd.to_datetime(df.date).dt.date
+    df = df.dropna()
     manual_label = validated_date(True)
     manual_label[&#39;patient id&#39;] = map_numeric_ids(manual_label[&#39;patient id&#39;], True)
     label_df = pd.concat([manual_label, df])
     label_df = label_df.drop_duplicates()
     label_df[&#39;time&#39;] = label_df[&#39;patient id&#39;].astype(str) + label_df[&#39;date&#39;].astype(str)
     mapping = label_df[[&#39;time&#39;, &#39;valid&#39;]].set_index(&#39;time&#39;).to_dict()[&#39;valid&#39;]
+
+    unlabelled_df[&#39;valid&#39;] = unlabelled_df.id.astype(str) + unlabelled_df.time.dt.date.astype(str)
     unlabelled_df[&#39;valid&#39;] = unlabelled_df[&#39;valid&#39;].map(mapping)
-    return unlabelled_df</code></pre>
+    return unlabelled_df
+
+
+def label_array(patient_ids, time, save_path=&#39;./data/raw_data/&#39;):
+    &#34;&#34;&#34;
+    This function returns labels given an array of ids and an array of times. Please see the
+    following for the description of the shapes required.
+
+    Arguments
+    ---------
+
+    - patient_ids: array:
+        This is an array containing the patient IDs corresponding to the times in ```time```.
+        This should be of shape (N,).
+
+    - time: array:
+        This is an array containing the times of events corresponding to the patient IDs 
+        in ```patient_ids```. This should be of shape (N,). These should be of a format 
+        that is acceptable by ```pandas.to_datetime()```.
+
+    - save_path: str:
+        This is the path that points to the ```procedure.csv``` file. If this 
+        file does not exist, it will be downloaded to this path.
+
+    Returns
+    ---------
+
+    - labels: array:
+        This is an array containing the labels for UTIs for the given inputs.
+
+    &#34;&#34;&#34;
+
+    df_dict = {&#39;id&#39;: patient_ids, &#39;time&#39;: pd.to_datetime(time, utc=True)}
+    unlabelled_df = pd.DataFrame(df_dict)
+    unlabelled_df = label_dataframe(unlabelled_df, save_path=save_path)
+
+    return unlabelled_df[&#39;valid&#39;].values</code></pre>
 </details>
 </section>
 <section>
@@ -77,39 +140,151 @@ def label_dataframe(unlabelled_df):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="minder_utils.formatting.label.label_dataframe"><code class="name flex">
-<span>def <span class="ident">label_dataframe</span></span>(<span>unlabelled_df)</span>
+<dt id="minder_utils.formatting.label.label_array"><code class="name flex">
+<span>def <span class="ident">label_array</span></span>(<span>patient_ids, time, save_path='./data/raw_data/')</span>
 </code></dt>
 <dd>
-<div class="desc"><p>unlabelled_df: contains id, time but no label information</p></div>
+<div class="desc"><p>This function returns labels given an array of ids and an array of times. Please see the
+following for the description of the shapes required.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>patient_ids: array:
+This is an array containing the patient IDs corresponding to the times in <code>time</code>.
+This should be of shape (N,).</p>
+</li>
+<li>
+<p>time: array:
+This is an array containing the times of events corresponding to the patient IDs
+in <code>patient_ids</code>. This should be of shape (N,). These should be of a format
+that is acceptable by <code>pandas.to_datetime()</code>.</p>
+</li>
+<li>
+<p>save_path: str:
+This is the path that points to the <code>procedure.csv</code> file. If this
+file does not exist, it will be downloaded to this path.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>labels: array:
+This is an array containing the labels for UTIs for the given inputs.</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def label_dataframe(unlabelled_df):
+<pre><code class="python">def label_array(patient_ids, time, save_path=&#39;./data/raw_data/&#39;):
     &#34;&#34;&#34;
-    unlabelled_df: contains id, time but no label information
+    This function returns labels given an array of ids and an array of times. Please see the
+    following for the description of the shapes required.
+
+    Arguments
+    ---------
+
+    - patient_ids: array:
+        This is an array containing the patient IDs corresponding to the times in ```time```.
+        This should be of shape (N,).
+
+    - time: array:
+        This is an array containing the times of events corresponding to the patient IDs 
+        in ```patient_ids```. This should be of shape (N,). These should be of a format 
+        that is acceptable by ```pandas.to_datetime()```.
+
+    - save_path: str:
+        This is the path that points to the ```procedure.csv``` file. If this 
+        file does not exist, it will be downloaded to this path.
+
+    Returns
+    ---------
+
+    - labels: array:
+        This is an array containing the labels for UTIs for the given inputs.
+
     &#34;&#34;&#34;
-    unlabelled_df[&#39;valid&#39;] = unlabelled_df.id.astype(str) + unlabelled_df.time.dt.date.astype(str)
+
+    df_dict = {&#39;id&#39;: patient_ids, &#39;time&#39;: pd.to_datetime(time, utc=True)}
+    unlabelled_df = pd.DataFrame(df_dict)
+    unlabelled_df = label_dataframe(unlabelled_df, save_path=save_path)
+
+    return unlabelled_df[&#39;valid&#39;].values</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.formatting.label.label_dataframe"><code class="name flex">
+<span>def <span class="ident">label_dataframe</span></span>(<span>unlabelled_df, save_path='./data/raw_data/')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function will label the input dataframe based on the information in <code>procedure.csv</code> and
+manual labels from TIHM.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>unlabelled_df: pandas dataframe:
+Unlabelled dataframe, must contain columns <code>[id, time]</code>, where <code>id</code> is the
+ids of participants, <code>time</code> is the time of the sensors.</p>
+</li>
+<li>
+<p>save_path: str:
+This is the path that points to the <code>procedure.csv</code> file. If this
+file does not exist, it will be downloaded to this path.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>unlabelled_df: pandas dataframe:
+This is a dataframe containing the original data along with a new column, <code>'labels'</code>,
+which contains the labels.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def label_dataframe(unlabelled_df, save_path=&#39;./data/raw_data/&#39;):
+    &#39;&#39;&#39;
+    This function will label the input dataframe based on the information in ```procedure.csv``` and
+    manual labels from TIHM.
     
+    Arguments
+    ----------
+    
+    - unlabelled_df: pandas dataframe:
+        Unlabelled dataframe, must contain columns ```[id, time]```, where ```id``` is the
+        ids of participants, ```time``` is the time of the sensors.
+
+    - save_path: str:
+        This is the path that points to the ```procedure.csv``` file. If this 
+        file does not exist, it will be downloaded to this path.
+
+    Returns
+    ---------
+    
+    - unlabelled_df: pandas dataframe:
+        This is a dataframe containing the original data along with a new column, ```&#39;labels&#39;```,
+        which contains the labels.
+
+    &#39;&#39;&#39;
     try:
-        df = pd.read_csv(&#39;./data/raw_data/procedure.csv&#39;)
+        df = pd.read_csv(save_path + &#39;procedure.csv&#39;)
     except FileNotFoundError:
-        Downloader().export(categories=[&#39;procedure&#39;])
-        df = pd.read_csv(&#39;./data/raw_data/procedure.csv&#39;)
-    
+        Downloader().export(categories=[&#39;procedure&#39;], save_path=save_path)
+        df = pd.read_csv(save_path + &#39;procedure.csv&#39;)
+
     df.notes = df.notes.apply(lambda x: str(x).lower())
-    df = df[df.notes.str.contains(&#39;urinalysis&#39;) | df.notes.str.contains(&#39;uti&#39;) | df.notes.str.contains(&#39;positive&#39;)|df.notes.str.contains(&#39;negative&#39;)]
+    df = df[df.notes.str.contains(&#39;urinalysis&#39;) | df.notes.str.contains(&#39;uti&#39;) | df.notes.str.contains(
+        &#39;positive&#39;) | df.notes.str.contains(&#39;negative&#39;)]
     df = df[[&#39;patient_id&#39;, &#39;start_date&#39;, &#39;outcome&#39;]]
     df.columns = [&#39;patient id&#39;, &#39;date&#39;, &#39;valid&#39;]
     df.valid = map_url_to_flag(df.valid)
     df.date = pd.to_datetime(df.date).dt.date
+    df = df.dropna()
     manual_label = validated_date(True)
     manual_label[&#39;patient id&#39;] = map_numeric_ids(manual_label[&#39;patient id&#39;], True)
     label_df = pd.concat([manual_label, df])
     label_df = label_df.drop_duplicates()
     label_df[&#39;time&#39;] = label_df[&#39;patient id&#39;].astype(str) + label_df[&#39;date&#39;].astype(str)
     mapping = label_df[[&#39;time&#39;, &#39;valid&#39;]].set_index(&#39;time&#39;).to_dict()[&#39;valid&#39;]
+
+    unlabelled_df[&#39;valid&#39;] = unlabelled_df.id.astype(str) + unlabelled_df.time.dt.date.astype(str)
     unlabelled_df[&#39;valid&#39;] = unlabelled_df[&#39;valid&#39;].map(mapping)
     return unlabelled_df</code></pre>
 </details>
@@ -137,6 +312,7 @@ def label_dataframe(unlabelled_df):
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="minder_utils.formatting.label.label_array" href="#minder_utils.formatting.label.label_array">label_array</a></code></li>
 <li><code><a title="minder_utils.formatting.label.label_dataframe" href="#minder_utils.formatting.label.label_dataframe">label_dataframe</a></code></li>
 </ul>
 </li>

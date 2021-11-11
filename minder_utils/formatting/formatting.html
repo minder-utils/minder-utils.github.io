@@ -51,11 +51,11 @@ class Formatting:
             print(&#39;Downloading required files for formatting&#39;)
             dl = Downloader()
             dl.export(categories=[&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;],
-                      reload=True, since = None, until = None, save_path=path)
+                      reload=True, since=None, until=None, save_path=path)
             print(&#39;Required files downloaded&#39;)
 
         self.device_type = \
-        pd.read_csv(os.path.join(self.path, &#39;device_types.csv&#39;))[[&#39;id&#39;, &#39;type&#39;]].set_index(&#39;id&#39;).to_dict()[&#39;type&#39;]
+            pd.read_csv(os.path.join(self.path, &#39;device_types.csv&#39;))[[&#39;id&#39;, &#39;type&#39;]].set_index(&#39;id&#39;).to_dict()[&#39;type&#39;]
         self.config = config
         self.physiological_data = pd.DataFrame(columns=self.config[&#39;physiological&#39;][&#39;columns&#39;])
         self.activity_data = pd.DataFrame(columns=self.config[&#39;activity&#39;][&#39;columns&#39;])
@@ -216,7 +216,6 @@ class Formatting:
         return False
 
 
-
 if __name__ == &#39;__main__&#39;:
     loader = Formatting(&#39;./raw_data/&#39;)</code></pre>
 </details>
@@ -256,11 +255,11 @@ if __name__ == &#39;__main__&#39;:
             print(&#39;Downloading required files for formatting&#39;)
             dl = Downloader()
             dl.export(categories=[&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;],
-                      reload=True, since = None, until = None, save_path=path)
+                      reload=True, since=None, until=None, save_path=path)
             print(&#39;Required files downloaded&#39;)
 
         self.device_type = \
-        pd.read_csv(os.path.join(self.path, &#39;device_types.csv&#39;))[[&#39;id&#39;, &#39;type&#39;]].set_index(&#39;id&#39;).to_dict()[&#39;type&#39;]
+            pd.read_csv(os.path.join(self.path, &#39;device_types.csv&#39;))[[&#39;id&#39;, &#39;type&#39;]].set_index(&#39;id&#39;).to_dict()[&#39;type&#39;]
         self.config = config
         self.physiological_data = pd.DataFrame(columns=self.config[&#39;physiological&#39;][&#39;columns&#39;])
         self.activity_data = pd.DataFrame(columns=self.config[&#39;activity&#39;][&#39;columns&#39;])

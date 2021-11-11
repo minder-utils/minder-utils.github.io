@@ -35,7 +35,7 @@ import numpy as np
 class Supervised_Filter(Feature_selector_template):
     &#39;&#39;&#39;
     This class provide a set of supervised feature selection methods.
-    Particularly, it contains a set of filter methods, which will perform separately with the classifier.
+    Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.
 
     Currently, it contains:
         - chi-squared stats
@@ -57,21 +57,21 @@ class Supervised_Filter(Feature_selector_template):
     X = selector.transform(X)
     ```
     &#39;&#39;&#39;
-    def __init__(self, model=&#39;chi&#39;, proportion=90):
+    def __init__(self, model_name=&#39;chi&#39;, proportion=90):
         &#39;&#39;&#39;
         Select a proportion of features
         Args:
             model: method to calculate the score for feature selection
             proportion: percentage of features to keep
         &#39;&#39;&#39;
-        super().__init__(model)
+        super().__init__(model_name)
         self.selector = SelectPercentile(self.model, percentile=proportion)
         self.proportion = proportion
 
-    def reset_model(self, model, proportion=None):
+    def reset_model(self, model_name, proportion=None):
         proportion = self.proportion if proportion is None else proportion
-        self.name = self.methods[model]
-        self.model = getattr(self, model)()
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
         self.selector = SelectPercentile(self.model, percentile=proportion)
 
     @property
@@ -117,11 +117,11 @@ class Supervised_Filter(Feature_selector_template):
 <dl>
 <dt id="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter"><code class="flex name class">
 <span>class <span class="ident">Supervised_Filter</span></span>
-<span>(</span><span>model='chi', proportion=90)</span>
+<span>(</span><span>model_name='chi', proportion=90)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This class provide a set of supervised feature selection methods.
-Particularly, it contains a set of filter methods, which will perform separately with the classifier.</p>
+Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.</p>
 <p>Currently, it contains:
 - chi-squared stats
 - ANOVA F-value
@@ -154,7 +154,7 @@ X = selector.transform(X)
 <pre><code class="python">class Supervised_Filter(Feature_selector_template):
     &#39;&#39;&#39;
     This class provide a set of supervised feature selection methods.
-    Particularly, it contains a set of filter methods, which will perform separately with the classifier.
+    Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.
 
     Currently, it contains:
         - chi-squared stats
@@ -176,21 +176,21 @@ X = selector.transform(X)
     X = selector.transform(X)
     ```
     &#39;&#39;&#39;
-    def __init__(self, model=&#39;chi&#39;, proportion=90):
+    def __init__(self, model_name=&#39;chi&#39;, proportion=90):
         &#39;&#39;&#39;
         Select a proportion of features
         Args:
             model: method to calculate the score for feature selection
             proportion: percentage of features to keep
         &#39;&#39;&#39;
-        super().__init__(model)
+        super().__init__(model_name)
         self.selector = SelectPercentile(self.model, percentile=proportion)
         self.proportion = proportion
 
-    def reset_model(self, model, proportion=None):
+    def reset_model(self, model_name, proportion=None):
         proportion = self.proportion if proportion is None else proportion
-        self.name = self.methods[model]
-        self.model = getattr(self, model)()
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
         self.selector = SelectPercentile(self.model, percentile=proportion)
 
     @property
@@ -311,7 +311,7 @@ def methods(self):
 </details>
 </dd>
 <dt id="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.reset_model"><code class="name flex">
-<span>def <span class="ident">reset_model</span></span>(<span>self, model, proportion=None)</span>
+<span>def <span class="ident">reset_model</span></span>(<span>self, model_name, proportion=None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -319,10 +319,10 @@ def methods(self):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def reset_model(self, model, proportion=None):
+<pre><code class="python">def reset_model(self, model_name, proportion=None):
     proportion = self.proportion if proportion is None else proportion
-    self.name = self.methods[model]
-    self.model = getattr(self, model)()
+    self.name = self.methods[model_name]
+    self.model = getattr(self, model_name)()
     self.selector = SelectPercentile(self.model, percentile=proportion)</code></pre>
 </details>
 </dd>
