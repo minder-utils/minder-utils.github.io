@@ -65,7 +65,7 @@ This class will
 - activity data: N * 3 * 8 * 20
 - environmental data: N * 19
 - physiological data: N * 12</p>
-<p>@param data_type: activity, #TODO environmental, physiological
+<p>@param data_type: activity, environmental, physiological
 @param num_days_extended: for uti only, how many consecutive days to be labelled</p></div>
 <details class="source">
 <summary>
@@ -87,26 +87,30 @@ This class will
     def __init__(self, categories=None, save_dir=os.path.join(&#39;data&#39;, &#39;weekly_test&#39;), num_days_extended=3):
         &#39;&#39;&#39;
 
-        @param data_type: activity, #TODO environmental, physiological
+        @param data_type: activity, environmental, physiological
         @param num_days_extended: for uti only, how many consecutive days to be labelled
         &#39;&#39;&#39;
         self.default_categories = [&#39;activity&#39;, &#39;environmental&#39;, &#39;physiological&#39;]
         self.categories = self.default_categories if categories is None else categories
         assert all(data_type in self.default_categories for data_type in self.categories), &#39;available categories: &#39; \
-                                                                                 &#39;activity, environmental, &#39; \
-                                                                                 &#39;physiological&#39;
+                                                                                           &#39;activity, environmental, &#39; \
+                                                                                           &#39;physiological&#39;
         self.num_days_extended = num_days_extended
         self.downloader = Downloader()
         self.default_dir = save_dir
         save_mkdir(self.default_dir)
 
     @property
-    def previous_data(self):
-        return os.path.join(self.default_dir, &#39;previous&#39;, &#39;npy&#39;)
+    def previous_labelled_data(self):
+        return os.path.join(self.default_dir, &#39;previous&#39;, &#39;npy&#39;, &#39;labelled&#39;)
+
+    @property
+    def previous_unlabelled_data(self):
+        return os.path.join(self.default_dir, &#39;previous&#39;, &#39;npy&#39;, &#39;unlabelled&#39;)
 
     @property
     def current_data(self):
-        return os.path.join(self.default_dir, &#39;current&#39;, &#39;npy&#39;)
+        return os.path.join(self.default_dir, &#39;current&#39;, &#39;npy&#39;, &#39;unlabelled&#39;)
 
     @property
     def current_csv_data(self):
@@ -185,7 +189,10 @@ This class will
             np.save(os.path.join(save_path, &#39;physiological.npy&#39;.format(data_type)), physiological_data)
             np.save(os.path.join(save_path, &#39;environmental.npy&#39;.format(data_type)), environmental_data)
             np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
-            np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
+            if data_type == &#39;labelled&#39;:
+                np.save(os.path.join(save_path, &#39;label.npy&#39;), dates)
+            else:
+                np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
 
     def refresh(self):
         date_dict = self.get_dates()
@@ -300,7 +307,7 @@ def current_csv_data(self):
 </summary>
 <pre><code class="python">@property
 def current_data(self):
-    return os.path.join(self.default_dir, &#39;current&#39;, &#39;npy&#39;)</code></pre>
+    return os.path.join(self.default_dir, &#39;current&#39;, &#39;npy&#39;, &#39;unlabelled&#39;)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.scripts.Weekly_dataloader.gap_csv_data"><code class="name">var <span class="ident">gap_csv_data</span></code></dt>
@@ -327,7 +334,7 @@ def previous_csv_data(self):
     return os.path.join(self.default_dir, &#39;previous&#39;, &#39;csv&#39;)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.scripts.Weekly_dataloader.previous_data"><code class="name">var <span class="ident">previous_data</span></code></dt>
+<dt id="minder_utils.scripts.Weekly_dataloader.previous_labelled_data"><code class="name">var <span class="ident">previous_labelled_data</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -335,8 +342,20 @@ def previous_csv_data(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def previous_data(self):
-    return os.path.join(self.default_dir, &#39;previous&#39;, &#39;npy&#39;)</code></pre>
+def previous_labelled_data(self):
+    return os.path.join(self.default_dir, &#39;previous&#39;, &#39;npy&#39;, &#39;labelled&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.scripts.Weekly_dataloader.previous_unlabelled_data"><code class="name">var <span class="ident">previous_unlabelled_data</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def previous_unlabelled_data(self):
+    return os.path.join(self.default_dir, &#39;previous&#39;, &#39;npy&#39;, &#39;unlabelled&#39;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -452,7 +471,10 @@ def previous_data(self):
         np.save(os.path.join(save_path, &#39;physiological.npy&#39;.format(data_type)), physiological_data)
         np.save(os.path.join(save_path, &#39;environmental.npy&#39;.format(data_type)), environmental_data)
         np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
-        np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)</code></pre>
+        if data_type == &#39;labelled&#39;:
+            np.save(os.path.join(save_path, &#39;label.npy&#39;), dates)
+        else:
+            np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.scripts.Weekly_dataloader.initialise"><code class="name flex">
@@ -531,7 +553,7 @@ def previous_data(self):
 <ul>
 <li>
 <h4><code><a title="minder_utils.scripts.Weekly_dataloader" href="#minder_utils.scripts.Weekly_dataloader">Weekly_dataloader</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="minder_utils.scripts.Weekly_dataloader.check_exist" href="#minder_utils.scripts.Weekly_dataloader.check_exist">check_exist</a></code></li>
 <li><code><a title="minder_utils.scripts.Weekly_dataloader.collate" href="#minder_utils.scripts.Weekly_dataloader.collate">collate</a></code></li>
 <li><code><a title="minder_utils.scripts.Weekly_dataloader.current_csv_data" href="#minder_utils.scripts.Weekly_dataloader.current_csv_data">current_csv_data</a></code></li>
@@ -542,7 +564,8 @@ def previous_data(self):
 <li><code><a title="minder_utils.scripts.Weekly_dataloader.get_dates" href="#minder_utils.scripts.Weekly_dataloader.get_dates">get_dates</a></code></li>
 <li><code><a title="minder_utils.scripts.Weekly_dataloader.initialise" href="#minder_utils.scripts.Weekly_dataloader.initialise">initialise</a></code></li>
 <li><code><a title="minder_utils.scripts.Weekly_dataloader.previous_csv_data" href="#minder_utils.scripts.Weekly_dataloader.previous_csv_data">previous_csv_data</a></code></li>
-<li><code><a title="minder_utils.scripts.Weekly_dataloader.previous_data" href="#minder_utils.scripts.Weekly_dataloader.previous_data">previous_data</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.previous_labelled_data" href="#minder_utils.scripts.Weekly_dataloader.previous_labelled_data">previous_labelled_data</a></code></li>
+<li><code><a title="minder_utils.scripts.Weekly_dataloader.previous_unlabelled_data" href="#minder_utils.scripts.Weekly_dataloader.previous_unlabelled_data">previous_unlabelled_data</a></code></li>
 <li><code><a title="minder_utils.scripts.Weekly_dataloader.refresh" href="#minder_utils.scripts.Weekly_dataloader.refresh">refresh</a></code></li>
 </ul>
 </li>

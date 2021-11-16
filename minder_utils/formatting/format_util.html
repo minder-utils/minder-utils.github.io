@@ -49,7 +49,10 @@ def iter_dir(directory, endwith=&#39;.csv&#39;, split=True):
     return filenames
 
 
-def y_to_categorical(y, smooth=False):
+def y_to_categorical(y, smooth=False, valid_only=False):
+    if valid_only:
+        mask = np.isin(y, [-1, 1])
+        y = y[mask]
     positives = y &gt; 0
     labels = np.zeros((y.shape[0], 2))
     if smooth:
@@ -58,7 +61,10 @@ def y_to_categorical(y, smooth=False):
     else:
         labels[:, 1][positives.reshape(-1, )] = 1
         labels[:, 0][~positives.reshape(-1, )] = 1
-    return labels
+    if valid_only:
+        return labels, mask
+    else:
+        return labels
 
 
 def normalise(X, technique=&#39;l2&#39;):
@@ -86,7 +92,13 @@ def normalise(X, technique=&#39;l2&#39;):
 
 
 def format_mean_std(values):
-    return str(np.mean(values))[:6] + &#34; +/- &#34; + str(np.std(values))[:6]</code></pre>
+    return str(np.mean(values))[:6] + &#34; +/- &#34; + str(np.std(values))[:6]
+
+
+def flatten(x, last_axis=False):
+    if last_axis:
+        return x.reshape(x.shape[0], x.shape[1], -1)
+    return x.reshape(x.shape[0], -1)</code></pre>
 </details>
 </section>
 <section>
@@ -96,6 +108,21 @@ def format_mean_std(values):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="minder_utils.formatting.format_util.flatten"><code class="name flex">
+<span>def <span class="ident">flatten</span></span>(<span>x, last_axis=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def flatten(x, last_axis=False):
+    if last_axis:
+        return x.reshape(x.shape[0], x.shape[1], -1)
+    return x.reshape(x.shape[0], -1)</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.formatting.format_util.format_mean_std"><code class="name flex">
 <span>def <span class="ident">format_mean_std</span></span>(<span>values)</span>
 </code></dt>
@@ -172,7 +199,7 @@ def format_mean_std(values):
 </details>
 </dd>
 <dt id="minder_utils.formatting.format_util.y_to_categorical"><code class="name flex">
-<span>def <span class="ident">y_to_categorical</span></span>(<span>y, smooth=False)</span>
+<span>def <span class="ident">y_to_categorical</span></span>(<span>y, smooth=False, valid_only=False)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -180,7 +207,10 @@ def format_mean_std(values):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def y_to_categorical(y, smooth=False):
+<pre><code class="python">def y_to_categorical(y, smooth=False, valid_only=False):
+    if valid_only:
+        mask = np.isin(y, [-1, 1])
+        y = y[mask]
     positives = y &gt; 0
     labels = np.zeros((y.shape[0], 2))
     if smooth:
@@ -189,7 +219,10 @@ def format_mean_std(values):
     else:
         labels[:, 1][positives.reshape(-1, )] = 1
         labels[:, 0][~positives.reshape(-1, )] = 1
-    return labels</code></pre>
+    if valid_only:
+        return labels, mask
+    else:
+        return labels</code></pre>
 </details>
 </dd>
 </dl>
@@ -215,6 +248,7 @@ def format_mean_std(values):
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="minder_utils.formatting.format_util.flatten" href="#minder_utils.formatting.format_util.flatten">flatten</a></code></li>
 <li><code><a title="minder_utils.formatting.format_util.format_mean_std" href="#minder_utils.formatting.format_util.format_mean_std">format_mean_std</a></code></li>
 <li><code><a title="minder_utils.formatting.format_util.iter_dir" href="#minder_utils.formatting.format_util.iter_dir">iter_dir</a></code></li>
 <li><code><a title="minder_utils.formatting.format_util.normalise" href="#minder_utils.formatting.format_util.normalise">normalise</a></code></li>

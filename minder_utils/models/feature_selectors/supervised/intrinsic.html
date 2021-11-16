@@ -23,6 +23,135 @@
 <h1 class="title">Module <code>minder_utils.models.feature_selectors.supervised.intrinsic</code></h1>
 </header>
 <section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from minder_utils.models.feature_selectors import Feature_selector_template
+from minder_utils.models.utils import EarlyStopping
+import torch.nn.functional as F
+import torch
+from torch import optim
+from torch import nn
+import numpy as np
+
+
+class Intrinsic_selector(Feature_selector_template):
+    &#39;&#39;&#39;
+    This class provide a set of supervised feature selection methods.
+    Particularly, it contains a set of intrinsic methods, which will perform automatic feature selection
+     DURING TRAINING.
+
+    Currently, it contains:
+        - Linear feature selector
+    ```Example```
+    ```
+    ```
+    &#39;&#39;&#39;
+
+    def __init__(self, classifier, model_name, num_features, freeze_classifier=False):
+        self.classifier = classifier
+        self.num_features = num_features
+        super().__init__(model_name)
+        self.name = self.methods[model_name]
+        self.early_stop = EarlyStopping()
+        self.freeze_classifier = freeze_classifier
+        self.discrete = &#39;discrete&#39; in model_name
+
+    def reset_model(self, model_name, discrete=True):
+        self.discrete = discrete
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
+
+    @property
+    def methods(self):
+        return {
+            &#39;linear&#39;: &#39;linear feature selector&#39;,
+            &#39;discrete_linear&#39;: &#39;discrete linear feature selector&#39;
+        }
+
+    def linear(self):
+        return nn.Linear(self.num_features, self.num_features, bias=False)
+
+    def discrete_linear(self):
+        return nn.ModuleList([
+            nn.Linear(self.num_features, self.num_features, bias=False),
+            nn.Linear(self.num_features, self.num_features, bias=False)])
+
+    def fit(self, dataloader, num_epoch=50):
+        parameters = self.model.parameters() if self.freeze_classifier \
+            else list(self.model.parameters()) + list(self.classifier.parameters())
+        optimiser = optim.Adam(parameters, lr=0.001)
+        criterion = nn.CrossEntropyLoss()
+        for e in range(num_epoch):
+            if self.early_stop.early_stop:
+                break
+            for X, y in dataloader:
+                optimiser.zero_grad()
+                if self.discrete:
+                    features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                    features_importance = F.gumbel_softmax(features_importance, dim=-1, hard=True)[:, :, 1]
+                    features_importance = torch.mean(features_importance, dim=0)
+                else:
+                    features_importance = self.model(X)
+                    features_importance = torch.mean(F.softmax(features_importance, dim=1), dim=0)
+                X = X * features_importance
+                outputs = self.classifier(X)
+                loss = criterion(outputs, y) + torch.sum(features_importance)
+                loss.backward()
+                optimiser.step()
+                print(&#39;Epoch: %d / %5d,  Loss: %.3f&#39; %
+                      (e + 1, num_epoch, loss.item()), end=&#39;\n&#39;)
+                self.early_stop(loss.item(), self.model)
+                if self.early_stop.early_stop:
+                    break
+            print(&#39;&#39;)
+
+    def test(self, dataloader, T=1e-5):
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for X, y in dataloader:
+                if self.discrete:
+                    features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                    features_importance = F.softmax(features_importance / T, dim=-1)[:, :, 1]
+                else:
+                    features_importance = self.model(X)
+                    features_importance = F.softmax(features_importance, dim=1)
+                X *= features_importance
+                outputs = self.classifier(X)
+                _, predicted = torch.max(outputs.data, 1)
+                total += y.size(0)
+                correct += (predicted == np.argmax(y, axis=1)).sum().item()
+
+        print(&#39;Accuracy: %d %%&#39; % (100 * correct / total))
+        return 100 * correct / total
+
+    def transform(self, X):
+        pass
+
+    def __name__(self):
+        return &#39;Supervised Intrinsic Selector&#39;, self.name
+
+    def get_importance(self, dataloader, datatype):
+        importance = []
+        with torch.no_grad():
+            for X, y in dataloader:
+                if self.discrete:
+                    features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                    importance.extend(list(F.softmax(features_importance / 1e-5, dim=-1).detach().numpy()[:, :, 1]))
+                else:
+                    features_importance = self.model(X)
+                    importance.extend(list(F.softmax(features_importance, dim=1).detach().numpy()))
+        importance = np.array(importance)
+        if datatype == &#39;activity&#39;:
+            importance = importance.reshape(importance.shape[0], 24, -1)
+            importance = np.sum(importance, axis=1)
+        importance -= np.min(importance, axis=1, keepdims=True) - 1e-5
+        importance /= np.max(importance, axis=1, keepdims=True)
+        importance = np.mean(importance, axis=0)
+        return importance</code></pre>
+</details>
 </section>
 <section>
 </section>
@@ -31,6 +160,322 @@
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector"><code class="flex name class">
+<span>class <span class="ident">Intrinsic_selector</span></span>
+<span>(</span><span>classifier, model_name, num_features, freeze_classifier=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class provide a set of supervised feature selection methods.
+Particularly, it contains a set of intrinsic methods, which will perform automatic feature selection
+DURING TRAINING.</p>
+<p>Currently, it contains:
+- Linear feature selector
+<code>Example</code></p>
+<pre><code></code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Intrinsic_selector(Feature_selector_template):
+    &#39;&#39;&#39;
+    This class provide a set of supervised feature selection methods.
+    Particularly, it contains a set of intrinsic methods, which will perform automatic feature selection
+     DURING TRAINING.
+
+    Currently, it contains:
+        - Linear feature selector
+    ```Example```
+    ```
+    ```
+    &#39;&#39;&#39;
+
+    def __init__(self, classifier, model_name, num_features, freeze_classifier=False):
+        self.classifier = classifier
+        self.num_features = num_features
+        super().__init__(model_name)
+        self.name = self.methods[model_name]
+        self.early_stop = EarlyStopping()
+        self.freeze_classifier = freeze_classifier
+        self.discrete = &#39;discrete&#39; in model_name
+
+    def reset_model(self, model_name, discrete=True):
+        self.discrete = discrete
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
+
+    @property
+    def methods(self):
+        return {
+            &#39;linear&#39;: &#39;linear feature selector&#39;,
+            &#39;discrete_linear&#39;: &#39;discrete linear feature selector&#39;
+        }
+
+    def linear(self):
+        return nn.Linear(self.num_features, self.num_features, bias=False)
+
+    def discrete_linear(self):
+        return nn.ModuleList([
+            nn.Linear(self.num_features, self.num_features, bias=False),
+            nn.Linear(self.num_features, self.num_features, bias=False)])
+
+    def fit(self, dataloader, num_epoch=50):
+        parameters = self.model.parameters() if self.freeze_classifier \
+            else list(self.model.parameters()) + list(self.classifier.parameters())
+        optimiser = optim.Adam(parameters, lr=0.001)
+        criterion = nn.CrossEntropyLoss()
+        for e in range(num_epoch):
+            if self.early_stop.early_stop:
+                break
+            for X, y in dataloader:
+                optimiser.zero_grad()
+                if self.discrete:
+                    features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                    features_importance = F.gumbel_softmax(features_importance, dim=-1, hard=True)[:, :, 1]
+                    features_importance = torch.mean(features_importance, dim=0)
+                else:
+                    features_importance = self.model(X)
+                    features_importance = torch.mean(F.softmax(features_importance, dim=1), dim=0)
+                X = X * features_importance
+                outputs = self.classifier(X)
+                loss = criterion(outputs, y) + torch.sum(features_importance)
+                loss.backward()
+                optimiser.step()
+                print(&#39;Epoch: %d / %5d,  Loss: %.3f&#39; %
+                      (e + 1, num_epoch, loss.item()), end=&#39;\n&#39;)
+                self.early_stop(loss.item(), self.model)
+                if self.early_stop.early_stop:
+                    break
+            print(&#39;&#39;)
+
+    def test(self, dataloader, T=1e-5):
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for X, y in dataloader:
+                if self.discrete:
+                    features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                    features_importance = F.softmax(features_importance / T, dim=-1)[:, :, 1]
+                else:
+                    features_importance = self.model(X)
+                    features_importance = F.softmax(features_importance, dim=1)
+                X *= features_importance
+                outputs = self.classifier(X)
+                _, predicted = torch.max(outputs.data, 1)
+                total += y.size(0)
+                correct += (predicted == np.argmax(y, axis=1)).sum().item()
+
+        print(&#39;Accuracy: %d %%&#39; % (100 * correct / total))
+        return 100 * correct / total
+
+    def transform(self, X):
+        pass
+
+    def __name__(self):
+        return &#39;Supervised Intrinsic Selector&#39;, self.name
+
+    def get_importance(self, dataloader, datatype):
+        importance = []
+        with torch.no_grad():
+            for X, y in dataloader:
+                if self.discrete:
+                    features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                    importance.extend(list(F.softmax(features_importance / 1e-5, dim=-1).detach().numpy()[:, :, 1]))
+                else:
+                    features_importance = self.model(X)
+                    importance.extend(list(F.softmax(features_importance, dim=1).detach().numpy()))
+        importance = np.array(importance)
+        if datatype == &#39;activity&#39;:
+            importance = importance.reshape(importance.shape[0], 24, -1)
+            importance = np.sum(importance, axis=1)
+        importance -= np.min(importance, axis=1, keepdims=True) - 1e-5
+        importance /= np.max(importance, axis=1, keepdims=True)
+        importance = np.mean(importance, axis=0)
+        return importance</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.feature_selectors.Feature_selector_template" href="../index.html#minder_utils.models.feature_selectors.Feature_selector_template">Feature_selector_template</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.methods"><code class="name">var <span class="ident">methods</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def methods(self):
+    return {
+        &#39;linear&#39;: &#39;linear feature selector&#39;,
+        &#39;discrete_linear&#39;: &#39;discrete linear feature selector&#39;
+    }</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.discrete_linear"><code class="name flex">
+<span>def <span class="ident">discrete_linear</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def discrete_linear(self):
+    return nn.ModuleList([
+        nn.Linear(self.num_features, self.num_features, bias=False),
+        nn.Linear(self.num_features, self.num_features, bias=False)])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, dataloader, num_epoch=50)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fit(self, dataloader, num_epoch=50):
+    parameters = self.model.parameters() if self.freeze_classifier \
+        else list(self.model.parameters()) + list(self.classifier.parameters())
+    optimiser = optim.Adam(parameters, lr=0.001)
+    criterion = nn.CrossEntropyLoss()
+    for e in range(num_epoch):
+        if self.early_stop.early_stop:
+            break
+        for X, y in dataloader:
+            optimiser.zero_grad()
+            if self.discrete:
+                features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                features_importance = F.gumbel_softmax(features_importance, dim=-1, hard=True)[:, :, 1]
+                features_importance = torch.mean(features_importance, dim=0)
+            else:
+                features_importance = self.model(X)
+                features_importance = torch.mean(F.softmax(features_importance, dim=1), dim=0)
+            X = X * features_importance
+            outputs = self.classifier(X)
+            loss = criterion(outputs, y) + torch.sum(features_importance)
+            loss.backward()
+            optimiser.step()
+            print(&#39;Epoch: %d / %5d,  Loss: %.3f&#39; %
+                  (e + 1, num_epoch, loss.item()), end=&#39;\n&#39;)
+            self.early_stop(loss.item(), self.model)
+            if self.early_stop.early_stop:
+                break
+        print(&#39;&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.get_importance"><code class="name flex">
+<span>def <span class="ident">get_importance</span></span>(<span>self, dataloader, datatype)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_importance(self, dataloader, datatype):
+    importance = []
+    with torch.no_grad():
+        for X, y in dataloader:
+            if self.discrete:
+                features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                importance.extend(list(F.softmax(features_importance / 1e-5, dim=-1).detach().numpy()[:, :, 1]))
+            else:
+                features_importance = self.model(X)
+                importance.extend(list(F.softmax(features_importance, dim=1).detach().numpy()))
+    importance = np.array(importance)
+    if datatype == &#39;activity&#39;:
+        importance = importance.reshape(importance.shape[0], 24, -1)
+        importance = np.sum(importance, axis=1)
+    importance -= np.min(importance, axis=1, keepdims=True) - 1e-5
+    importance /= np.max(importance, axis=1, keepdims=True)
+    importance = np.mean(importance, axis=0)
+    return importance</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.linear"><code class="name flex">
+<span>def <span class="ident">linear</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def linear(self):
+    return nn.Linear(self.num_features, self.num_features, bias=False)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.reset_model"><code class="name flex">
+<span>def <span class="ident">reset_model</span></span>(<span>self, model_name, discrete=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_model(self, model_name, discrete=True):
+    self.discrete = discrete
+    self.name = self.methods[model_name]
+    self.model = getattr(self, model_name)()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.test"><code class="name flex">
+<span>def <span class="ident">test</span></span>(<span>self, dataloader, T=1e-05)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test(self, dataloader, T=1e-5):
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for X, y in dataloader:
+            if self.discrete:
+                features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                features_importance = F.softmax(features_importance / T, dim=-1)[:, :, 1]
+            else:
+                features_importance = self.model(X)
+                features_importance = F.softmax(features_importance, dim=1)
+            X *= features_importance
+            outputs = self.classifier(X)
+            _, predicted = torch.max(outputs.data, 1)
+            total += y.size(0)
+            correct += (predicted == np.argmax(y, axis=1)).sum().item()
+
+    print(&#39;Accuracy: %d %%&#39; % (100 * correct / total))
+    return 100 * correct / total</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.transform"><code class="name flex">
+<span>def <span class="ident">transform</span></span>(<span>self, X)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transform(self, X):
+    pass</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -47,6 +492,23 @@
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="minder_utils.models.feature_selectors.supervised" href="index.html">minder_utils.models.feature_selectors.supervised</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector" href="#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector">Intrinsic_selector</a></code></h4>
+<ul class="two-column">
+<li><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.discrete_linear" href="#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.discrete_linear">discrete_linear</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.fit" href="#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.get_importance" href="#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.get_importance">get_importance</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.linear" href="#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.linear">linear</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.methods" href="#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.methods">methods</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.reset_model" href="#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.reset_model">reset_model</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.test" href="#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.test">test</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.transform" href="#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector.transform">transform</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

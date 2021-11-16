@@ -39,7 +39,7 @@ from minder_utils.formatting.format_util import y_to_categorical
 
 
 class Classifiers:
-    def __init__(self, model_type):
+    def __init__(self, model_type=&#39;nn&#39;):
         self.model_type = model_type
         self.model = getattr(self, model_type)()
         self.callbacks = [EarlyStopping(monitor=&#39;loss&#39;, patience=3)]
@@ -49,14 +49,34 @@ class Classifiers:
     def reset(self):
         self.model = getattr(self, self.model_type)()
 
-    def nn(self):
+    @property
+    def methods(self):
+        return {
+            &#39;nn&#39;: &#39;neural network&#39;,
+            # &#39;lstm&#39;: &#39;LSTM&#39;,
+            &#39;lr&#39;: &#39;logistic regression&#39;,
+            &#39;bayes&#39;: &#39;naive bayesian&#39;,
+            &#39;dt&#39;: &#39;decision tree&#39;,
+            &#39;knn&#39;: &#39;KNN&#39;
+        }
+
+    def get_info(self, verbose=False):
+        if verbose:
+            print(&#39;Available methods:&#39;)
+            for idx, key in enumerate(self.methods):
+                print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
+        return self.methods
+
+    @staticmethod
+    def nn():
         model = Sequential()
         model.add(Dense(256, activation=&#39;relu&#39;))
         model.add(Dense(2, activation=&#39;softmax&#39;))
         model.compile(loss=&#39;categorical_crossentropy&#39;, optimizer=&#39;Adam&#39;, metrics=[&#39;accuracy&#39;])
         return model
 
-    def lstm(self):
+    @staticmethod
+    def lstm():
         model = Sequential()
         model.add(LSTM(256, dropout=0.1, recurrent_dropout=0.1))
         model.add(Dense(2, activation=&#39;softmax&#39;))
@@ -93,17 +113,24 @@ class Classifiers:
         else:
             return self.model.predict_proba(data)
 
-    def lr(self):
+    @staticmethod
+    def lr():
         return LogisticRegression()
 
-    def bayes(self):
+    @staticmethod
+    def bayes():
         return GaussianNB()
 
-    def dt(self):
+    @staticmethod
+    def dt():
         return tree.DecisionTreeClassifier()
 
-    def knn(self):
-        return KNeighborsClassifier()</code></pre>
+    @staticmethod
+    def knn():
+        return KNeighborsClassifier()
+
+    def __name__(self):
+        return self.model_type</code></pre>
 </details>
 </section>
 <section>
@@ -117,7 +144,7 @@ class Classifiers:
 <dl>
 <dt id="minder_utils.models.classifiers.classifiers.Classifiers"><code class="flex name class">
 <span>class <span class="ident">Classifiers</span></span>
-<span>(</span><span>model_type)</span>
+<span>(</span><span>model_type='nn')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -126,7 +153,7 @@ class Classifiers:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Classifiers:
-    def __init__(self, model_type):
+    def __init__(self, model_type=&#39;nn&#39;):
         self.model_type = model_type
         self.model = getattr(self, model_type)()
         self.callbacks = [EarlyStopping(monitor=&#39;loss&#39;, patience=3)]
@@ -136,14 +163,34 @@ class Classifiers:
     def reset(self):
         self.model = getattr(self, self.model_type)()
 
-    def nn(self):
+    @property
+    def methods(self):
+        return {
+            &#39;nn&#39;: &#39;neural network&#39;,
+            # &#39;lstm&#39;: &#39;LSTM&#39;,
+            &#39;lr&#39;: &#39;logistic regression&#39;,
+            &#39;bayes&#39;: &#39;naive bayesian&#39;,
+            &#39;dt&#39;: &#39;decision tree&#39;,
+            &#39;knn&#39;: &#39;KNN&#39;
+        }
+
+    def get_info(self, verbose=False):
+        if verbose:
+            print(&#39;Available methods:&#39;)
+            for idx, key in enumerate(self.methods):
+                print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
+        return self.methods
+
+    @staticmethod
+    def nn():
         model = Sequential()
         model.add(Dense(256, activation=&#39;relu&#39;))
         model.add(Dense(2, activation=&#39;softmax&#39;))
         model.compile(loss=&#39;categorical_crossentropy&#39;, optimizer=&#39;Adam&#39;, metrics=[&#39;accuracy&#39;])
         return model
 
-    def lstm(self):
+    @staticmethod
+    def lstm():
         model = Sequential()
         model.add(LSTM(256, dropout=0.1, recurrent_dropout=0.1))
         model.add(Dense(2, activation=&#39;softmax&#39;))
@@ -180,22 +227,29 @@ class Classifiers:
         else:
             return self.model.predict_proba(data)
 
-    def lr(self):
+    @staticmethod
+    def lr():
         return LogisticRegression()
 
-    def bayes(self):
+    @staticmethod
+    def bayes():
         return GaussianNB()
 
-    def dt(self):
+    @staticmethod
+    def dt():
         return tree.DecisionTreeClassifier()
 
-    def knn(self):
-        return KNeighborsClassifier()</code></pre>
+    @staticmethod
+    def knn():
+        return KNeighborsClassifier()
+
+    def __name__(self):
+        return self.model_type</code></pre>
 </details>
-<h3>Methods</h3>
+<h3>Static methods</h3>
 <dl>
 <dt id="minder_utils.models.classifiers.classifiers.Classifiers.bayes"><code class="name flex">
-<span>def <span class="ident">bayes</span></span>(<span>self)</span>
+<span>def <span class="ident">bayes</span></span>(<span>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -203,12 +257,13 @@ class Classifiers:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def bayes(self):
+<pre><code class="python">@staticmethod
+def bayes():
     return GaussianNB()</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.models.classifiers.classifiers.Classifiers.dt"><code class="name flex">
-<span>def <span class="ident">dt</span></span>(<span>self)</span>
+<span>def <span class="ident">dt</span></span>(<span>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -216,10 +271,100 @@ class Classifiers:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def dt(self):
+<pre><code class="python">@staticmethod
+def dt():
     return tree.DecisionTreeClassifier()</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.knn"><code class="name flex">
+<span>def <span class="ident">knn</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def knn():
+    return KNeighborsClassifier()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.lr"><code class="name flex">
+<span>def <span class="ident">lr</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def lr():
+    return LogisticRegression()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.lstm"><code class="name flex">
+<span>def <span class="ident">lstm</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def lstm():
+    model = Sequential()
+    model.add(LSTM(256, dropout=0.1, recurrent_dropout=0.1))
+    model.add(Dense(2, activation=&#39;softmax&#39;))
+    model.compile(loss=&#39;categorical_crossentropy&#39;, optimizer=&#39;Adam&#39;, metrics=[&#39;accuracy&#39;])
+    return model</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.nn"><code class="name flex">
+<span>def <span class="ident">nn</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def nn():
+    model = Sequential()
+    model.add(Dense(256, activation=&#39;relu&#39;))
+    model.add(Dense(2, activation=&#39;softmax&#39;))
+    model.compile(loss=&#39;categorical_crossentropy&#39;, optimizer=&#39;Adam&#39;, metrics=[&#39;accuracy&#39;])
+    return model</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.methods"><code class="name">var <span class="ident">methods</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def methods(self):
+    return {
+        &#39;nn&#39;: &#39;neural network&#39;,
+        # &#39;lstm&#39;: &#39;LSTM&#39;,
+        &#39;lr&#39;: &#39;logistic regression&#39;,
+        &#39;bayes&#39;: &#39;naive bayesian&#39;,
+        &#39;dt&#39;: &#39;decision tree&#39;,
+        &#39;knn&#39;: &#39;KNN&#39;
+    }</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
 <dt id="minder_utils.models.classifiers.classifiers.Classifiers.fit"><code class="name flex">
 <span>def <span class="ident">fit</span></span>(<span>self, data, targets, cat=False)</span>
 </code></dt>
@@ -242,8 +387,8 @@ class Classifiers:
         self.model.fit(data, targets)</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.models.classifiers.classifiers.Classifiers.knn"><code class="name flex">
-<span>def <span class="ident">knn</span></span>(<span>self)</span>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.get_info"><code class="name flex">
+<span>def <span class="ident">get_info</span></span>(<span>self, verbose=False)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -251,55 +396,12 @@ class Classifiers:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def knn(self):
-    return KNeighborsClassifier()</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.models.classifiers.classifiers.Classifiers.lr"><code class="name flex">
-<span>def <span class="ident">lr</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def lr(self):
-    return LogisticRegression()</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.models.classifiers.classifiers.Classifiers.lstm"><code class="name flex">
-<span>def <span class="ident">lstm</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def lstm(self):
-    model = Sequential()
-    model.add(LSTM(256, dropout=0.1, recurrent_dropout=0.1))
-    model.add(Dense(2, activation=&#39;softmax&#39;))
-    model.compile(loss=&#39;categorical_crossentropy&#39;, optimizer=&#39;Adam&#39;, metrics=[&#39;accuracy&#39;])
-    return model</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.models.classifiers.classifiers.Classifiers.nn"><code class="name flex">
-<span>def <span class="ident">nn</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def nn(self):
-    model = Sequential()
-    model.add(Dense(256, activation=&#39;relu&#39;))
-    model.add(Dense(2, activation=&#39;softmax&#39;))
-    model.compile(loss=&#39;categorical_crossentropy&#39;, optimizer=&#39;Adam&#39;, metrics=[&#39;accuracy&#39;])
-    return model</code></pre>
+<pre><code class="python">def get_info(self, verbose=False):
+    if verbose:
+        print(&#39;Available methods:&#39;)
+        for idx, key in enumerate(self.methods):
+            print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
+    return self.methods</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.models.classifiers.classifiers.Classifiers.predict"><code class="name flex">
@@ -382,9 +484,11 @@ class Classifiers:
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.bayes" href="#minder_utils.models.classifiers.classifiers.Classifiers.bayes">bayes</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.dt" href="#minder_utils.models.classifiers.classifiers.Classifiers.dt">dt</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.fit" href="#minder_utils.models.classifiers.classifiers.Classifiers.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.get_info" href="#minder_utils.models.classifiers.classifiers.Classifiers.get_info">get_info</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.knn" href="#minder_utils.models.classifiers.classifiers.Classifiers.knn">knn</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.lr" href="#minder_utils.models.classifiers.classifiers.Classifiers.lr">lr</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.lstm" href="#minder_utils.models.classifiers.classifiers.Classifiers.lstm">lstm</a></code></li>
+<li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.methods" href="#minder_utils.models.classifiers.classifiers.Classifiers.methods">methods</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.nn" href="#minder_utils.models.classifiers.classifiers.Classifiers.nn">nn</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.predict" href="#minder_utils.models.classifiers.classifiers.Classifiers.predict">predict</a></code></li>
 <li><code><a title="minder_utils.models.classifiers.classifiers.Classifiers.predict_probs" href="#minder_utils.models.classifiers.classifiers.Classifiers.predict_probs">predict_probs</a></code></li>

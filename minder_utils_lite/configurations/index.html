@@ -47,15 +47,38 @@ config = {
                  &#39;raw_total_body_fat&#39;, &#39;raw_body_mass_index&#39;,
                  &#39;raw_blood_pressure&#39;, &#39;raw_total_body_water&#39;,
                  &#39;raw_total_bone_mass&#39;],
-        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;type&#39;, &#39;value&#39;, &#39;unit&#39;]
+        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;],
+        &#39;sensors&#39;: [&#39;body_mass_index&#39;,
+                    &#39;body_muscle_mass&#39;,
+                    &#39;body_temperature&#39;,
+                    &#39;body_weight&#39;,
+                    &#39;diastolic&#39;,
+                    &#39;heart_rate&#39;,
+                    &#39;oxygen_saturation&#39;,
+                    &#39;skin_temperature&#39;,
+                    &#39;systolic&#39;,
+                    &#39;total_body_fat&#39;,
+                    &#39;total_body_water&#39;,
+                    &#39;total_bone_mass&#39;],
     },
     &#39;activity&#39;: {
         &#39;type&#39;: [&#39;raw_door_sensor&#39;, &#39;raw_appliance_use&#39;, &#39;raw_activity_pir&#39;],
-        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;]
+        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;],
+        # &#39;sensors&#39;: [&#39;WC1&#39;, &#39;back door&#39;, &#39;bathroom1&#39;, &#39;bedroom1&#39;,
+        #             &#39;conservatory&#39;, &#39;dining room&#39;, &#39;fridge door&#39;, &#39;front door&#39;,
+        #             &#39;hallway&#39;, &#39;kettle&#39;, &#39;kitchen&#39;, &#39;living room&#39;,
+        #             &#39;lounge&#39;, &#39;main door&#39;, &#39;microwave&#39;, &#39;office&#39;],
+        &#39;sensors&#39;: [&#39;back door&#39;, &#39;bathroom1&#39;, &#39;bedroom1&#39;, &#39;dining room&#39;,
+                    &#39;fridge door&#39;, &#39;front door&#39;, &#39;hallway&#39;, &#39;kettle&#39;, &#39;kitchen&#39;,
+                    &#39;living room&#39;, &#39;lounge&#39;, &#39;microwave&#39;, &#39;study&#39;, &#39;toaster&#39;]
     },
     &#39;environmental&#39;: {
         &#39;type&#39;: [&#39;raw_ambient_temperature&#39;, &#39;raw_light&#39;],
-        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;type&#39;, &#39;value&#39;, &#39;unit&#39;]
+        &#39;columns&#39;: [&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;],
+        &#39;sensors&#39;: [&#39;back door&#39;, &#39;bathroom1&#39;, &#39;bedroom1&#39;, &#39;fridge door&#39;, &#39;front door&#39;,
+                    &#39;hallway&#39;, &#39;kitchen&#39;, &#39;lounge&#39;, &#39;study&#39;, &#39;conservatory&#39;,
+                    &#39;dining room&#39;, &#39;main door&#39;, &#39;cellar&#39;, &#39;living room&#39;, &#39;WC1&#39;,
+                    &#39;corridor1&#39;, &#39;secondary&#39;, &#39;office&#39;, &#39;garage&#39;]
     },
     &#39;individuals&#39;: {
         &#39;text&#39;: [&#39;homes&#39;, &#39;raw_sleep_mat&#39;, &#39;raw_behavioural&#39;,

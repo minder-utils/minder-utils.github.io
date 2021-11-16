@@ -33,16 +33,16 @@
 class Feature_selector_template(ABC):
     def __init__(self, model):
         self.name = self.methods[model]
-        self.model = getattr(self, model)
+        self.model = getattr(self, model)()
 
     @property
     @abstractmethod
     def methods(self):
         pass
 
-    def reset_model(self, model):
-        self.name = self.methods[model]
-        self.model = getattr(self, model)()
+    def reset_model(self, model_name):
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
 
     def get_info(self, verbose=False):
         if verbose:
@@ -94,16 +94,16 @@ inheritance.</p></div>
 <pre><code class="python">class Feature_selector_template(ABC):
     def __init__(self, model):
         self.name = self.methods[model]
-        self.model = getattr(self, model)
+        self.model = getattr(self, model)()
 
     @property
     @abstractmethod
     def methods(self):
         pass
 
-    def reset_model(self, model):
-        self.name = self.methods[model]
-        self.model = getattr(self, model)()
+    def reset_model(self, model_name):
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
 
     def get_info(self, verbose=False):
         if verbose:
@@ -127,6 +127,7 @@ inheritance.</p></div>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter" href="supervised/filter.html#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter">Supervised_Filter</a></li>
+<li><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector" href="supervised/intrinsic.html#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector">Intrinsic_selector</a></li>
 <li><a title="minder_utils.models.feature_selectors.unsupervised.filter.Unsupervised_Filter" href="unsupervised/filter.html#minder_utils.models.feature_selectors.unsupervised.filter.Unsupervised_Filter">Unsupervised_Filter</a></li>
 </ul>
 <h3>Instance variables</h3>
@@ -179,7 +180,7 @@ def fit(self, X, y):
 </details>
 </dd>
 <dt id="minder_utils.models.feature_selectors.Feature_selector_template.reset_model"><code class="name flex">
-<span>def <span class="ident">reset_model</span></span>(<span>self, model)</span>
+<span>def <span class="ident">reset_model</span></span>(<span>self, model_name)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -187,9 +188,9 @@ def fit(self, X, y):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def reset_model(self, model):
-    self.name = self.methods[model]
-    self.model = getattr(self, model)()</code></pre>
+<pre><code class="python">def reset_model(self, model_name):
+    self.name = self.methods[model_name]
+    self.model = getattr(self, model_name)()</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.models.feature_selectors.Feature_selector_template.transform"><code class="name flex">

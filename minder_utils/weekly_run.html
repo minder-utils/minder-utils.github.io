@@ -66,8 +66,8 @@ def run_default(reload_weekly=False, reload_all=False):
     evaluate(Classifiers(&#39;knn&#39;), extractor.transform(X, &#39;cnn&#39;), y, label_p_ids, 10)
 
     weekly_data = np.load(os.path.join(loader.weekly_data, &#39;unlabelled.npy&#39;))
-    p_ids = np.load(os.path.join(loader.weekly_data, &#39;patient_id.npy&#39;))
-    dates = np.load(os.path.join(loader.weekly_data, &#39;dates.npy&#39;), allow_pickle=True)
+    p_ids = np.load(os.path.join(loader.weekly_data, &#39;label.npy&#39;))
+    dates = np.load(os.path.join(loader.weekly_data, &#39;patient_id.npy&#39;), allow_pickle=True)
     X = extractor.transform(X, &#39;cnn&#39;)
     weekly_data = extractor.transform(weekly_data, &#39;cnn&#39;)
 
@@ -217,8 +217,8 @@ Download all data.</p>
     evaluate(Classifiers(&#39;knn&#39;), extractor.transform(X, &#39;cnn&#39;), y, label_p_ids, 10)
 
     weekly_data = np.load(os.path.join(loader.weekly_data, &#39;unlabelled.npy&#39;))
-    p_ids = np.load(os.path.join(loader.weekly_data, &#39;patient_id.npy&#39;))
-    dates = np.load(os.path.join(loader.weekly_data, &#39;dates.npy&#39;), allow_pickle=True)
+    p_ids = np.load(os.path.join(loader.weekly_data, &#39;label.npy&#39;))
+    dates = np.load(os.path.join(loader.weekly_data, &#39;patient_id.npy&#39;), allow_pickle=True)
     X = extractor.transform(X, &#39;cnn&#39;)
     weekly_data = extractor.transform(weekly_data, &#39;cnn&#39;)
 

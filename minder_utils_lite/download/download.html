@@ -78,6 +78,7 @@ class Downloader:
             This returns a dictionary of the available datasets.
         &#39;&#39;&#39;
         try:
+            print(&#39;Sending Request...&#39;)
             return requests.get(self.url + &#39;info/datasets&#39;, headers=self.params).json()
         except json.decoder.JSONDecodeError:
             print(&#39;Get response &#39;, requests.get(self.url + &#39;info/datasets&#39;, headers=self.params))
@@ -232,7 +233,7 @@ class Downloader:
 
         return job_id_dict
 
-    def export(self, since=None, until=None, reload=True, categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;):
+    def export(self, since=None, until=None, reload=True, categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;, append = True):
         &#39;&#39;&#39;
         This is a function that is able to download the data and save it as a csv in save_path.
 
@@ -240,7 +241,9 @@ class Downloader:
         for a given set of measurements (ie: activity, care, vital signs, etc) please use
         the method ```.get_category_names(&#39;measurement_name&#39;)```. Alternatively, if you want to view all of the
         available datasets, please use the method ```.get_category_names(&#39;all&#39;)```
-        
+
+        If the data files already exist, the new data will be appended to the end. Be careful, this can cause 
+        duplicates! To avoid this, use the ```.refresh()``` function or use ```append = False```     
 
         Arguments
         ---------
@@ -271,6 +274,10 @@ class Downloader:
         - save_path: string: 
             This is the save path for the data that is downloaded from minder.
             Default: ```&#39;./data/raw_data/&#39;```
+
+        - append: bool:
+            If ```True```, the downloaded data will be appended to the previous data, if it exists.
+            If ```False```, the previous data will be overwritten if it exists.
 
         &#39;&#39;&#39;
 
@@ -306,9 +313,11 @@ class Downloader:
             if content.status_code != 200:
                 print(&#39;Fail, Response code {}&#39;.format(content.status_code))
             else:
-                pd.read_csv(io.StringIO(content.text)).to_csv(save_path + record[&#39;type&#39;] + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                                              header=not Path(
-                                                                  save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
+                mode = &#39;a&#39; if append else &#39;w&#39;
+                header = (not Path(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists()) or mode == &#39;w&#39; 
+                pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;), mode=mode,
+                                                              header=header)
+
                 print(&#39;Success&#39;)
 
     def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
@@ -343,7 +352,7 @@ class Downloader:
             categories = [categories]
 
         export_dict = {}
-
+        mode_dict = {}
         print(&#39;Checking current files...&#39;)
         last_rows = {}
         for category in categories:
@@ -356,6 +365,17 @@ class Downloader:
                 # add the following to avoid a duplicate of the last and first row
                 last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
                 since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1, 0])
+                if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
+                    # change since to earliest date and overwrite all data for this category
+                    since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
+                    # if the earliest date is after until, then we error
+                    if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
+                        raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39;\
+                            &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                    else:
+                        mode_dict[category] = &#39;w&#39;
+                else: 
+                    mode_dict[category] = &#39;a&#39;
 
             export_dict[category] = (since, until)
 
@@ -365,10 +385,16 @@ class Downloader:
 
         for category in categories:
             job_id = job_id_dict[category]
+            job_found = False
             for previous_job in data[::-1]:
                 if previous_job[&#39;id&#39;] == job_id:
                     output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
+                    job_found = True
                     break
+
+            if not job_found:
+                raise TypeError(&#39;Uh-oh! Something seems to have gone wrong.&#39;\
+                    &#39;Please check the inputs to the function and try again.&#39;)
 
             for n_output, data_chunk in enumerate(output):
                 content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
@@ -383,14 +409,14 @@ class Downloader:
                     sys.stdout.flush()
                 else:
                     current_data = pd.read_csv(io.StringIO(content.text))
+                    header = (not Path(save_path + category + &#39;.csv&#39;).exists()) or mode_dict[category]  == &#39;w&#39;
                     # checking whether the first line is a duplicate of the end of the previous file
                     if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0, :] == last_rows[category]):
-                        current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                                                               header=not Path(
-                                                                                   save_path + category + &#39;.csv&#39;).exists())
+                        current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
+                                                                               header=header)
                     else:
-                        current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                            header=not Path(save_path + category + &#39;.csv&#39;).exists())
+                        current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
+                                            header=header)
             sys.stdout.write(&#39;\n&#39;)
 
         print(&#39;Success&#39;)
@@ -557,6 +583,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
             This returns a dictionary of the available datasets.
         &#39;&#39;&#39;
         try:
+            print(&#39;Sending Request...&#39;)
             return requests.get(self.url + &#39;info/datasets&#39;, headers=self.params).json()
         except json.decoder.JSONDecodeError:
             print(&#39;Get response &#39;, requests.get(self.url + &#39;info/datasets&#39;, headers=self.params))
@@ -711,7 +738,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
 
         return job_id_dict
 
-    def export(self, since=None, until=None, reload=True, categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;):
+    def export(self, since=None, until=None, reload=True, categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;, append = True):
         &#39;&#39;&#39;
         This is a function that is able to download the data and save it as a csv in save_path.
 
@@ -719,7 +746,9 @@ as a csv in the directory <code>'./data/'</code></p></div>
         for a given set of measurements (ie: activity, care, vital signs, etc) please use
         the method ```.get_category_names(&#39;measurement_name&#39;)```. Alternatively, if you want to view all of the
         available datasets, please use the method ```.get_category_names(&#39;all&#39;)```
-        
+
+        If the data files already exist, the new data will be appended to the end. Be careful, this can cause 
+        duplicates! To avoid this, use the ```.refresh()``` function or use ```append = False```     
 
         Arguments
         ---------
@@ -750,6 +779,10 @@ as a csv in the directory <code>'./data/'</code></p></div>
         - save_path: string: 
             This is the save path for the data that is downloaded from minder.
             Default: ```&#39;./data/raw_data/&#39;```
+
+        - append: bool:
+            If ```True```, the downloaded data will be appended to the previous data, if it exists.
+            If ```False```, the previous data will be overwritten if it exists.
 
         &#39;&#39;&#39;
 
@@ -785,9 +818,11 @@ as a csv in the directory <code>'./data/'</code></p></div>
             if content.status_code != 200:
                 print(&#39;Fail, Response code {}&#39;.format(content.status_code))
             else:
-                pd.read_csv(io.StringIO(content.text)).to_csv(save_path + record[&#39;type&#39;] + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                                              header=not Path(
-                                                                  save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
+                mode = &#39;a&#39; if append else &#39;w&#39;
+                header = (not Path(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists()) or mode == &#39;w&#39; 
+                pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;), mode=mode,
+                                                              header=header)
+
                 print(&#39;Success&#39;)
 
     def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
@@ -822,7 +857,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
             categories = [categories]
 
         export_dict = {}
-
+        mode_dict = {}
         print(&#39;Checking current files...&#39;)
         last_rows = {}
         for category in categories:
@@ -835,6 +870,17 @@ as a csv in the directory <code>'./data/'</code></p></div>
                 # add the following to avoid a duplicate of the last and first row
                 last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
                 since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1, 0])
+                if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
+                    # change since to earliest date and overwrite all data for this category
+                    since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
+                    # if the earliest date is after until, then we error
+                    if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
+                        raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39;\
+                            &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                    else:
+                        mode_dict[category] = &#39;w&#39;
+                else: 
+                    mode_dict[category] = &#39;a&#39;
 
             export_dict[category] = (since, until)
 
@@ -844,10 +890,16 @@ as a csv in the directory <code>'./data/'</code></p></div>
 
         for category in categories:
             job_id = job_id_dict[category]
+            job_found = False
             for previous_job in data[::-1]:
                 if previous_job[&#39;id&#39;] == job_id:
                     output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
+                    job_found = True
                     break
+
+            if not job_found:
+                raise TypeError(&#39;Uh-oh! Something seems to have gone wrong.&#39;\
+                    &#39;Please check the inputs to the function and try again.&#39;)
 
             for n_output, data_chunk in enumerate(output):
                 content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
@@ -862,14 +914,14 @@ as a csv in the directory <code>'./data/'</code></p></div>
                     sys.stdout.flush()
                 else:
                     current_data = pd.read_csv(io.StringIO(content.text))
+                    header = (not Path(save_path + category + &#39;.csv&#39;).exists()) or mode_dict[category]  == &#39;w&#39;
                     # checking whether the first line is a duplicate of the end of the previous file
                     if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0, :] == last_rows[category]):
-                        current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                                                               header=not Path(
-                                                                                   save_path + category + &#39;.csv&#39;).exists())
+                        current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
+                                                                               header=header)
                     else:
-                        current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                            header=not Path(save_path + category + &#39;.csv&#39;).exists())
+                        current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
+                                            header=header)
             sys.stdout.write(&#39;\n&#39;)
 
         print(&#39;Success&#39;)
@@ -1047,7 +1099,7 @@ def token():
 <h3>Methods</h3>
 <dl>
 <dt id="minder_utils.download.download.Downloader.export"><code class="name flex">
-<span>def <span class="ident">export</span></span>(<span>self, since=None, until=None, reload=True, categories='all', save_path='./data/raw_data/')</span>
+<span>def <span class="ident">export</span></span>(<span>self, since=None, until=None, reload=True, categories='all', save_path='./data/raw_data/', append=True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This is a function that is able to download the data and save it as a csv in save_path.</p>
@@ -1055,6 +1107,9 @@ def token():
 for a given set of measurements (ie: activity, care, vital signs, etc) please use
 the method <code>.get_category_names('measurement_name')</code>. Alternatively, if you want to view all of the
 available datasets, please use the method <code>.get_category_names('all')</code></p>
+<p>If the data files already exist, the new data will be appended to the end. Be careful, this can cause
+duplicates! To avoid this, use the <code>.refresh()</code> function or use <code>append = False</code>
+</p>
 <h2 id="arguments">Arguments</h2>
 <ul>
 <li>
@@ -1089,12 +1144,17 @@ Default: <code>'all'</code></p>
 This is the save path for the data that is downloaded from minder.
 Default: <code>'./data/raw_data/'</code></p>
 </li>
+<li>
+<p>append: bool:
+If <code>True</code>, the downloaded data will be appended to the previous data, if it exists.
+If <code>False</code>, the previous data will be overwritten if it exists.</p>
+</li>
 </ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def export(self, since=None, until=None, reload=True, categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;):
+<pre><code class="python">def export(self, since=None, until=None, reload=True, categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;, append = True):
     &#39;&#39;&#39;
     This is a function that is able to download the data and save it as a csv in save_path.
 
@@ -1102,7 +1162,9 @@ Default: <code>'./data/raw_data/'</code></p>
     for a given set of measurements (ie: activity, care, vital signs, etc) please use
     the method ```.get_category_names(&#39;measurement_name&#39;)```. Alternatively, if you want to view all of the
     available datasets, please use the method ```.get_category_names(&#39;all&#39;)```
-    
+
+    If the data files already exist, the new data will be appended to the end. Be careful, this can cause 
+    duplicates! To avoid this, use the ```.refresh()``` function or use ```append = False```     
 
     Arguments
     ---------
@@ -1133,6 +1195,10 @@ Default: <code>'./data/raw_data/'</code></p>
     - save_path: string: 
         This is the save path for the data that is downloaded from minder.
         Default: ```&#39;./data/raw_data/&#39;```
+
+    - append: bool:
+        If ```True```, the downloaded data will be appended to the previous data, if it exists.
+        If ```False```, the previous data will be overwritten if it exists.
 
     &#39;&#39;&#39;
 
@@ -1168,9 +1234,11 @@ Default: <code>'./data/raw_data/'</code></p>
         if content.status_code != 200:
             print(&#39;Fail, Response code {}&#39;.format(content.status_code))
         else:
-            pd.read_csv(io.StringIO(content.text)).to_csv(save_path + record[&#39;type&#39;] + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                                          header=not Path(
-                                                              save_path + record[&#39;type&#39;] + &#39;.csv&#39;).exists())
+            mode = &#39;a&#39; if append else &#39;w&#39;
+            header = (not Path(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists()) or mode == &#39;w&#39; 
+            pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;), mode=mode,
+                                                          header=header)
+
             print(&#39;Success&#39;)</code></pre>
 </details>
 </dd>
@@ -1286,6 +1354,7 @@ This returns a dictionary of the available datasets.</li>
         This returns a dictionary of the available datasets.
     &#39;&#39;&#39;
     try:
+        print(&#39;Sending Request...&#39;)
         return requests.get(self.url + &#39;info/datasets&#39;, headers=self.params).json()
     except json.decoder.JSONDecodeError:
         print(&#39;Get response &#39;, requests.get(self.url + &#39;info/datasets&#39;, headers=self.params))</code></pre>
@@ -1354,7 +1423,7 @@ Default: <code>'./data/raw_data/'</code></p>
         categories = [categories]
 
     export_dict = {}
-
+    mode_dict = {}
     print(&#39;Checking current files...&#39;)
     last_rows = {}
     for category in categories:
@@ -1367,6 +1436,17 @@ Default: <code>'./data/raw_data/'</code></p>
             # add the following to avoid a duplicate of the last and first row
             last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
             since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1, 0])
+            if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
+                # change since to earliest date and overwrite all data for this category
+                since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
+                # if the earliest date is after until, then we error
+                if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
+                    raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39;\
+                        &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                else:
+                    mode_dict[category] = &#39;w&#39;
+            else: 
+                mode_dict[category] = &#39;a&#39;
 
         export_dict[category] = (since, until)
 
@@ -1376,10 +1456,16 @@ Default: <code>'./data/raw_data/'</code></p>
 
     for category in categories:
         job_id = job_id_dict[category]
+        job_found = False
         for previous_job in data[::-1]:
             if previous_job[&#39;id&#39;] == job_id:
                 output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
+                job_found = True
                 break
+
+        if not job_found:
+            raise TypeError(&#39;Uh-oh! Something seems to have gone wrong.&#39;\
+                &#39;Please check the inputs to the function and try again.&#39;)
 
         for n_output, data_chunk in enumerate(output):
             content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
@@ -1394,14 +1480,14 @@ Default: <code>'./data/raw_data/'</code></p>
                 sys.stdout.flush()
             else:
                 current_data = pd.read_csv(io.StringIO(content.text))
+                header = (not Path(save_path + category + &#39;.csv&#39;).exists()) or mode_dict[category]  == &#39;w&#39;
                 # checking whether the first line is a duplicate of the end of the previous file
                 if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0, :] == last_rows[category]):
-                    current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                                                           header=not Path(
-                                                                               save_path + category + &#39;.csv&#39;).exists())
+                    current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
+                                                                           header=header)
                 else:
-                    current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;a&#39;,
-                                        header=not Path(save_path + category + &#39;.csv&#39;).exists())
+                    current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
+                                        header=header)
         sys.stdout.write(&#39;\n&#39;)
 
     print(&#39;Success&#39;)
