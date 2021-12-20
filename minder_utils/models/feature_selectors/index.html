@@ -27,37 +27,12 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from abc import ABC, abstractmethod
+<pre><code class="python">from .supervised.wrapper import *
+from .supervised.filter import *
+from .supervised.intrinsic import *
+from .unsupervised.filter import *
 
-
-class Feature_selector_template(ABC):
-    def __init__(self, model):
-        self.name = self.methods[model]
-        self.model = getattr(self, model)()
-
-    @property
-    @abstractmethod
-    def methods(self):
-        pass
-
-    def reset_model(self, model_name):
-        self.name = self.methods[model_name]
-        self.model = getattr(self, model_name)()
-
-    def get_info(self, verbose=False):
-        if verbose:
-            print(&#39;Available methods:&#39;)
-            for idx, key in enumerate(self.methods):
-                print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
-        return self.methods
-
-    @abstractmethod
-    def fit(self, X, y):
-        pass
-
-    @abstractmethod
-    def transform(self, X):
-        pass</code></pre>
+__all__ = [&#39;Supervised_Filter&#39;, &#39;Intrinsic_Selector&#39;, &#39;Wrapper_Selector&#39;, &#39;Unsupervised_Filter&#39;]</code></pre>
 </details>
 </section>
 <section>
@@ -80,59 +55,147 @@ class Feature_selector_template(ABC):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="minder_utils.models.feature_selectors.Feature_selector_template"><code class="flex name class">
-<span>class <span class="ident">Feature_selector_template</span></span>
-<span>(</span><span>model)</span>
+<dt id="minder_utils.models.feature_selectors.Intrinsic_Selector"><code class="flex name class">
+<span>class <span class="ident">Intrinsic_Selector</span></span>
+<span>(</span><span>classifier, model_name, num_features, freeze_classifier=False, temperature=5)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Helper class that provides a standard way to create an ABC using
-inheritance.</p></div>
+<div class="desc"><p>This class provide a set of supervised feature selection methods.
+Particularly, it contains a set of intrinsic methods, which will perform automatic feature selection
+DURING TRAINING.</p>
+<p>Currently, it contains:
+- Linear feature selector
+<code>Example</code></p>
+<pre><code></code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Feature_selector_template(ABC):
-    def __init__(self, model):
-        self.name = self.methods[model]
-        self.model = getattr(self, model)()
+<pre><code class="python">class Intrinsic_Selector(Feature_selector):
+    &#39;&#39;&#39;
+    This class provide a set of supervised feature selection methods.
+    Particularly, it contains a set of intrinsic methods, which will perform automatic feature selection
+     DURING TRAINING.
 
-    @property
-    @abstractmethod
-    def methods(self):
-        pass
+    Currently, it contains:
+        - Linear feature selector
+    ```Example```
+    ```
+    ```
+    &#39;&#39;&#39;
 
-    def reset_model(self, model_name):
+    def __init__(self, classifier, model_name, num_features, freeze_classifier=False, temperature=5):
+        self.classifier = classifier
+        self.num_features = num_features
+        super().__init__(model_name)
+        self.name = self.methods[model_name]
+        self.early_stop = EarlyStopping(**self.config[&#39;early_stop&#39;])
+        self.freeze_classifier = freeze_classifier
+        self.discrete = &#39;discrete&#39; in model_name
+        self.temperature = temperature
+
+    def reset_model(self, model_name, discrete=True):
+        self.discrete = discrete
         self.name = self.methods[model_name]
         self.model = getattr(self, model_name)()
 
-    def get_info(self, verbose=False):
-        if verbose:
-            print(&#39;Available methods:&#39;)
-            for idx, key in enumerate(self.methods):
-                print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
-        return self.methods
+    @property
+    def methods(self):
+        return {
+            &#39;linear&#39;: &#39;linear feature selector&#39;,
+            &#39;discrete_linear&#39;: &#39;discrete linear feature selector&#39;
+        }
 
-    @abstractmethod
-    def fit(self, X, y):
+    def linear(self):
+        return nn.Linear(self.num_features, self.num_features, bias=False)
+
+    def discrete_linear(self):
+        return nn.ModuleList([
+            nn.Linear(self.num_features, self.num_features, bias=False),
+            nn.Linear(self.num_features, self.num_features, bias=False)])
+
+    def fit(self, dataloader, num_epoch=50):
+        parameters = self.model.parameters() if self.freeze_classifier \
+            else list(self.model.parameters()) + list(self.classifier.parameters())
+        optimiser = optim.Adam(parameters, lr=0.001)
+        criterion = nn.CrossEntropyLoss()
+        for e in range(num_epoch):
+            if self.early_stop.early_stop:
+                break
+            for X, y in dataloader:
+                optimiser.zero_grad()
+                if self.discrete:
+                    features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                    features_importance = F.gumbel_softmax(features_importance, tau=self.temperature, hard=True, dim=-1)[:, :, 1]
+                    features_importance = features_importance
+                else:
+                    features_importance = self.model(X)
+                    features_importance = F.softmax(features_importance, dim=1)
+                X = X * features_importance
+                outputs = self.classifier(X)
+                loss = criterion(outputs, y) + torch.sum(features_importance)
+                loss.backward()
+                optimiser.step()
+                print(&#39;Epoch: %d / %5d,  Loss: %.3f&#39; %
+                      (e + 1, num_epoch, loss.item()), end=&#39;\n&#39;)
+                self.early_stop(loss.item(), self.model, self.__class__.__name__)
+                if self.early_stop.early_stop and self.config[&#39;early_stop&#39;][&#39;enable&#39;]:
+                    break
+            if self.early_stop.early_stop and self.config[&#39;early_stop&#39;][&#39;enable&#39;]:
+                break
+            return self
+
+    def test(self, dataloader):
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for X, y in dataloader:
+                if self.discrete:
+                    features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                    features_importance = F.softmax(features_importance / self.temperature, dim=-1)[:, :, 1]
+                else:
+                    features_importance = self.model(X)
+                    features_importance = F.softmax(features_importance, dim=1)
+                X *= features_importance
+                outputs = self.classifier(X)
+                _, predicted = torch.max(outputs.data, 1)
+                total += y.size(0)
+                correct += (predicted == y).sum().item()
+
+        print(&#39;Accuracy: %d %%&#39; % (100 * correct / total))
+        return 100 * correct / total
+
+    def transform(self, X):
         pass
 
-    @abstractmethod
-    def transform(self, X):
-        pass</code></pre>
+    def __name__(self):
+        return &#39;Supervised Intrinsic Selector&#39;, self.name
+
+    def get_importance(self, dataloader, normalise=True):
+        importance = []
+        with torch.no_grad():
+            for X, y in dataloader:
+                if self.discrete:
+                    features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                    importance.extend(list(F.softmax(features_importance / self.temperature, dim=-1).detach().numpy()[:, :, 1]))
+                else:
+                    features_importance = self.model(X)
+                    importance.extend(list(F.softmax(features_importance, dim=1).detach().numpy()))
+        importance = np.array(importance)
+        if normalise:
+            importance -= np.min(importance, axis=1, keepdims=True) - 1e-5
+            importance /= np.max(importance, axis=1, keepdims=True)
+        importance = np.mean(importance, axis=0)
+        return importance</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
+<li><a title="minder_utils.models.utils.feature_selector.Feature_selector" href="../utils/feature_selector.html#minder_utils.models.utils.feature_selector.Feature_selector">Feature_selector</a></li>
 <li>abc.ABC</li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter" href="supervised/filter.html#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter">Supervised_Filter</a></li>
-<li><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector" href="supervised/intrinsic.html#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_selector">Intrinsic_selector</a></li>
-<li><a title="minder_utils.models.feature_selectors.unsupervised.filter.Unsupervised_Filter" href="unsupervised/filter.html#minder_utils.models.feature_selectors.unsupervised.filter.Unsupervised_Filter">Unsupervised_Filter</a></li>
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="minder_utils.models.feature_selectors.Feature_selector_template.methods"><code class="name">var <span class="ident">methods</span></code></dt>
+<dt id="minder_utils.models.feature_selectors.Intrinsic_Selector.methods"><code class="name">var <span class="ident">methods</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -140,16 +203,18 @@ inheritance.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-@abstractmethod
 def methods(self):
-    pass</code></pre>
+    return {
+        &#39;linear&#39;: &#39;linear feature selector&#39;,
+        &#39;discrete_linear&#39;: &#39;discrete linear feature selector&#39;
+    }</code></pre>
 </details>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="minder_utils.models.feature_selectors.Feature_selector_template.fit"><code class="name flex">
-<span>def <span class="ident">fit</span></span>(<span>self, X, y)</span>
+<dt id="minder_utils.models.feature_selectors.Intrinsic_Selector.discrete_linear"><code class="name flex">
+<span>def <span class="ident">discrete_linear</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -157,13 +222,14 @@ def methods(self):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@abstractmethod
-def fit(self, X, y):
-    pass</code></pre>
+<pre><code class="python">def discrete_linear(self):
+    return nn.ModuleList([
+        nn.Linear(self.num_features, self.num_features, bias=False),
+        nn.Linear(self.num_features, self.num_features, bias=False)])</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.models.feature_selectors.Feature_selector_template.get_info"><code class="name flex">
-<span>def <span class="ident">get_info</span></span>(<span>self, verbose=False)</span>
+<dt id="minder_utils.models.feature_selectors.Intrinsic_Selector.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, dataloader, num_epoch=50)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -171,16 +237,40 @@ def fit(self, X, y):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_info(self, verbose=False):
-    if verbose:
-        print(&#39;Available methods:&#39;)
-        for idx, key in enumerate(self.methods):
-            print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
-    return self.methods</code></pre>
+<pre><code class="python">def fit(self, dataloader, num_epoch=50):
+    parameters = self.model.parameters() if self.freeze_classifier \
+        else list(self.model.parameters()) + list(self.classifier.parameters())
+    optimiser = optim.Adam(parameters, lr=0.001)
+    criterion = nn.CrossEntropyLoss()
+    for e in range(num_epoch):
+        if self.early_stop.early_stop:
+            break
+        for X, y in dataloader:
+            optimiser.zero_grad()
+            if self.discrete:
+                features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                features_importance = F.gumbel_softmax(features_importance, tau=self.temperature, hard=True, dim=-1)[:, :, 1]
+                features_importance = features_importance
+            else:
+                features_importance = self.model(X)
+                features_importance = F.softmax(features_importance, dim=1)
+            X = X * features_importance
+            outputs = self.classifier(X)
+            loss = criterion(outputs, y) + torch.sum(features_importance)
+            loss.backward()
+            optimiser.step()
+            print(&#39;Epoch: %d / %5d,  Loss: %.3f&#39; %
+                  (e + 1, num_epoch, loss.item()), end=&#39;\n&#39;)
+            self.early_stop(loss.item(), self.model, self.__class__.__name__)
+            if self.early_stop.early_stop and self.config[&#39;early_stop&#39;][&#39;enable&#39;]:
+                break
+        if self.early_stop.early_stop and self.config[&#39;early_stop&#39;][&#39;enable&#39;]:
+            break
+        return self</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.models.feature_selectors.Feature_selector_template.reset_model"><code class="name flex">
-<span>def <span class="ident">reset_model</span></span>(<span>self, model_name)</span>
+<dt id="minder_utils.models.feature_selectors.Intrinsic_Selector.get_importance"><code class="name flex">
+<span>def <span class="ident">get_importance</span></span>(<span>self, dataloader, normalise=True)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -188,12 +278,83 @@ def fit(self, X, y):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def reset_model(self, model_name):
+<pre><code class="python">def get_importance(self, dataloader, normalise=True):
+    importance = []
+    with torch.no_grad():
+        for X, y in dataloader:
+            if self.discrete:
+                features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                importance.extend(list(F.softmax(features_importance / self.temperature, dim=-1).detach().numpy()[:, :, 1]))
+            else:
+                features_importance = self.model(X)
+                importance.extend(list(F.softmax(features_importance, dim=1).detach().numpy()))
+    importance = np.array(importance)
+    if normalise:
+        importance -= np.min(importance, axis=1, keepdims=True) - 1e-5
+        importance /= np.max(importance, axis=1, keepdims=True)
+    importance = np.mean(importance, axis=0)
+    return importance</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Intrinsic_Selector.linear"><code class="name flex">
+<span>def <span class="ident">linear</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def linear(self):
+    return nn.Linear(self.num_features, self.num_features, bias=False)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Intrinsic_Selector.reset_model"><code class="name flex">
+<span>def <span class="ident">reset_model</span></span>(<span>self, model_name, discrete=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_model(self, model_name, discrete=True):
+    self.discrete = discrete
     self.name = self.methods[model_name]
     self.model = getattr(self, model_name)()</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.models.feature_selectors.Feature_selector_template.transform"><code class="name flex">
+<dt id="minder_utils.models.feature_selectors.Intrinsic_Selector.test"><code class="name flex">
+<span>def <span class="ident">test</span></span>(<span>self, dataloader)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test(self, dataloader):
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for X, y in dataloader:
+            if self.discrete:
+                features_importance = torch.stack([self.model[0](X), self.model[1](X)], dim=-1)
+                features_importance = F.softmax(features_importance / self.temperature, dim=-1)[:, :, 1]
+            else:
+                features_importance = self.model(X)
+                features_importance = F.softmax(features_importance, dim=1)
+            X *= features_importance
+            outputs = self.classifier(X)
+            _, predicted = torch.max(outputs.data, 1)
+            total += y.size(0)
+            correct += (predicted == y).sum().item()
+
+    print(&#39;Accuracy: %d %%&#39; % (100 * correct / total))
+    return 100 * correct / total</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Intrinsic_Selector.transform"><code class="name flex">
 <span>def <span class="ident">transform</span></span>(<span>self, X)</span>
 </code></dt>
 <dd>
@@ -202,9 +363,607 @@ def fit(self, X, y):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@abstractmethod
-def transform(self, X):
+<pre><code class="python">def transform(self, X):
     pass</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Supervised_Filter"><code class="flex name class">
+<span>class <span class="ident">Supervised_Filter</span></span>
+<span>(</span><span>model_name='chi', proportion=90)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class provide a set of supervised feature selection methods.
+Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.</p>
+<p>Currently, it contains:
+- chi-squared stats
+- ANOVA F-value
+- mutual information</p>
+<p><code>Example</code></p>
+<pre><code>from minder_utils.models.feature_selectors.unsupervised.filter import Unsupervised_Filter
+
+selector = Unsupervised_Filter(model='vt')
+# show the available methods:
+selector.get_info(verbose=True)
+
+# train the selector. Note the X is the data, y is None and will not be used
+selector.fit(X, y)
+
+# do the selection
+X = selector.transform(X)
+</code></pre>
+<p>Select a proportion of features</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>model</code></strong></dt>
+<dd>method to calculate the score for feature selection</dd>
+<dt><strong><code>proportion</code></strong></dt>
+<dd>percentage of features to keep</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Supervised_Filter(Feature_selector):
+    &#39;&#39;&#39;
+    This class provide a set of supervised feature selection methods.
+    Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.
+
+    Currently, it contains:
+        - chi-squared stats
+        - ANOVA F-value
+        - mutual information
+
+    ```Example```
+    ```
+    from minder_utils.models.feature_selectors.unsupervised.filter import Unsupervised_Filter
+
+    selector = Unsupervised_Filter(model=&#39;vt&#39;)
+    # show the available methods:
+    selector.get_info(verbose=True)
+
+    # train the selector. Note the X is the data, y is None and will not be used
+    selector.fit(X, y)
+
+    # do the selection
+    X = selector.transform(X)
+    ```
+    &#39;&#39;&#39;
+    def __init__(self, model_name=&#39;chi&#39;, proportion=90):
+        &#39;&#39;&#39;
+        Select a proportion of features
+        Args:
+            model: method to calculate the score for feature selection
+            proportion: percentage of features to keep
+        &#39;&#39;&#39;
+        super().__init__(model_name)
+        self.selector = SelectPercentile(self.model, percentile=proportion)
+        self.proportion = proportion
+
+    def reset_model(self, model_name, proportion=None):
+        proportion = self.proportion if proportion is None else proportion
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
+        self.selector = SelectPercentile(self.model, percentile=proportion)
+
+    @property
+    def methods(self):
+        return {
+            &#39;chi&#39;: &#39;chi-squared stats&#39;,
+            &#39;f_class&#39;: &#39;ANOVA F-value&#39;,
+            &#39;mi&#39;: &#39;mutual information&#39;,
+        }
+
+    @staticmethod
+    def chi():
+        return chi2
+
+    @staticmethod
+    def f_class():
+        return f_classif
+
+    @staticmethod
+    def mi():
+        return mutual_info_classif
+
+    def fit(self, X, y):
+        if y.ndim &gt; 1:
+            y = np.argmax(y, axis=1)
+        y[y &lt; 0] = 0
+        y[y &gt; 0] = 1
+        return self.selector.fit(X, y.astype(float))
+
+    def transform(self, X):
+        return self.selector.transform(X)
+
+    def __name__(self):
+        return &#39;Supervised Filter&#39;, self.name
+
+    def get_importance(self):
+        return self.selector.scores_</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.utils.feature_selector.Feature_selector" href="../utils/feature_selector.html#minder_utils.models.utils.feature_selector.Feature_selector">Feature_selector</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Supervised_Filter.chi"><code class="name flex">
+<span>def <span class="ident">chi</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def chi():
+    return chi2</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Supervised_Filter.f_class"><code class="name flex">
+<span>def <span class="ident">f_class</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def f_class():
+    return f_classif</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Supervised_Filter.mi"><code class="name flex">
+<span>def <span class="ident">mi</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def mi():
+    return mutual_info_classif</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Supervised_Filter.methods"><code class="name">var <span class="ident">methods</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def methods(self):
+    return {
+        &#39;chi&#39;: &#39;chi-squared stats&#39;,
+        &#39;f_class&#39;: &#39;ANOVA F-value&#39;,
+        &#39;mi&#39;: &#39;mutual information&#39;,
+    }</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Supervised_Filter.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, X, y)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fit(self, X, y):
+    if y.ndim &gt; 1:
+        y = np.argmax(y, axis=1)
+    y[y &lt; 0] = 0
+    y[y &gt; 0] = 1
+    return self.selector.fit(X, y.astype(float))</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Supervised_Filter.get_importance"><code class="name flex">
+<span>def <span class="ident">get_importance</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_importance(self):
+    return self.selector.scores_</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Supervised_Filter.reset_model"><code class="name flex">
+<span>def <span class="ident">reset_model</span></span>(<span>self, model_name, proportion=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_model(self, model_name, proportion=None):
+    proportion = self.proportion if proportion is None else proportion
+    self.name = self.methods[model_name]
+    self.model = getattr(self, model_name)()
+    self.selector = SelectPercentile(self.model, percentile=proportion)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Supervised_Filter.transform"><code class="name flex">
+<span>def <span class="ident">transform</span></span>(<span>self, X)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transform(self, X):
+    return self.selector.transform(X)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Unsupervised_Filter"><code class="flex name class">
+<span>class <span class="ident">Unsupervised_Filter</span></span>
+<span>(</span><span>model_name='vt')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class provide a set of unsupervised feature selection methods.</p>
+<p>Currently, it contains:
+- VarianceThreshold</p>
+<p><code>Example</code></p>
+<pre><code>from minder_utils.models.feature_selectors.unsupervised.filter import Unsupervised_Filter
+
+selector = Unsupervised_Filter(model='vt')
+# show the available methods:
+selector.get_info(verbose=True)
+
+# train the selector. Note the X is the data, y is None and will not be used
+selector.fit(X, y)
+
+# do the selection
+X = selector.transform(X)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Unsupervised_Filter(Feature_selector):
+    &#39;&#39;&#39;
+    This class provide a set of unsupervised feature selection methods.
+
+    Currently, it contains:
+        - VarianceThreshold
+
+    ```Example```
+    ```
+    from minder_utils.models.feature_selectors.unsupervised.filter import Unsupervised_Filter
+
+    selector = Unsupervised_Filter(model=&#39;vt&#39;)
+    # show the available methods:
+    selector.get_info(verbose=True)
+
+    # train the selector. Note the X is the data, y is None and will not be used
+    selector.fit(X, y)
+
+    # do the selection
+    X = selector.transform(X)
+    ```
+    &#39;&#39;&#39;
+    def __init__(self, model_name=&#39;vt&#39;):
+        super().__init__(model_name)
+
+    @property
+    def methods(self):
+        return {
+            &#39;vt&#39;: &#39;VarianceThreshold&#39;,
+        }
+
+    @staticmethod
+    def vt():
+        return VarianceThreshold()
+
+    def __name__(self):
+        return &#39;Unsupervised Filter&#39;, self.name
+
+    def fit(self, X, y=None):
+        return self.model.fit(X)
+
+    def transform(self, X):
+        return self.model.transform(X)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.utils.feature_selector.Feature_selector" href="../utils/feature_selector.html#minder_utils.models.utils.feature_selector.Feature_selector">Feature_selector</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Unsupervised_Filter.vt"><code class="name flex">
+<span>def <span class="ident">vt</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def vt():
+    return VarianceThreshold()</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Unsupervised_Filter.methods"><code class="name">var <span class="ident">methods</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def methods(self):
+    return {
+        &#39;vt&#39;: &#39;VarianceThreshold&#39;,
+    }</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Unsupervised_Filter.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, X, y=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fit(self, X, y=None):
+    return self.model.fit(X)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Unsupervised_Filter.transform"><code class="name flex">
+<span>def <span class="ident">transform</span></span>(<span>self, X)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transform(self, X):
+    return self.model.transform(X)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Wrapper_Selector"><code class="flex name class">
+<span>class <span class="ident">Wrapper_Selector</span></span>
+<span>(</span><span>estimator, model_name='rfe', num_features=10)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class provide a set of supervised feature selection methods.
+Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.</p>
+<p>Currently, it contains:
+- REF: Recursive feature elimination</p>
+<p><code>Example</code></p>
+<pre><code>from minder_utils.models.feature_selectors.supervised.wrapper import Supervised_wrapper
+from sklearn.svm import SVC
+
+selector = Supervised_wrapper(SVC(kernel='linear'), model_name='rfe')
+# show the available methods:
+selector.get_info(verbose=True)
+
+# train the selector
+selector.fit(X, y)
+
+# do the selection
+X = selector.transform(X)
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>estimator</code></strong> :&ensp;<code>sklearn estimator</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>model_name</code></strong> :&ensp;<code>'rfe'</code> or <code>'refcv'</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>num_features</code></strong> :&ensp;<code>int / float, number / percentage</code> of <code>features to be selected</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Wrapper_Selector(Feature_selector):
+    &#39;&#39;&#39;
+    This class provide a set of supervised feature selection methods.
+    Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.
+
+    Currently, it contains:
+        - REF: Recursive feature elimination
+
+    ```Example```
+    ```
+    from minder_utils.models.feature_selectors.supervised.wrapper import Supervised_wrapper
+    from sklearn.svm import SVC
+
+    selector = Supervised_wrapper(SVC(kernel=&#39;linear&#39;), model_name=&#39;rfe&#39;)
+    # show the available methods:
+    selector.get_info(verbose=True)
+
+    # train the selector
+    selector.fit(X, y)
+
+    # do the selection
+    X = selector.transform(X)
+    ```
+    &#39;&#39;&#39;
+
+    def __init__(self, estimator, model_name=&#39;rfe&#39;, num_features=10):
+        &#39;&#39;&#39;
+
+        Parameters
+        ----------
+        estimator: sklearn estimator
+        model_name: &#39;rfe&#39; or &#39;refcv&#39;
+        num_features: int / float, number / percentage of features to be selected
+        &#39;&#39;&#39;
+        self.estimator = estimator
+        self.num_features = num_features
+        super().__init__(model_name)
+
+    def reset_model(self, model_name, num_features=None):
+        self.num_features = self.num_features if num_features is None else num_features
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
+
+    @property
+    def methods(self):
+        return {
+            &#39;rfe&#39;: &#39;Recursive feature elimination&#39;,
+            &#39;rfecv&#39;: &#39;Recursive feature elimination with cross-validation &#39;,
+        }
+
+    def rfe(self):
+        return RFE(self.estimator, n_features_to_select=self.num_features)
+
+    def rfecv(self):
+        return RFECV(self.estimator, min_features_to_select=self.num_features, cv=5)
+
+    def fit(self, X, y):
+        if y.ndim &gt; 1:
+            y = np.argmax(y, axis=1)
+        return self.model.fit(X, y)
+
+    def transform(self, X):
+        return self.model.transform(X)
+
+    def mask_of_features(self):
+        return self.model.support_
+
+    def __name__(self):
+        return &#39;Supervised Filter&#39;, self.name</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.utils.feature_selector.Feature_selector" href="../utils/feature_selector.html#minder_utils.models.utils.feature_selector.Feature_selector">Feature_selector</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Wrapper_Selector.methods"><code class="name">var <span class="ident">methods</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def methods(self):
+    return {
+        &#39;rfe&#39;: &#39;Recursive feature elimination&#39;,
+        &#39;rfecv&#39;: &#39;Recursive feature elimination with cross-validation &#39;,
+    }</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.Wrapper_Selector.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, X, y)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fit(self, X, y):
+    if y.ndim &gt; 1:
+        y = np.argmax(y, axis=1)
+    return self.model.fit(X, y)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Wrapper_Selector.mask_of_features"><code class="name flex">
+<span>def <span class="ident">mask_of_features</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mask_of_features(self):
+    return self.model.support_</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Wrapper_Selector.reset_model"><code class="name flex">
+<span>def <span class="ident">reset_model</span></span>(<span>self, model_name, num_features=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_model(self, model_name, num_features=None):
+    self.num_features = self.num_features if num_features is None else num_features
+    self.name = self.methods[model_name]
+    self.model = getattr(self, model_name)()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Wrapper_Selector.rfe"><code class="name flex">
+<span>def <span class="ident">rfe</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rfe(self):
+    return RFE(self.estimator, n_features_to_select=self.num_features)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Wrapper_Selector.rfecv"><code class="name flex">
+<span>def <span class="ident">rfecv</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rfecv(self):
+    return RFECV(self.estimator, min_features_to_select=self.num_features, cv=5)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.Wrapper_Selector.transform"><code class="name flex">
+<span>def <span class="ident">transform</span></span>(<span>self, X)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transform(self, X):
+    return self.model.transform(X)</code></pre>
 </details>
 </dd>
 </dl>
@@ -237,13 +996,50 @@ def transform(self, X):
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="minder_utils.models.feature_selectors.Feature_selector_template" href="#minder_utils.models.feature_selectors.Feature_selector_template">Feature_selector_template</a></code></h4>
+<h4><code><a title="minder_utils.models.feature_selectors.Intrinsic_Selector" href="#minder_utils.models.feature_selectors.Intrinsic_Selector">Intrinsic_Selector</a></code></h4>
+<ul class="two-column">
+<li><code><a title="minder_utils.models.feature_selectors.Intrinsic_Selector.discrete_linear" href="#minder_utils.models.feature_selectors.Intrinsic_Selector.discrete_linear">discrete_linear</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Intrinsic_Selector.fit" href="#minder_utils.models.feature_selectors.Intrinsic_Selector.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Intrinsic_Selector.get_importance" href="#minder_utils.models.feature_selectors.Intrinsic_Selector.get_importance">get_importance</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Intrinsic_Selector.linear" href="#minder_utils.models.feature_selectors.Intrinsic_Selector.linear">linear</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Intrinsic_Selector.methods" href="#minder_utils.models.feature_selectors.Intrinsic_Selector.methods">methods</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Intrinsic_Selector.reset_model" href="#minder_utils.models.feature_selectors.Intrinsic_Selector.reset_model">reset_model</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Intrinsic_Selector.test" href="#minder_utils.models.feature_selectors.Intrinsic_Selector.test">test</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Intrinsic_Selector.transform" href="#minder_utils.models.feature_selectors.Intrinsic_Selector.transform">transform</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="minder_utils.models.feature_selectors.Supervised_Filter" href="#minder_utils.models.feature_selectors.Supervised_Filter">Supervised_Filter</a></code></h4>
+<ul class="two-column">
+<li><code><a title="minder_utils.models.feature_selectors.Supervised_Filter.chi" href="#minder_utils.models.feature_selectors.Supervised_Filter.chi">chi</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Supervised_Filter.f_class" href="#minder_utils.models.feature_selectors.Supervised_Filter.f_class">f_class</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Supervised_Filter.fit" href="#minder_utils.models.feature_selectors.Supervised_Filter.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Supervised_Filter.get_importance" href="#minder_utils.models.feature_selectors.Supervised_Filter.get_importance">get_importance</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Supervised_Filter.methods" href="#minder_utils.models.feature_selectors.Supervised_Filter.methods">methods</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Supervised_Filter.mi" href="#minder_utils.models.feature_selectors.Supervised_Filter.mi">mi</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Supervised_Filter.reset_model" href="#minder_utils.models.feature_selectors.Supervised_Filter.reset_model">reset_model</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Supervised_Filter.transform" href="#minder_utils.models.feature_selectors.Supervised_Filter.transform">transform</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="minder_utils.models.feature_selectors.Unsupervised_Filter" href="#minder_utils.models.feature_selectors.Unsupervised_Filter">Unsupervised_Filter</a></code></h4>
 <ul class="">
-<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.fit" href="#minder_utils.models.feature_selectors.Feature_selector_template.fit">fit</a></code></li>
-<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.get_info" href="#minder_utils.models.feature_selectors.Feature_selector_template.get_info">get_info</a></code></li>
-<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.methods" href="#minder_utils.models.feature_selectors.Feature_selector_template.methods">methods</a></code></li>
-<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.reset_model" href="#minder_utils.models.feature_selectors.Feature_selector_template.reset_model">reset_model</a></code></li>
-<li><code><a title="minder_utils.models.feature_selectors.Feature_selector_template.transform" href="#minder_utils.models.feature_selectors.Feature_selector_template.transform">transform</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Unsupervised_Filter.fit" href="#minder_utils.models.feature_selectors.Unsupervised_Filter.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Unsupervised_Filter.methods" href="#minder_utils.models.feature_selectors.Unsupervised_Filter.methods">methods</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Unsupervised_Filter.transform" href="#minder_utils.models.feature_selectors.Unsupervised_Filter.transform">transform</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Unsupervised_Filter.vt" href="#minder_utils.models.feature_selectors.Unsupervised_Filter.vt">vt</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="minder_utils.models.feature_selectors.Wrapper_Selector" href="#minder_utils.models.feature_selectors.Wrapper_Selector">Wrapper_Selector</a></code></h4>
+<ul class="two-column">
+<li><code><a title="minder_utils.models.feature_selectors.Wrapper_Selector.fit" href="#minder_utils.models.feature_selectors.Wrapper_Selector.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Wrapper_Selector.mask_of_features" href="#minder_utils.models.feature_selectors.Wrapper_Selector.mask_of_features">mask_of_features</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Wrapper_Selector.methods" href="#minder_utils.models.feature_selectors.Wrapper_Selector.methods">methods</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Wrapper_Selector.reset_model" href="#minder_utils.models.feature_selectors.Wrapper_Selector.reset_model">reset_model</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Wrapper_Selector.rfe" href="#minder_utils.models.feature_selectors.Wrapper_Selector.rfe">rfe</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Wrapper_Selector.rfecv" href="#minder_utils.models.feature_selectors.Wrapper_Selector.rfecv">rfecv</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.Wrapper_Selector.transform" href="#minder_utils.models.feature_selectors.Wrapper_Selector.transform">transform</a></code></li>
 </ul>
 </li>
 </ul>

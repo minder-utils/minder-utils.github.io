@@ -28,6 +28,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from .download import *
+
 __all__ = [&#39;Downloader&#39;]</code></pre>
 </details>
 </section>
@@ -257,9 +258,10 @@ as a csv in the directory <code>'./data/'</code></p></div>
                 sys.stdout.write(&#39;\n&#39;)
                 waiting = False
 
-        return job_id_dict
+        return job_id_dict, request_url_dict
 
-    def export(self, since=None, until=None, reload=True, categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;, append = True):
+    def export(self, since=None, until=None, reload=True, 
+                categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;, append=True, export_index=None):
         &#39;&#39;&#39;
         This is a function that is able to download the data and save it as a csv in save_path.
 
@@ -305,33 +307,41 @@ as a csv in the directory <code>'./data/'</code></p></div>
             If ```True```, the downloaded data will be appended to the previous data, if it exists.
             If ```False```, the previous data will be overwritten if it exists.
 
-        &#39;&#39;&#39;
+        - export_index: integer:
+            You may use this argument to download a previous request. ```-1``` will download
+            the most recent request. This argument will over rule the ```reload``` argument.
+            Defaults to ```None```.
 
+        &#39;&#39;&#39;
+        save_path = reformat_path(save_path)
         p = Path(save_path)
         if not p.exists():
             print(&#39;Target directory does not exist, creating a new folder&#39;)
-            p.mkdir()
-        if reload:
-            self._export_request(categories=categories, since=since, until=until)
+            save_mkdir(save_path)
+        if export_index is None:
+            if reload:
+                self._export_request(categories=categories, since=since, until=until)
 
         data = requests.get(self.url + &#39;export&#39;, headers=self.params).json()
-        export_index = -1
-        if not reload:
-            if len(data) &gt; 1:
-                print(&#39;Multiple export requests exist, please choose one to download&#39;)
-                for idx, job in enumerate(data):
-                    print(&#39;Job {} &#39;.format(idx).center(50, &#39;=&#39;))
-                    print(&#39;ID: &#39;, job[&#39;id&#39;])
-                    print(&#39;Transaction Time&#39;, job[&#39;jobRecord&#39;][&#39;transactionTime&#39;])
-                    print(&#39;Export sensors: &#39;, end=&#39;&#39;)
-                    for record in job[&#39;jobRecord&#39;][&#39;output&#39;]:
-                        print(record[&#39;type&#39;], end=&#39; &#39;)
-                    print(&#39;&#39;)
-                export_index = int(input(&#39;Enter the index of the job ...&#39;))
-                while export_index not in range(len(data)):
-                    print(&#39;Not a valid input&#39;)
+        export_index = -1 if export_index is None else export_index
+        if export_index is None:
+            if not reload:
+                if len(data) &gt; 1:
+                    print(&#39;Multiple export requests exist, please choose one to download&#39;)
+                    for idx, job in enumerate(data):
+                        print(&#39;Job {} &#39;.format(idx).center(50, &#39;=&#39;))
+                        print(&#39;ID: &#39;, job[&#39;id&#39;])
+                        print(&#39;Transaction Time&#39;, job[&#39;jobRecord&#39;][&#39;transactionTime&#39;])
+                        print(&#39;Export sensors: &#39;, end=&#39;&#39;)
+                        for record in job[&#39;jobRecord&#39;][&#39;output&#39;]:
+                            print(record[&#39;type&#39;], end=&#39; &#39;)
+                        print(&#39;&#39;)
                     export_index = int(input(&#39;Enter the index of the job ...&#39;))
+                    while export_index not in range(len(data)):
+                        print(&#39;Not a valid input&#39;)
+                        export_index = int(input(&#39;Enter the index of the job ...&#39;))
         print(&#39;Start to export job&#39;)
+        categories_downloaded = []
         for idx, record in enumerate(data[export_index][&#39;jobRecord&#39;][&#39;output&#39;]):
             print(&#39;Exporting {}/{}&#39;.format(idx + 1, len(data[export_index][&#39;jobRecord&#39;][&#39;output&#39;])).ljust(20, &#39; &#39;),
                   str(record[&#39;type&#39;]).ljust(20, &#39; &#39;), end=&#39; &#39;)
@@ -339,11 +349,17 @@ as a csv in the directory <code>'./data/'</code></p></div>
             if content.status_code != 200:
                 print(&#39;Fail, Response code {}&#39;.format(content.status_code))
             else:
-                mode = &#39;a&#39; if append else &#39;w&#39;
-                header = (not Path(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists()) or mode == &#39;w&#39; 
-                pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;), mode=mode,
+                if record[&#39;type&#39;] in categories_downloaded:
+                    mode = &#39;a&#39;
+                    header = False
+                else:
+                    mode = &#39;a&#39; if append else &#39;w&#39;
+                    header = not Path(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists() or mode == &#39;w&#39;
+                
+                pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;),
+                                                              mode=mode,
                                                               header=header)
-
+                categories_downloaded.append(record[&#39;type&#39;])
                 print(&#39;Success&#39;)
 
     def refresh(self, until=None, categories=None, save_path=&#39;./data/raw_data/&#39;):
@@ -371,11 +387,14 @@ as a csv in the directory <code>'./data/'</code></p></div>
         
 
         &#39;&#39;&#39;
-
+        save_path = reformat_path(save_path)
         if categories is None:
             raise TypeError(&#39;Please supply at least one category...&#39;)
         if type(categories) == str:
-            categories = [categories]
+            if categories == &#39;all&#39;:
+                categories = self.get_category_names(&#39;all&#39;)
+            else:
+                categories = [categories]
 
         export_dict = {}
         mode_dict = {}
@@ -396,36 +415,35 @@ as a csv in the directory <code>'./data/'</code></p></div>
                     since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
                     # if the earliest date is after until, then we error
                     if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
-                        raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39;\
-                            &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                        raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39; \
+                                        &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
                     else:
                         mode_dict[category] = &#39;w&#39;
-                else: 
+                else:
                     mode_dict[category] = &#39;a&#39;
 
             export_dict[category] = (since, until)
 
-        job_id_dict = self._export_request_parallel(export_dict=export_dict)
+        job_id_dict, request_url_dict = self._export_request_parallel(export_dict=export_dict)
+
 
         data = requests.get(self.url + &#39;export&#39;, headers=self.params).json()
 
         for category in categories:
-            job_id = job_id_dict[category]
-            job_found = False
-            for previous_job in data[::-1]:
-                if previous_job[&#39;id&#39;] == job_id:
-                    output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
-                    job_found = True
-                    break
 
-            if not job_found:
-                raise TypeError(&#39;Uh-oh! Something seems to have gone wrong.&#39;\
-                    &#39;Please check the inputs to the function and try again.&#39;)
+            if not category in  request_url_dict:
+                raise TypeError(&#39;Uh-oh! Something seems to have gone wrong.&#39; \
+                                &#39;Please check the inputs to the function and try again.&#39; \
+                                &#39; Looks as if category {} caused the problem&#39;.format(category))
+
+            content = requests.get(request_url_dict[category], headers=self.params)
+            output = json.load(io.StringIO(content.text))[&#39;jobRecord&#39;][&#39;output&#39;]
+
 
             for n_output, data_chunk in enumerate(output):
                 content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
                 sys.stdout.write(&#39;\r&#39;)
-                sys.stdout.write(&#34;For {}, exporting {}/{}&#34;.format(category, n_output+1,len(output)))
+                sys.stdout.write(&#34;For {}, exporting {}/{}&#34;.format(category, n_output + 1, len(output)))
                 sys.stdout.flush()
                 if content.status_code != 200:
                     sys.stdout.write(&#39;\n&#39;)
@@ -435,14 +453,31 @@ as a csv in the directory <code>'./data/'</code></p></div>
                     sys.stdout.flush()
                 else:
                     current_data = pd.read_csv(io.StringIO(content.text))
-                    header = (not Path(save_path + category + &#39;.csv&#39;).exists()) or mode_dict[category]  == &#39;w&#39;
+                    
+                    if Path(save_path + category + &#39;.csv&#39;).exists():
+                        data_to_save = pd.read_csv(save_path + category + &#39;.csv&#39;, index_col=0)
+                        data_to_save = data_to_save.append(current_data, ignore_index=True)
+                        data_to_save = data_to_save.drop_duplicates(ignore_index=True)
+
+                    else:
+                        data_to_save = current_data
+
+                    &#39;&#39;&#39;
+                    header = (not Path(save_path + category + &#39;.csv&#39;).exists()) or mode_dict[category] == &#39;w&#39;
                     # checking whether the first line is a duplicate of the end of the previous file
                     if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0, :] == last_rows[category]):
-                        current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
+                        current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;,
+                                                                               mode=mode_dict[category],
                                                                                header=header)
                     else:
                         current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
                                             header=header)
+                    &#39;&#39;&#39;
+
+                    data_to_save.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;w&#39;,
+                                            header=True)
+
+
             sys.stdout.write(&#39;\n&#39;)
 
         print(&#39;Success&#39;)
@@ -620,7 +655,7 @@ def token():
 <h3>Methods</h3>
 <dl>
 <dt id="minder_utils.download.Downloader.export"><code class="name flex">
-<span>def <span class="ident">export</span></span>(<span>self, since=None, until=None, reload=True, categories='all', save_path='./data/raw_data/', append=True)</span>
+<span>def <span class="ident">export</span></span>(<span>self, since=None, until=None, reload=True, categories='all', save_path='./data/raw_data/', append=True, export_index=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This is a function that is able to download the data and save it as a csv in save_path.</p>
@@ -670,12 +705,19 @@ Default: <code>'./data/raw_data/'</code></p>
 If <code>True</code>, the downloaded data will be appended to the previous data, if it exists.
 If <code>False</code>, the previous data will be overwritten if it exists.</p>
 </li>
+<li>
+<p>export_index: integer:
+You may use this argument to download a previous request. <code>-1</code> will download
+the most recent request. This argument will over rule the <code>reload</code> argument.
+Defaults to <code>None</code>.</p>
+</li>
 </ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def export(self, since=None, until=None, reload=True, categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;, append = True):
+<pre><code class="python">def export(self, since=None, until=None, reload=True, 
+            categories=&#39;all&#39;, save_path=&#39;./data/raw_data/&#39;, append=True, export_index=None):
     &#39;&#39;&#39;
     This is a function that is able to download the data and save it as a csv in save_path.
 
@@ -721,33 +763,41 @@ If <code>False</code>, the previous data will be overwritten if it exists.</p>
         If ```True```, the downloaded data will be appended to the previous data, if it exists.
         If ```False```, the previous data will be overwritten if it exists.
 
-    &#39;&#39;&#39;
+    - export_index: integer:
+        You may use this argument to download a previous request. ```-1``` will download
+        the most recent request. This argument will over rule the ```reload``` argument.
+        Defaults to ```None```.
 
+    &#39;&#39;&#39;
+    save_path = reformat_path(save_path)
     p = Path(save_path)
     if not p.exists():
         print(&#39;Target directory does not exist, creating a new folder&#39;)
-        p.mkdir()
-    if reload:
-        self._export_request(categories=categories, since=since, until=until)
+        save_mkdir(save_path)
+    if export_index is None:
+        if reload:
+            self._export_request(categories=categories, since=since, until=until)
 
     data = requests.get(self.url + &#39;export&#39;, headers=self.params).json()
-    export_index = -1
-    if not reload:
-        if len(data) &gt; 1:
-            print(&#39;Multiple export requests exist, please choose one to download&#39;)
-            for idx, job in enumerate(data):
-                print(&#39;Job {} &#39;.format(idx).center(50, &#39;=&#39;))
-                print(&#39;ID: &#39;, job[&#39;id&#39;])
-                print(&#39;Transaction Time&#39;, job[&#39;jobRecord&#39;][&#39;transactionTime&#39;])
-                print(&#39;Export sensors: &#39;, end=&#39;&#39;)
-                for record in job[&#39;jobRecord&#39;][&#39;output&#39;]:
-                    print(record[&#39;type&#39;], end=&#39; &#39;)
-                print(&#39;&#39;)
-            export_index = int(input(&#39;Enter the index of the job ...&#39;))
-            while export_index not in range(len(data)):
-                print(&#39;Not a valid input&#39;)
+    export_index = -1 if export_index is None else export_index
+    if export_index is None:
+        if not reload:
+            if len(data) &gt; 1:
+                print(&#39;Multiple export requests exist, please choose one to download&#39;)
+                for idx, job in enumerate(data):
+                    print(&#39;Job {} &#39;.format(idx).center(50, &#39;=&#39;))
+                    print(&#39;ID: &#39;, job[&#39;id&#39;])
+                    print(&#39;Transaction Time&#39;, job[&#39;jobRecord&#39;][&#39;transactionTime&#39;])
+                    print(&#39;Export sensors: &#39;, end=&#39;&#39;)
+                    for record in job[&#39;jobRecord&#39;][&#39;output&#39;]:
+                        print(record[&#39;type&#39;], end=&#39; &#39;)
+                    print(&#39;&#39;)
                 export_index = int(input(&#39;Enter the index of the job ...&#39;))
+                while export_index not in range(len(data)):
+                    print(&#39;Not a valid input&#39;)
+                    export_index = int(input(&#39;Enter the index of the job ...&#39;))
     print(&#39;Start to export job&#39;)
+    categories_downloaded = []
     for idx, record in enumerate(data[export_index][&#39;jobRecord&#39;][&#39;output&#39;]):
         print(&#39;Exporting {}/{}&#39;.format(idx + 1, len(data[export_index][&#39;jobRecord&#39;][&#39;output&#39;])).ljust(20, &#39; &#39;),
               str(record[&#39;type&#39;]).ljust(20, &#39; &#39;), end=&#39; &#39;)
@@ -755,11 +805,17 @@ If <code>False</code>, the previous data will be overwritten if it exists.</p>
         if content.status_code != 200:
             print(&#39;Fail, Response code {}&#39;.format(content.status_code))
         else:
-            mode = &#39;a&#39; if append else &#39;w&#39;
-            header = (not Path(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists()) or mode == &#39;w&#39; 
-            pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;), mode=mode,
+            if record[&#39;type&#39;] in categories_downloaded:
+                mode = &#39;a&#39;
+                header = False
+            else:
+                mode = &#39;a&#39; if append else &#39;w&#39;
+                header = not Path(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;)).exists() or mode == &#39;w&#39;
+            
+            pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;),
+                                                          mode=mode,
                                                           header=header)
-
+            categories_downloaded.append(record[&#39;type&#39;])
             print(&#39;Success&#39;)</code></pre>
 </details>
 </dd>
@@ -937,11 +993,14 @@ Default: <code>'./data/raw_data/'</code></p>
     
 
     &#39;&#39;&#39;
-
+    save_path = reformat_path(save_path)
     if categories is None:
         raise TypeError(&#39;Please supply at least one category...&#39;)
     if type(categories) == str:
-        categories = [categories]
+        if categories == &#39;all&#39;:
+            categories = self.get_category_names(&#39;all&#39;)
+        else:
+            categories = [categories]
 
     export_dict = {}
     mode_dict = {}
@@ -962,36 +1021,35 @@ Default: <code>'./data/raw_data/'</code></p>
                 since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
                 # if the earliest date is after until, then we error
                 if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
-                    raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39;\
-                        &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                    raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39; \
+                                    &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
                 else:
                     mode_dict[category] = &#39;w&#39;
-            else: 
+            else:
                 mode_dict[category] = &#39;a&#39;
 
         export_dict[category] = (since, until)
 
-    job_id_dict = self._export_request_parallel(export_dict=export_dict)
+    job_id_dict, request_url_dict = self._export_request_parallel(export_dict=export_dict)
+
 
     data = requests.get(self.url + &#39;export&#39;, headers=self.params).json()
 
     for category in categories:
-        job_id = job_id_dict[category]
-        job_found = False
-        for previous_job in data[::-1]:
-            if previous_job[&#39;id&#39;] == job_id:
-                output = previous_job[&#39;jobRecord&#39;][&#39;output&#39;]
-                job_found = True
-                break
 
-        if not job_found:
-            raise TypeError(&#39;Uh-oh! Something seems to have gone wrong.&#39;\
-                &#39;Please check the inputs to the function and try again.&#39;)
+        if not category in  request_url_dict:
+            raise TypeError(&#39;Uh-oh! Something seems to have gone wrong.&#39; \
+                            &#39;Please check the inputs to the function and try again.&#39; \
+                            &#39; Looks as if category {} caused the problem&#39;.format(category))
+
+        content = requests.get(request_url_dict[category], headers=self.params)
+        output = json.load(io.StringIO(content.text))[&#39;jobRecord&#39;][&#39;output&#39;]
+
 
         for n_output, data_chunk in enumerate(output):
             content = requests.get(data_chunk[&#39;url&#39;], headers=self.params)
             sys.stdout.write(&#39;\r&#39;)
-            sys.stdout.write(&#34;For {}, exporting {}/{}&#34;.format(category, n_output+1,len(output)))
+            sys.stdout.write(&#34;For {}, exporting {}/{}&#34;.format(category, n_output + 1, len(output)))
             sys.stdout.flush()
             if content.status_code != 200:
                 sys.stdout.write(&#39;\n&#39;)
@@ -1001,14 +1059,31 @@ Default: <code>'./data/raw_data/'</code></p>
                 sys.stdout.flush()
             else:
                 current_data = pd.read_csv(io.StringIO(content.text))
-                header = (not Path(save_path + category + &#39;.csv&#39;).exists()) or mode_dict[category]  == &#39;w&#39;
+                
+                if Path(save_path + category + &#39;.csv&#39;).exists():
+                    data_to_save = pd.read_csv(save_path + category + &#39;.csv&#39;, index_col=0)
+                    data_to_save = data_to_save.append(current_data, ignore_index=True)
+                    data_to_save = data_to_save.drop_duplicates(ignore_index=True)
+
+                else:
+                    data_to_save = current_data
+
+                &#39;&#39;&#39;
+                header = (not Path(save_path + category + &#39;.csv&#39;).exists()) or mode_dict[category] == &#39;w&#39;
                 # checking whether the first line is a duplicate of the end of the previous file
                 if np.all(current_data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[0, :] == last_rows[category]):
-                    current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
+                    current_data.iloc[1:, :].reset_index(drop=True).to_csv(save_path + category + &#39;.csv&#39;,
+                                                                           mode=mode_dict[category],
                                                                            header=header)
                 else:
                     current_data.to_csv(save_path + category + &#39;.csv&#39;, mode=mode_dict[category],
                                         header=header)
+                &#39;&#39;&#39;
+
+                data_to_save.to_csv(save_path + category + &#39;.csv&#39;, mode=&#39;w&#39;,
+                                        header=True)
+
+
         sys.stdout.write(&#39;\n&#39;)
 
     print(&#39;Success&#39;)

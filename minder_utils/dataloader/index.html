@@ -28,7 +28,12 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from .dataloader import *
-__all__ = [&#39;Dataloader&#39;]</code></pre>
+from .partial_order_loader import Partial_Order_Loader
+from .simclr_loader import *
+from .load_saved import process_data
+
+__all__ = [&#39;Dataloader&#39;, &#39;Partial_Order_Loader&#39;, &#39;create_labelled_loader&#39;,
+           &#39;create_unlabelled_loader&#39;, &#39;process_data&#39;]</code></pre>
 </details>
 </section>
 <section>
@@ -38,7 +43,7 @@ __all__ = [&#39;Dataloader&#39;]</code></pre>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="minder_utils.dataloader.load_data" href="load_data.html">minder_utils.dataloader.load_data</a></code></dt>
+<dt><code class="name"><a title="minder_utils.dataloader.load_saved" href="load_saved.html">minder_utils.dataloader.load_saved</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -55,6 +60,182 @@ __all__ = [&#39;Dataloader&#39;]</code></pre>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="minder_utils.dataloader.create_labelled_loader"><code class="name flex">
+<span>def <span class="ident">create_labelled_loader</span></span>(<span>X, y, batch_size=10, normalise_data=True, shuffle=True, seed=0, split=True, augmentation=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a dataloader for labelled data
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>numpy array, data</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>numpy array, label</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>batch_size</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>normalise_data</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>shuffle</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>seed</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>split</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>augmentation</code></strong> :&ensp;<code>augment data</code> or <code>not</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns-torch-dataloader">Returns torch dataloader</h2></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_labelled_loader(X, y, batch_size=10, normalise_data=True, shuffle=True, seed=0, split=True, augmentation=False):
+    &#39;&#39;&#39;
+    Create a dataloader for labelled data
+    Parameters
+    ----------
+    X: numpy array, data
+    y: numpy array, label
+    batch_size
+    normalise_data
+    shuffle
+    seed
+    split
+    augmentation: augment data or not
+
+    Returns torch dataloader
+    -------
+
+    &#39;&#39;&#39;
+    transformers = DataTransform(augmentation_transformers()) if augmentation else None
+    if split:
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=seed, stratify=y)
+        train_dataset = CustomTensorDataset([torch.Tensor(X_train), torch.tensor(y_train)], transformers, normalise_data)
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle)
+        test_dataset = CustomTensorDataset([torch.Tensor(X_test), torch.tensor(y_test)], transformers, normalise_data)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=shuffle)
+        return train_dataloader, test_dataloader
+    else:
+        train_dataset = CustomTensorDataset([torch.Tensor(X), torch.tensor(y)], transformers, normalise_data)
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle)
+        return train_dataloader</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.dataloader.create_unlabelled_loader"><code class="name flex">
+<span>def <span class="ident">create_unlabelled_loader</span></span>(<span>X, batch_size=10, shuffle=True, augmentation=False, normalise_data=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a dataloader for unlabelled data, note this function will label every datapoint
+with one.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>unlabelled data</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>batch_size</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>shuffle</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>augmentation</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>normalise_data</code></strong> :&ensp;<code>normalise the data</code> or <code>not</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns-torch-dataloader">Returns torch dataloader</h2></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_unlabelled_loader(X, batch_size=10, shuffle=True, augmentation=False,
+                             normalise_data=True):
+    &#39;&#39;&#39;
+    Create a dataloader for unlabelled data, note this function will label every datapoint
+    with one.
+    Parameters
+    ----------
+    X: unlabelled data
+    batch_size
+    shuffle
+    augmentation
+    normalise_data: normalise the data or not
+
+    Returns torch dataloader
+    -------
+
+    &#39;&#39;&#39;
+    transformers = DataTransform(augmentation_transformers()) if augmentation else None
+    train_dataset = CustomTensorDataset([torch.Tensor(X), torch.ones(X.shape[0])], transformers,
+                                        normalise_data=normalise_data)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=True)
+    return train_dataloader</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.dataloader.process_data"><code class="name flex">
+<span>def <span class="ident">process_data</span></span>(<span>data, unlabelled_data, num_days_extended=0, flatten=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function is to process the data from dataloader and make it easy for
+the models to use
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>data</code></strong> :&ensp;<code>dict, dictionary contains activity, p_ids, uti_labels</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>unlabelled_data</code></strong> :&ensp;<code>numpy array, unlabelled data</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>num_days_extended: int, How many consecutive days you want to extend the labelled data.
+The data will be extended by 2 * num_days_extended (n days before and after)
+flatten: bool, flatten the activity data or not.</p>
+<h2 id="returns-list-contains-unlabelled_data-x-y-p_ids">Returns list contains unlabelled_data, X, y, p_ids</h2></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_data(data, unlabelled_data, num_days_extended=0, flatten=True):
+    &#39;&#39;&#39;
+    This function is to process the data from dataloader and make it easy for
+    the models to use
+    Parameters
+    ----------
+    data: dict, dictionary contains activity, p_ids, uti_labels
+    unlabelled_data: numpy array, unlabelled data
+    num_days_extended: int, How many consecutive days you want to extend the labelled data.
+        The data will be extended by 2 * num_days_extended (n days before and after)
+    flatten: bool, flatten the activity data or not.
+
+    Returns list contains unlabelled_data, X, y, p_ids
+    -------
+
+    &#39;&#39;&#39;
+    X, y, p_ids = data[&#39;activity&#39;], data[&#39;uti_labels&#39;], data[&#39;p_ids&#39;]
+    X_truncated = []
+    y_truncated = []
+    p_ids_truncated = []
+    for idx in range(len(X)):
+        truncated_len = 1 + num_days_extended * 2
+        if len(X[idx]) &gt;= truncated_len:
+            X_truncated.append(X[idx][: truncated_len])
+            y_truncated.append(y[idx][: truncated_len])
+            p_ids_truncated.append(p_ids[idx][: truncated_len])
+    X, y, p_ids = np.array(X_truncated), np.array(y_truncated), np.array(p_ids_truncated)
+
+    if flatten:
+        X = X.reshape(X.shape[0], 3, 8, 14)
+        y = y.reshape(y.shape[0], -1)
+        y[y &gt; 0] = 1
+        y[y &lt; 0] = -1
+    else:
+        X = X.reshape(X.shape[0], X.shape[1], 3, 8, 14)
+
+    unlabelled_data = unlabelled_data.reshape(unlabelled_data.shape[0], 3, 8, 14)
+    return unlabelled_data, X, y, p_ids</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -96,6 +277,9 @@ the validated date will be labelled as UTI</li>
     &#34;&#34;&#34;
 
     def __init__(self, activity, physiological=None, environmental=None, max_days=3, label_data=False):
+        if activity is None:
+            warnings.warn(&#39;Activity data is None, this class can be only used to load the processed data&#39;)
+            return
         activity = pd.read_csv(activity) if type(activity) == str else activity
         shared_id = None
         for data in [activity, physiological, environmental]:
@@ -139,33 +323,31 @@ the validated date will be labelled as UTI</li>
     def __len__(self):
         return int(len(self.labelled_df) / 24)
 
-    def get(self, valid=None):
-        if valid is None:
-            valid = bool(np.random.randint(2))
-        outputs = []
-        # get p ids
-        p_ids = self.true_p_ids if valid else self.false_p_ids
-        idx = np.random.randint(len(p_ids))
-        # get data of patient
-        data = self.labelled_df.loc[:, valid, :].loc[p_ids[idx]]
-        dates = np.unique(data.index.values)
-        # get date of patient
-        date = pd.to_datetime(dates[np.random.randint(len(dates))])
-        # validated data
-        data = data.loc[date, &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1)
-        outputs.append(data)
-        for i in range(1, self.max_days):
-            date = date - datetime.timedelta(1)
-            try:
-                outputs.append(
-                    self.activity.loc[(p_ids[idx], date), &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1))
-            except KeyError:
-                break
-        outputs = np.array(outputs)
+    @property
+    @load_save(**config[&#39;labelled_data&#39;][&#39;save&#39;])
+    def labelled_data(self):
+        activity_data, physiological_data, environmental_data, patient_ids, uti_labels = \
+            self.get_labelled_data(normalise=False)
+        return {
+            &#39;activity&#39;: activity_data,
+            &#39;phy&#39;: physiological_data,
+            &#39;env&#39;: environmental_data,
+            &#39;p_ids&#39;: patient_ids,
+            &#39;uti_labels&#39;: uti_labels
+        }
 
-        label = np.array([int(valid)])
-
-        return outputs, label
+    @property
+    @load_save(**config[&#39;unlabelled_data&#39;][&#39;save&#39;])
+    def unlabelled_data(self):
+        activity_data, physiological_data, environmental_data, patient_ids, dates = \
+            self.get_unlabelled_data(normalise=False)
+        return {
+            &#39;activity&#39;: activity_data,
+            &#39;phy&#39;: physiological_data,
+            &#39;env&#39;: environmental_data,
+            &#39;p_ids&#39;: patient_ids,
+            &#39;dates&#39;: dates
+        }
 
     def get_labelled_data(self, normalise=False):
         # get p ids
@@ -218,11 +400,30 @@ the validated date will be labelled as UTI</li>
 
         return activity_data, physiological_data, environmental_data, patient_ids, uti_labels
 
-    def get_unlabelled_data(self, normalise=False, date=None):
+    def get_unlabelled_data(self, normalise=False, date=&#39;2021-03-01&#39;):
+        &#39;&#39;&#39;
+        Get the unlabelled data,
+        Parameters
+        ----------
+        normalise: bool, normalise the data or not
+        date: str, only return the data later than the date provided. By default,
+            it will not return the tihm unlabelled
+
+        Returns activity, physiological, environmental data, patient ids, dates
+        -------
+
+        &#39;&#39;&#39;
+        # May need to change the for loop to dataframe operations
+        # df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
+        # phy_df = self.physiological.reset_index()
+        # phy_df = phy_df.pivot_table(index=[&#39;id&#39;, &#39;time&#39;], columns=&#39;location&#39;,
+        #                             values=&#39;value&#39;).reset_index().rename(columns={&#39;time&#39;: &#39;Date&#39;})
+        # indices = df.reset_index()[[&#39;id&#39;, &#39;Date&#39;]].drop_duplicates()
         # get p ids
         df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
         if date is not None:
             df = df[df.index.get_level_values(1) &gt; date]
+
         p_ids = df.index.get_level_values(0).unique()
         outputs = []
         phy_data, env_data = [], []
@@ -294,46 +495,53 @@ def laplace_smooth(i, lam=3, denominator=1):
 </details>
 </dd>
 </dl>
-<h3>Methods</h3>
+<h3>Instance variables</h3>
 <dl>
-<dt id="minder_utils.dataloader.Dataloader.get"><code class="name flex">
-<span>def <span class="ident">get</span></span>(<span>self, valid=None)</span>
-</code></dt>
+<dt id="minder_utils.dataloader.Dataloader.labelled_data"><code class="name">var <span class="ident">labelled_data</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get(self, valid=None):
-    if valid is None:
-        valid = bool(np.random.randint(2))
-    outputs = []
-    # get p ids
-    p_ids = self.true_p_ids if valid else self.false_p_ids
-    idx = np.random.randint(len(p_ids))
-    # get data of patient
-    data = self.labelled_df.loc[:, valid, :].loc[p_ids[idx]]
-    dates = np.unique(data.index.values)
-    # get date of patient
-    date = pd.to_datetime(dates[np.random.randint(len(dates))])
-    # validated data
-    data = data.loc[date, &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1)
-    outputs.append(data)
-    for i in range(1, self.max_days):
-        date = date - datetime.timedelta(1)
-        try:
-            outputs.append(
-                self.activity.loc[(p_ids[idx], date), &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1))
-        except KeyError:
-            break
-    outputs = np.array(outputs)
-
-    label = np.array([int(valid)])
-
-    return outputs, label</code></pre>
+<pre><code class="python">@property
+@load_save(**config[&#39;labelled_data&#39;][&#39;save&#39;])
+def labelled_data(self):
+    activity_data, physiological_data, environmental_data, patient_ids, uti_labels = \
+        self.get_labelled_data(normalise=False)
+    return {
+        &#39;activity&#39;: activity_data,
+        &#39;phy&#39;: physiological_data,
+        &#39;env&#39;: environmental_data,
+        &#39;p_ids&#39;: patient_ids,
+        &#39;uti_labels&#39;: uti_labels
+    }</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.dataloader.Dataloader.unlabelled_data"><code class="name">var <span class="ident">unlabelled_data</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**config[&#39;unlabelled_data&#39;][&#39;save&#39;])
+def unlabelled_data(self):
+    activity_data, physiological_data, environmental_data, patient_ids, dates = \
+        self.get_unlabelled_data(normalise=False)
+    return {
+        &#39;activity&#39;: activity_data,
+        &#39;phy&#39;: physiological_data,
+        &#39;env&#39;: environmental_data,
+        &#39;p_ids&#39;: patient_ids,
+        &#39;dates&#39;: dates
+    }</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
 <dt id="minder_utils.dataloader.Dataloader.get_labelled_data"><code class="name flex">
 <span>def <span class="ident">get_labelled_data</span></span>(<span>self, normalise=False)</span>
 </code></dt>
@@ -396,19 +604,47 @@ def laplace_smooth(i, lam=3, denominator=1):
 </details>
 </dd>
 <dt id="minder_utils.dataloader.Dataloader.get_unlabelled_data"><code class="name flex">
-<span>def <span class="ident">get_unlabelled_data</span></span>(<span>self, normalise=False, date=None)</span>
+<span>def <span class="ident">get_unlabelled_data</span></span>(<span>self, normalise=False, date='2021-03-01')</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Get the unlabelled data,
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>normalise</code></strong> :&ensp;<code>bool, normalise the data</code> or <code>not</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>date</code></strong> :&ensp;<code>str, only return the data later than the date provided. By default,</code></dt>
+<dd>it will not return the tihm unlabelled</dd>
+</dl>
+<h2 id="returns-activity-physiological-environmental-data-patient-ids-dates">Returns activity, physiological, environmental data, patient ids, dates</h2></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_unlabelled_data(self, normalise=False, date=None):
+<pre><code class="python">def get_unlabelled_data(self, normalise=False, date=&#39;2021-03-01&#39;):
+    &#39;&#39;&#39;
+    Get the unlabelled data,
+    Parameters
+    ----------
+    normalise: bool, normalise the data or not
+    date: str, only return the data later than the date provided. By default,
+        it will not return the tihm unlabelled
+
+    Returns activity, physiological, environmental data, patient ids, dates
+    -------
+
+    &#39;&#39;&#39;
+    # May need to change the for loop to dataframe operations
+    # df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
+    # phy_df = self.physiological.reset_index()
+    # phy_df = phy_df.pivot_table(index=[&#39;id&#39;, &#39;time&#39;], columns=&#39;location&#39;,
+    #                             values=&#39;value&#39;).reset_index().rename(columns={&#39;time&#39;: &#39;Date&#39;})
+    # indices = df.reset_index()[[&#39;id&#39;, &#39;Date&#39;]].drop_duplicates()
     # get p ids
     df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
     if date is not None:
         df = df[df.index.get_level_values(1) &gt; date]
+
     p_ids = df.index.get_level_values(0).unique()
     outputs = []
     phy_data, env_data = [], []
@@ -438,6 +674,95 @@ def laplace_smooth(i, lam=3, denominator=1):
 </dd>
 </dl>
 </dd>
+<dt id="minder_utils.dataloader.Partial_Order_Loader"><code class="flex name class">
+<span>class <span class="ident">Partial_Order_Loader</span></span>
+<span>(</span><span>data, y=None, shuffle=True, augmented_day=3, max_iter=None, normalise=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Partial_Order_Loader:
+    def __init__(self, data, y=None, shuffle=True, augmented_day=3, max_iter=None, normalise=True):
+        self.data = data
+        self.y = y
+        self.augmented_day = augmented_day
+        self.max_iter = max_iter
+        self.iter_count = 0
+        self.shuffle = shuffle
+        self.normalise = normalise
+
+    def normalisation(self, data):
+        if self.normalise:
+            data = torch.Tensor(data)
+            return F.normalize(data.view(24, -1), dim=0).view(data.size()).detach().numpy()
+        return data
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.iter_count &gt;= len(self):
+            raise StopIteration
+        if self.y is not None:
+            data_idx = np.random.choice(len(self.data)) if self.shuffle else self.iter_count
+            p_data = self.data[data_idx]
+            p_label = self.y[data_idx]
+            anchor = self.normalisation(p_data[np.isin(p_label, [-1, 1])])
+
+            pre_idx = np.sort(p_label[p_label &lt; 0])
+            post_idx = np.sort(p_label[(p_label &gt; 0) &amp; (p_label != 1)])[::-1]
+            pre_anchor = []
+            post_anchor = []
+            for i in range(self.augmented_day):
+                pre_anchor.append(self.normalisation(p_data[p_label == pre_idx[i]]))
+                post_anchor.append(self.normalisation(p_data[p_label == post_idx[i]]))
+            # pre_anchor = np.concatenate(pre_anchor)
+            # post_anchor = np.concatenate(post_anchor)
+            self.iter_count += 1
+        else:
+            data_idx = np.random.choice(len(self.data) - self.augmented_day * 2) + self.augmented_day
+            p_data = self.data[data_idx]
+            anchor = self.normalisation(p_data)
+
+            pre_anchor = []
+            post_anchor = []
+            for i in range(1, self.augmented_day + 1):
+                pre_anchor.append(self.normalisation(p_data[data_idx - i]))
+                post_anchor.append(self.normalisation(p_data[data_idx + i]))
+            self.iter_count += 1
+
+        pre_anchor, anchor, post_anchor = torch.Tensor(pre_anchor), torch.Tensor(anchor), torch.Tensor(post_anchor)
+
+        return pre_anchor, anchor, post_anchor
+
+    def __len__(self):
+        if self.max_iter:
+            return self.max_iter
+        return len(self.data)</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.dataloader.Partial_Order_Loader.normalisation"><code class="name flex">
+<span>def <span class="ident">normalisation</span></span>(<span>self, data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def normalisation(self, data):
+    if self.normalise:
+        data = torch.Tensor(data)
+        return F.normalize(data.view(24, -1), dim=0).view(data.size()).detach().numpy()
+    return data</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 </dl>
 </section>
 </article>
@@ -460,21 +785,35 @@ def laplace_smooth(i, lam=3, denominator=1):
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
 <li><code><a title="minder_utils.dataloader.dataloader" href="dataloader.html">minder_utils.dataloader.dataloader</a></code></li>
-<li><code><a title="minder_utils.dataloader.load_data" href="load_data.html">minder_utils.dataloader.load_data</a></code></li>
+<li><code><a title="minder_utils.dataloader.load_saved" href="load_saved.html">minder_utils.dataloader.load_saved</a></code></li>
 <li><code><a title="minder_utils.dataloader.partial_order_loader" href="partial_order_loader.html">minder_utils.dataloader.partial_order_loader</a></code></li>
 <li><code><a title="minder_utils.dataloader.simclr_loader" href="simclr_loader.html">minder_utils.dataloader.simclr_loader</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="minder_utils.dataloader.create_labelled_loader" href="#minder_utils.dataloader.create_labelled_loader">create_labelled_loader</a></code></li>
+<li><code><a title="minder_utils.dataloader.create_unlabelled_loader" href="#minder_utils.dataloader.create_unlabelled_loader">create_unlabelled_loader</a></code></li>
+<li><code><a title="minder_utils.dataloader.process_data" href="#minder_utils.dataloader.process_data">process_data</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
 <h4><code><a title="minder_utils.dataloader.Dataloader" href="#minder_utils.dataloader.Dataloader">Dataloader</a></code></h4>
-<ul class="">
-<li><code><a title="minder_utils.dataloader.Dataloader.get" href="#minder_utils.dataloader.Dataloader.get">get</a></code></li>
+<ul class="two-column">
 <li><code><a title="minder_utils.dataloader.Dataloader.get_data" href="#minder_utils.dataloader.Dataloader.get_data">get_data</a></code></li>
 <li><code><a title="minder_utils.dataloader.Dataloader.get_labelled_data" href="#minder_utils.dataloader.Dataloader.get_labelled_data">get_labelled_data</a></code></li>
 <li><code><a title="minder_utils.dataloader.Dataloader.get_unlabelled_data" href="#minder_utils.dataloader.Dataloader.get_unlabelled_data">get_unlabelled_data</a></code></li>
+<li><code><a title="minder_utils.dataloader.Dataloader.labelled_data" href="#minder_utils.dataloader.Dataloader.labelled_data">labelled_data</a></code></li>
 <li><code><a title="minder_utils.dataloader.Dataloader.laplace_smooth" href="#minder_utils.dataloader.Dataloader.laplace_smooth">laplace_smooth</a></code></li>
+<li><code><a title="minder_utils.dataloader.Dataloader.unlabelled_data" href="#minder_utils.dataloader.Dataloader.unlabelled_data">unlabelled_data</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="minder_utils.dataloader.Partial_Order_Loader" href="#minder_utils.dataloader.Partial_Order_Loader">Partial_Order_Loader</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.dataloader.Partial_Order_Loader.normalisation" href="#minder_utils.dataloader.Partial_Order_Loader.normalisation">normalisation</a></code></li>
 </ul>
 </li>
 </ul>

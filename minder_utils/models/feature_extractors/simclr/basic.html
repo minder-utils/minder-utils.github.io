@@ -41,7 +41,7 @@ class Encoder(nn.Module):
         self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
         self.conv4 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(336, 1024)
+        self.fc = nn.Linear(1792, 1024)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -67,7 +67,7 @@ class Encoder(nn.Module):
 
 class ResNetSimCLR(nn.Module):
 
-    def __init__(self, base_model, out_dim):
+    def __init__(self, base_model, out_dim, **kwargs):
         super(ResNetSimCLR, self).__init__()
         self.resnet_dict = {&#34;resnet18&#34;: models.resnet18(pretrained=False),
                             &#34;resnet50&#34;: models.resnet50(pretrained=False),
@@ -94,7 +94,7 @@ class ResNetSimCLR(nn.Module):
 
     def forward(self, x):
         h = self.features(x)
-        h = nn.Flatten()(x) if self.base_model == &#39;basic&#39; else h.squeeze()
+        h = nn.Flatten()(h) if self.base_model == &#39;basic&#39; else h.squeeze()
 
         x = self.l1(h)
         x = F.relu(x)
@@ -150,7 +150,7 @@ evaluation mode.
         self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
         self.conv4 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.fc = nn.Linear(336, 1024)
+        self.fc = nn.Linear(1792, 1024)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -233,7 +233,7 @@ registered hooks while the latter silently ignores them.</p>
 </dd>
 <dt id="minder_utils.models.feature_extractors.simclr.basic.ResNetSimCLR"><code class="flex name class">
 <span>class <span class="ident">ResNetSimCLR</span></span>
-<span>(</span><span>base_model, out_dim)</span>
+<span>(</span><span>base_model, out_dim, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base class for all neural network modules.</p>
@@ -265,7 +265,7 @@ evaluation mode.
 </summary>
 <pre><code class="python">class ResNetSimCLR(nn.Module):
 
-    def __init__(self, base_model, out_dim):
+    def __init__(self, base_model, out_dim, **kwargs):
         super(ResNetSimCLR, self).__init__()
         self.resnet_dict = {&#34;resnet18&#34;: models.resnet18(pretrained=False),
                             &#34;resnet50&#34;: models.resnet50(pretrained=False),
@@ -292,7 +292,7 @@ evaluation mode.
 
     def forward(self, x):
         h = self.features(x)
-        h = nn.Flatten()(x) if self.base_model == &#39;basic&#39; else h.squeeze()
+        h = nn.Flatten()(h) if self.base_model == &#39;basic&#39; else h.squeeze()
 
         x = self.l1(h)
         x = F.relu(x)
@@ -335,7 +335,7 @@ registered hooks while the latter silently ignores them.</p>
 </summary>
 <pre><code class="python">def forward(self, x):
     h = self.features(x)
-    h = nn.Flatten()(x) if self.base_model == &#39;basic&#39; else h.squeeze()
+    h = nn.Flatten()(h) if self.base_model == &#39;basic&#39; else h.squeeze()
 
     x = self.l1(h)
     x = F.relu(x)

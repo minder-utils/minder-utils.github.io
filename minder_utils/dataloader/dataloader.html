@@ -29,11 +29,11 @@
 </summary>
 <pre><code class="python">import pandas as pd
 import numpy as np
+import warnings
 import datetime
-# import torch
-# import torch.nn.functional as F
-from ..formatting.format_util import normalise as normalized
-from ..formatting.label import label_dataframe
+from minder_utils.util import load_save
+from minder_utils.formatting.format_util import normalise as normalized
+from minder_utils.formatting.label import label_dataframe
 from minder_utils.formatting.standardisation import standardise_physiological_environmental, standardise_activity_data
 from minder_utils.configurations import config
 
@@ -54,6 +54,9 @@ class Dataloader:
     &#34;&#34;&#34;
 
     def __init__(self, activity, physiological=None, environmental=None, max_days=3, label_data=False):
+        if activity is None:
+            warnings.warn(&#39;Activity data is None, this class can be only used to load the processed data&#39;)
+            return
         activity = pd.read_csv(activity) if type(activity) == str else activity
         shared_id = None
         for data in [activity, physiological, environmental]:
@@ -97,33 +100,31 @@ class Dataloader:
     def __len__(self):
         return int(len(self.labelled_df) / 24)
 
-    def get(self, valid=None):
-        if valid is None:
-            valid = bool(np.random.randint(2))
-        outputs = []
-        # get p ids
-        p_ids = self.true_p_ids if valid else self.false_p_ids
-        idx = np.random.randint(len(p_ids))
-        # get data of patient
-        data = self.labelled_df.loc[:, valid, :].loc[p_ids[idx]]
-        dates = np.unique(data.index.values)
-        # get date of patient
-        date = pd.to_datetime(dates[np.random.randint(len(dates))])
-        # validated data
-        data = data.loc[date, &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1)
-        outputs.append(data)
-        for i in range(1, self.max_days):
-            date = date - datetime.timedelta(1)
-            try:
-                outputs.append(
-                    self.activity.loc[(p_ids[idx], date), &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1))
-            except KeyError:
-                break
-        outputs = np.array(outputs)
+    @property
+    @load_save(**config[&#39;labelled_data&#39;][&#39;save&#39;])
+    def labelled_data(self):
+        activity_data, physiological_data, environmental_data, patient_ids, uti_labels = \
+            self.get_labelled_data(normalise=False)
+        return {
+            &#39;activity&#39;: activity_data,
+            &#39;phy&#39;: physiological_data,
+            &#39;env&#39;: environmental_data,
+            &#39;p_ids&#39;: patient_ids,
+            &#39;uti_labels&#39;: uti_labels
+        }
 
-        label = np.array([int(valid)])
-
-        return outputs, label
+    @property
+    @load_save(**config[&#39;unlabelled_data&#39;][&#39;save&#39;])
+    def unlabelled_data(self):
+        activity_data, physiological_data, environmental_data, patient_ids, dates = \
+            self.get_unlabelled_data(normalise=False)
+        return {
+            &#39;activity&#39;: activity_data,
+            &#39;phy&#39;: physiological_data,
+            &#39;env&#39;: environmental_data,
+            &#39;p_ids&#39;: patient_ids,
+            &#39;dates&#39;: dates
+        }
 
     def get_labelled_data(self, normalise=False):
         # get p ids
@@ -176,11 +177,30 @@ class Dataloader:
 
         return activity_data, physiological_data, environmental_data, patient_ids, uti_labels
 
-    def get_unlabelled_data(self, normalise=False, date=None):
+    def get_unlabelled_data(self, normalise=False, date=&#39;2021-03-01&#39;):
+        &#39;&#39;&#39;
+        Get the unlabelled data,
+        Parameters
+        ----------
+        normalise: bool, normalise the data or not
+        date: str, only return the data later than the date provided. By default,
+            it will not return the tihm unlabelled
+
+        Returns activity, physiological, environmental data, patient ids, dates
+        -------
+
+        &#39;&#39;&#39;
+        # May need to change the for loop to dataframe operations
+        # df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
+        # phy_df = self.physiological.reset_index()
+        # phy_df = phy_df.pivot_table(index=[&#39;id&#39;, &#39;time&#39;], columns=&#39;location&#39;,
+        #                             values=&#39;value&#39;).reset_index().rename(columns={&#39;time&#39;: &#39;Date&#39;})
+        # indices = df.reset_index()[[&#39;id&#39;, &#39;Date&#39;]].drop_duplicates()
         # get p ids
         df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
         if date is not None:
             df = df[df.index.get_level_values(1) &gt; date]
+
         p_ids = df.index.get_level_values(0).unique()
         outputs = []
         phy_data, env_data = [], []
@@ -265,6 +285,9 @@ the validated date will be labelled as UTI</li>
     &#34;&#34;&#34;
 
     def __init__(self, activity, physiological=None, environmental=None, max_days=3, label_data=False):
+        if activity is None:
+            warnings.warn(&#39;Activity data is None, this class can be only used to load the processed data&#39;)
+            return
         activity = pd.read_csv(activity) if type(activity) == str else activity
         shared_id = None
         for data in [activity, physiological, environmental]:
@@ -308,33 +331,31 @@ the validated date will be labelled as UTI</li>
     def __len__(self):
         return int(len(self.labelled_df) / 24)
 
-    def get(self, valid=None):
-        if valid is None:
-            valid = bool(np.random.randint(2))
-        outputs = []
-        # get p ids
-        p_ids = self.true_p_ids if valid else self.false_p_ids
-        idx = np.random.randint(len(p_ids))
-        # get data of patient
-        data = self.labelled_df.loc[:, valid, :].loc[p_ids[idx]]
-        dates = np.unique(data.index.values)
-        # get date of patient
-        date = pd.to_datetime(dates[np.random.randint(len(dates))])
-        # validated data
-        data = data.loc[date, &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1)
-        outputs.append(data)
-        for i in range(1, self.max_days):
-            date = date - datetime.timedelta(1)
-            try:
-                outputs.append(
-                    self.activity.loc[(p_ids[idx], date), &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1))
-            except KeyError:
-                break
-        outputs = np.array(outputs)
+    @property
+    @load_save(**config[&#39;labelled_data&#39;][&#39;save&#39;])
+    def labelled_data(self):
+        activity_data, physiological_data, environmental_data, patient_ids, uti_labels = \
+            self.get_labelled_data(normalise=False)
+        return {
+            &#39;activity&#39;: activity_data,
+            &#39;phy&#39;: physiological_data,
+            &#39;env&#39;: environmental_data,
+            &#39;p_ids&#39;: patient_ids,
+            &#39;uti_labels&#39;: uti_labels
+        }
 
-        label = np.array([int(valid)])
-
-        return outputs, label
+    @property
+    @load_save(**config[&#39;unlabelled_data&#39;][&#39;save&#39;])
+    def unlabelled_data(self):
+        activity_data, physiological_data, environmental_data, patient_ids, dates = \
+            self.get_unlabelled_data(normalise=False)
+        return {
+            &#39;activity&#39;: activity_data,
+            &#39;phy&#39;: physiological_data,
+            &#39;env&#39;: environmental_data,
+            &#39;p_ids&#39;: patient_ids,
+            &#39;dates&#39;: dates
+        }
 
     def get_labelled_data(self, normalise=False):
         # get p ids
@@ -387,11 +408,30 @@ the validated date will be labelled as UTI</li>
 
         return activity_data, physiological_data, environmental_data, patient_ids, uti_labels
 
-    def get_unlabelled_data(self, normalise=False, date=None):
+    def get_unlabelled_data(self, normalise=False, date=&#39;2021-03-01&#39;):
+        &#39;&#39;&#39;
+        Get the unlabelled data,
+        Parameters
+        ----------
+        normalise: bool, normalise the data or not
+        date: str, only return the data later than the date provided. By default,
+            it will not return the tihm unlabelled
+
+        Returns activity, physiological, environmental data, patient ids, dates
+        -------
+
+        &#39;&#39;&#39;
+        # May need to change the for loop to dataframe operations
+        # df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
+        # phy_df = self.physiological.reset_index()
+        # phy_df = phy_df.pivot_table(index=[&#39;id&#39;, &#39;time&#39;], columns=&#39;location&#39;,
+        #                             values=&#39;value&#39;).reset_index().rename(columns={&#39;time&#39;: &#39;Date&#39;})
+        # indices = df.reset_index()[[&#39;id&#39;, &#39;Date&#39;]].drop_duplicates()
         # get p ids
         df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
         if date is not None:
             df = df[df.index.get_level_values(1) &gt; date]
+
         p_ids = df.index.get_level_values(0).unique()
         outputs = []
         phy_data, env_data = [], []
@@ -463,46 +503,53 @@ def laplace_smooth(i, lam=3, denominator=1):
 </details>
 </dd>
 </dl>
-<h3>Methods</h3>
+<h3>Instance variables</h3>
 <dl>
-<dt id="minder_utils.dataloader.dataloader.Dataloader.get"><code class="name flex">
-<span>def <span class="ident">get</span></span>(<span>self, valid=None)</span>
-</code></dt>
+<dt id="minder_utils.dataloader.dataloader.Dataloader.labelled_data"><code class="name">var <span class="ident">labelled_data</span></code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get(self, valid=None):
-    if valid is None:
-        valid = bool(np.random.randint(2))
-    outputs = []
-    # get p ids
-    p_ids = self.true_p_ids if valid else self.false_p_ids
-    idx = np.random.randint(len(p_ids))
-    # get data of patient
-    data = self.labelled_df.loc[:, valid, :].loc[p_ids[idx]]
-    dates = np.unique(data.index.values)
-    # get date of patient
-    date = pd.to_datetime(dates[np.random.randint(len(dates))])
-    # validated data
-    data = data.loc[date, &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1)
-    outputs.append(data)
-    for i in range(1, self.max_days):
-        date = date - datetime.timedelta(1)
-        try:
-            outputs.append(
-                self.activity.loc[(p_ids[idx], date), &#39;Back Door&#39;: &#39;Toaster&#39;].to_numpy().reshape(3, 8, -1))
-        except KeyError:
-            break
-    outputs = np.array(outputs)
-
-    label = np.array([int(valid)])
-
-    return outputs, label</code></pre>
+<pre><code class="python">@property
+@load_save(**config[&#39;labelled_data&#39;][&#39;save&#39;])
+def labelled_data(self):
+    activity_data, physiological_data, environmental_data, patient_ids, uti_labels = \
+        self.get_labelled_data(normalise=False)
+    return {
+        &#39;activity&#39;: activity_data,
+        &#39;phy&#39;: physiological_data,
+        &#39;env&#39;: environmental_data,
+        &#39;p_ids&#39;: patient_ids,
+        &#39;uti_labels&#39;: uti_labels
+    }</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.dataloader.dataloader.Dataloader.unlabelled_data"><code class="name">var <span class="ident">unlabelled_data</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**config[&#39;unlabelled_data&#39;][&#39;save&#39;])
+def unlabelled_data(self):
+    activity_data, physiological_data, environmental_data, patient_ids, dates = \
+        self.get_unlabelled_data(normalise=False)
+    return {
+        &#39;activity&#39;: activity_data,
+        &#39;phy&#39;: physiological_data,
+        &#39;env&#39;: environmental_data,
+        &#39;p_ids&#39;: patient_ids,
+        &#39;dates&#39;: dates
+    }</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
 <dt id="minder_utils.dataloader.dataloader.Dataloader.get_labelled_data"><code class="name flex">
 <span>def <span class="ident">get_labelled_data</span></span>(<span>self, normalise=False)</span>
 </code></dt>
@@ -565,19 +612,47 @@ def laplace_smooth(i, lam=3, denominator=1):
 </details>
 </dd>
 <dt id="minder_utils.dataloader.dataloader.Dataloader.get_unlabelled_data"><code class="name flex">
-<span>def <span class="ident">get_unlabelled_data</span></span>(<span>self, normalise=False, date=None)</span>
+<span>def <span class="ident">get_unlabelled_data</span></span>(<span>self, normalise=False, date='2021-03-01')</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Get the unlabelled data,
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>normalise</code></strong> :&ensp;<code>bool, normalise the data</code> or <code>not</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>date</code></strong> :&ensp;<code>str, only return the data later than the date provided. By default,</code></dt>
+<dd>it will not return the tihm unlabelled</dd>
+</dl>
+<h2 id="returns-activity-physiological-environmental-data-patient-ids-dates">Returns activity, physiological, environmental data, patient ids, dates</h2></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_unlabelled_data(self, normalise=False, date=None):
+<pre><code class="python">def get_unlabelled_data(self, normalise=False, date=&#39;2021-03-01&#39;):
+    &#39;&#39;&#39;
+    Get the unlabelled data,
+    Parameters
+    ----------
+    normalise: bool, normalise the data or not
+    date: str, only return the data later than the date provided. By default,
+        it will not return the tihm unlabelled
+
+    Returns activity, physiological, environmental data, patient ids, dates
+    -------
+
+    &#39;&#39;&#39;
+    # May need to change the for loop to dataframe operations
+    # df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
+    # phy_df = self.physiological.reset_index()
+    # phy_df = phy_df.pivot_table(index=[&#39;id&#39;, &#39;time&#39;], columns=&#39;location&#39;,
+    #                             values=&#39;value&#39;).reset_index().rename(columns={&#39;time&#39;: &#39;Date&#39;})
+    # indices = df.reset_index()[[&#39;id&#39;, &#39;Date&#39;]].drop_duplicates()
     # get p ids
     df = self.activity.reset_index().set_index([&#39;id&#39;, &#39;Date&#39;])
     if date is not None:
         df = df[df.index.get_level_values(1) &gt; date]
+
     p_ids = df.index.get_level_values(0).unique()
     outputs = []
     phy_data, env_data = [], []
@@ -630,12 +705,13 @@ def laplace_smooth(i, lam=3, denominator=1):
 <ul>
 <li>
 <h4><code><a title="minder_utils.dataloader.dataloader.Dataloader" href="#minder_utils.dataloader.dataloader.Dataloader">Dataloader</a></code></h4>
-<ul class="">
-<li><code><a title="minder_utils.dataloader.dataloader.Dataloader.get" href="#minder_utils.dataloader.dataloader.Dataloader.get">get</a></code></li>
+<ul class="two-column">
 <li><code><a title="minder_utils.dataloader.dataloader.Dataloader.get_data" href="#minder_utils.dataloader.dataloader.Dataloader.get_data">get_data</a></code></li>
 <li><code><a title="minder_utils.dataloader.dataloader.Dataloader.get_labelled_data" href="#minder_utils.dataloader.dataloader.Dataloader.get_labelled_data">get_labelled_data</a></code></li>
 <li><code><a title="minder_utils.dataloader.dataloader.Dataloader.get_unlabelled_data" href="#minder_utils.dataloader.dataloader.Dataloader.get_unlabelled_data">get_unlabelled_data</a></code></li>
+<li><code><a title="minder_utils.dataloader.dataloader.Dataloader.labelled_data" href="#minder_utils.dataloader.dataloader.Dataloader.labelled_data">labelled_data</a></code></li>
 <li><code><a title="minder_utils.dataloader.dataloader.Dataloader.laplace_smooth" href="#minder_utils.dataloader.dataloader.Dataloader.laplace_smooth">laplace_smooth</a></code></li>
+<li><code><a title="minder_utils.dataloader.dataloader.Dataloader.unlabelled_data" href="#minder_utils.dataloader.dataloader.Dataloader.unlabelled_data">unlabelled_data</a></code></li>
 </ul>
 </li>
 </ul>

@@ -1,0 +1,1178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>minder_utils.feature_engineering.TimeFunctions API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<style>.homelink{display:block;font-size:2em;font-weight:bold;color:#555;padding-bottom:.5em;border-bottom:1px solid silver}.homelink:hover{color:inherit}.homelink img{max-width:20%;max-height:5em;margin:auto;margin-bottom:.3em}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>minder_utils.feature_engineering.TimeFunctions</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import numpy as np
+import pandas as pd
+from .DensityFunctions import BaseDensityCalc
+
+
+def raw_delta_calc(times):
+    &#39;&#39;&#39;
+    Given an array of times, this function calculates the deltas between them.
+
+    Arguments
+    ---------
+    
+    - times: array:
+        This is an array of times that will be used to calculate the deltas.
+
+    Returns
+    ---------
+
+    - out: array:
+        This is an array of deltas.
+
+    &#39;&#39;&#39;
+
+    out = (times[1:] - times[:-1])*1e-9
+
+    out = out.astype(float)
+
+
+    return out
+
+
+
+def single_location_delta(input_df, single_location, 
+                            columns={&#39;time&#39;: &#39;time&#39;, &#39;location&#39;: &#39;location&#39;}, recall_value=5, 
+                            return_as_list = False):
+    &#39;&#39;&#39;
+    This function takes the ```input_df``` and calculates the raw time delta between the single_location location time
+    and the time of the ```recall_value``` number of locations immediately before the single_location.
+
+    This does not separate on subject. Please pass data from a single subject into this function.
+
+    Arguments
+    ---------
+
+    - input_df: pandas dataframe:
+        This is a dataframe that contains columns relating to the subject, time and location of sensor trigger.
+
+    - single_location: string:
+        This is the location value that you wish to calculate the delta to.
+    
+    - columns: dictionary:
+        This is the dictionary with the column names in ```input_df``` for each of the values of data that we need 
+        in our calculations.
+        This dictionary should be of the form:
+        ```
+        {&#39;time&#39;:      column containing the times of sensor triggers,
+         &#39;location&#39;:  column containing the locations of the sensor triggers}
+         ```
+
+    - recall_value: integer:
+        This is the number of previous locations to the single_location trigger
+
+    - return_as_list: bool:
+        This option allows the user to return a list of the dates and data if ```True```. This is 
+        used internally by other functions.
+
+    
+    Returns
+    ---------
+
+    - out: dictionary:
+        This has the Timestamps of the dates as keys (for example: Timestamp(&#39;2021-05-05 00:00:00&#39;)) and the 
+        arrays of deltas as values. The arrays of deltas are of shape ```(Nt, recall_value)``` where Nt is the 
+        number of visits to ```single_location``` on a given day. If there are no ```single_location``` visits
+        found in the data, then an empty dictionary will be returned.
+
+    &#39;&#39;&#39;
+    time_column = columns[&#39;time&#39;]
+    location_column = columns[&#39;location&#39;]
+
+    # format the incoming data to ensure assumptions about structure are met
+    input_df[time_column] = pd.to_datetime(input_df[time_column], utc=True)
+    input_df = input_df.sort_values(time_column)
+
+    # find the indices of the data that match with the location we want to find the delta to
+    single_location_indices = np.where(input_df[location_column] == single_location)[0].reshape(-1, 1)
+    # making sure that the recall value is not more than the number of sensor triggers before the
+    # first single_location sensor trigger
+    if len(single_location_indices) ==  0:
+        
+        if return_as_list: return [], []
+        else: return {}
+
+    single_location_indices = single_location_indices[np.argmax(recall_value &lt; single_location_indices):]
+
+    # indices of the sensor triggers that we need in our calculations
+    recall_indices = np.hstack([single_location_indices - i for i in range(recall_value + 1)])
+
+    # the times of the sensor triggers
+    recall_times = input_df[time_column].values[recall_indices]
+
+    # the delta between the times for each of the previous sensors to recall_value
+    recall_delta = (recall_times[:, 0, None] - recall_times[:, 1:]) * 1e-9
+
+    # the times of the single_location triggers
+    single_location_times = input_df[time_column].iloc[single_location_indices.reshape(-1, )]
+    # dates of the single_location triggers
+    single_location_dates = single_location_times.dt.date
+
+    # out dictionary
+    out = {}
+
+
+    if return_as_list:
+        date_list = []
+        data_list = []
+        for nd, date in enumerate(single_location_dates.unique()):
+            date_list.append(date)
+            data_to_add = recall_delta[single_location_dates.values == date].astype(float)
+            data_list.append(data_to_add)
+        
+        return pd.to_datetime(date_list), data_list
+
+
+    else:
+        # creating the output dictionary
+        for date in single_location_dates.unique():
+            # saving the delta values for this date to the dictionary
+            out[pd.to_datetime(date)] = recall_delta[single_location_dates.values == date].astype(float)
+
+        return out
+
+
+class TimeDeltaDensity(BaseDensityCalc):
+    &#39;&#39;&#39;
+    This function allows the user to calculate reverse percentiles on some data, given another
+    dataset.
+
+    &#39;&#39;&#39;
+
+    def __init__(self, save_baseline_array=True, sample=False, sample_size=10000,
+                 seed=None, verbose=True):
+        BaseDensityCalc.__init__(self, save_baseline_array=save_baseline_array,
+                                 sample=sample, sample_size=sample_size, seed=seed, verbose=verbose)
+
+        return
+
+
+
+
+def rp_single_location_delta(input_df, single_location, baseline_length_days = 7, baseline_offset_days = 0,
+                             columns={&#39;time&#39;: &#39;time&#39;, &#39;location&#39;: &#39;location&#39;}, recall_value=5):
+    &#39;&#39;&#39;
+    This function takes the ```input_df``` and calculates the reverse percentage time delta between the ```single_location``` location time
+    and the time of the ```recall_value``` number of locations immediately before the ```single_location```. The baseline
+    for the reverse percentage calculation is defined by ```baseline_length_days``` and ```baseline_offset_days```. 
+
+    For example:
+    With ```baseline_length_days = 7``` and ```baseline_offset_days = 1```, the rp deltas on the day
+    ```pd.Timestamp(&#39;2021-06-29&#39;)``` are calculated using the deltas from 
+    ```pd.Timestamp(&#39;2021-06-21 00:00:00&#39;)``` to ```pd.Timestamp(&#39;2021-06-28 00:00:00&#39;)```.
+
+    This does not separate on subject. Please pass data from a single subject into this function.
+
+    NOTE: The reverse percentage is calculated based on all of the deltas coming into a location!
+    This means that the delta is agnostic to the &#34;from&#34; location.
+
+    Arguments
+    ---------
+
+    - input_df: pandas dataframe:
+        This is a dataframe that contains columns relating to the time and location of sensor trigger.
+
+    - single_location: string:
+        This is the location value that you wish to calculate the delta to.
+    
+    - baseline_length_days: integer:
+        This is the length of the baseline in days that will be used. This value is used when finding
+        the ```baseline_length_days``` complete days of ```single_location``` data to use as a baseline.
+    
+    - baseline_offset_days: integer:
+        This is the offset to the baseline period. ```0``` corresponds to a time period ending the morning of the
+        current date being calculated on.
+    
+    - columns: dictionary:
+        This is the dictionary with the column names in ```input_df``` for each of the values of data that we need 
+        in our calculations.
+        This dictionary should be of the form:
+        ```
+        {&#39;time&#39;:      column containing the times of sensor triggers,
+         &#39;location&#39;:  column containing the locations of the sensor triggers}
+         ```
+
+    - recall_value: integer:
+        This is the number of previous locations to the single_location trigger
+    
+    
+    Returns
+    ---------
+
+    - out: dictionary:
+        This has the Timestamps of the dates as keys (for example: Timestamp(&#39;2021-05-05 00:00:00&#39;)) and the 
+        arrays of deltas as values. The arrays of deltas are of shape ```(Nt, recall_value)``` where Nt is the 
+        number of visits to ```single_location``` on a given day.
+
+    &#39;&#39;&#39;
+
+
+    # column names
+    time_column = columns[&#39;time&#39;]
+    location_column = columns[&#39;location&#39;]
+
+    out = {}
+
+    # format the incoming data to ensure assumptions about structure are met
+    input_df[time_column] = pd.to_datetime(input_df[time_column], utc=True)
+    input_df = input_df.sort_values(time_column)
+
+    # getting the single location raw delta
+    date_list, data_list = single_location_delta(input_df, single_location, columns, recall_value, return_as_list=True)
+
+    # for each date
+    for nd, date in enumerate(date_list):
+        date = pd.to_datetime(date)
+
+
+        &#39;&#39;&#39;
+        if len(baseline_offset)&gt;0:
+            baseline_start_tp = pd.to_datetime(date - pd.Timedelta(**baseline_length) - pd.Timedelta(**baseline_offset))
+            baseline_end_tp = pd.to_datetime(date - pd.Timedelta(**baseline_offset))
+        else:
+            baseline_start_tp = pd.to_datetime(date - pd.Timedelta(**baseline_length))
+            baseline_end_tp = pd.to_datetime(date)
+        &#39;&#39;&#39;
+
+        
+
+        index_baseline_end = np.where(date_list &lt;= date)[0][-1]
+        
+        index_baseline_end = index_baseline_end - baseline_offset_days
+        index_baseline_start = index_baseline_end - baseline_length_days
+
+        if index_baseline_start &lt; 0:
+            out[date] = -1*np.ones_like(data_list[nd])
+            continue
+
+        
+        baseline_delta = np.vstack([data_list[index] for index in range(index_baseline_start, index_baseline_end)])
+
+        
+        td = TimeDeltaDensity(save_baseline_array=True, sample=True, sample_size=10000,
+                                seed=None, verbose=False)
+
+        td.fit(baseline_delta)
+        out[date] = td.transform(data_list[nd])
+        
+    return out
+
+
+def rp_location_delta(data, columns = {&#39;time&#39;: &#39;start_date&#39;, &#39;location&#39;: &#39;location_name&#39;}, baseline_length_days = 7,
+                           baseline_offset_days = 0, all_loc_as_baseline = False):
+    &#39;&#39;&#39; 
+    This funciton allows you to calculate the reverse percentage of the delta for each of the locations based on a baseline.
+    This function allows you to specify whether to calculate the rp values based on the deltas to the same location or 
+    whether to calculate them using all locations.
+
+    Arguments
+    ---------
+
+    - data: pandas dataframe:
+        This is the dataframe containing the time and locations that will be used to calculate the reverse 
+        percentage deltas
+    
+    - columns: dictionary:
+        This is the dictionary with the column names in ```input_df``` for each of the values of data that we need 
+        in our calculations.
+        This dictionary should be of the form:
+        ```
+        {&#39;time&#39;:      column containing the times of sensor triggers,
+         &#39;location&#39;:  column containing the locations of the sensor triggers}
+         ```
+
+    - baseline_length_days: integer:
+        This is the length of the baseline in days that will be used. This value is used when finding
+        the ```baseline_length_days``` complete days of ```single_location``` data to use as a baseline.
+    
+    - baseline_offset_days: integer:
+        This is the offset to the baseline period. ```0``` corresponds to a time period ending the morning of the
+        current date being calculated on.
+
+    - all_loc_as_baseline: bool:
+        This argument dictates whether all the locations are used as part of the calculationg for the reverse
+        percentage or if only the values from the ```to``` locations are used.
+
+    Returns
+    ---------
+        
+    - out: pandas dataframe:
+        This is the outputted data frame, complete with rp values.
+        
+    
+    &#39;&#39;&#39;
+    
+    import time
+    
+    time_col = columns[&#39;time&#39;]
+    location_col = columns[&#39;location&#39;]
+
+    data[time_col] = pd.to_datetime(data[time_col])
+
+    data = data.sort_values(time_col)
+
+    if all_loc_as_baseline:
+
+
+
+        times = data[time_col].values
+        raw_delta = raw_delta_calc(times)
+
+        locations = data[location_col].values
+
+        df_dict = {&#39;from&#39;: locations[:-1], &#39;to&#39;: locations[1:], &#39;delta&#39;: raw_delta, time_col: times}
+
+        out = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in df_dict.items()]))
+        out[&#39;date&#39;] = out[time_col].dt.date
+
+        baseline_df = out.groupby(by=&#39;date&#39;)[&#39;delta&#39;].apply(list).reset_index()
+
+        dates = baseline_df[&#39;date&#39;].values
+        deltas = baseline_df[&#39;delta&#39;].values
+
+        rp_col = []
+
+
+        for nd in range(dates.shape[0]):
+            date = dates[nd]
+            this_delta = deltas[nd]
+            index_baseline_end = np.where(dates &lt;= date)[0][-1]
+            index_baseline_end = index_baseline_end - baseline_offset_days
+            index_baseline_start = index_baseline_end - baseline_length_days
+
+            if index_baseline_start &lt; 0:
+                rp_col.extend([np.NAN]*len(this_delta))
+            
+            else:
+                X_fit = np.hstack(deltas[index_baseline_start:index_baseline_end]).reshape(-1,1)
+                X_transform = np.asarray(this_delta).reshape(-1,1)
+                td = TimeDeltaDensity(sample = True, sample_size = 10000, seed = nd, verbose = False)
+                td.fit(X_fit)
+                rp_col.extend(td.transform(X_transform).reshape(-1,))
+
+        out[&#39;rp&#39;] = rp_col
+
+
+        return out
+    
+    else:
+
+
+        unique_locations = data[location_col].unique()
+        data[&#39;date&#39;] = pd.to_datetime(data[time_col].dt.date)
+
+        rp_col = -1*np.ones(data.shape[0])
+
+
+        for location in unique_locations:
+            start_func = time.time()
+            delta_dict = rp_single_location_delta(input_df=data, 
+                                single_location=location, 
+                                baseline_length_days=7, 
+                                baseline_offset_days=0, 
+                                columns=columns, 
+                                recall_value=1)
+            end_func = time.time()
+            location_index = np.where(data[location_col] == location)[0]
+            for date in delta_dict:
+                deltas = delta_dict[pd.Timestamp(date)]
+                
+                start_search = time.time()
+                index_add = location_index[np.where(data[&#39;date&#39;].iloc[location_index] == pd.Timestamp(date))[0]]
+                end_search = time.time()
+                
+                # This accounts for rp_single_location_delta function not calculating 
+                index_add = index_add[-deltas.shape[0]:]
+                rp_col[index_add] = deltas.reshape(-1,)
+
+        data[&#39;rp&#39;] = rp_col
+
+        df_dict = {&#39;from&#39;: data[location_col].values[:-1], &#39;to&#39;: data[location_col].values[1:],
+                    &#39;rp&#39;: data[&#39;rp&#39;].values[1:], time_col: data[time_col].values[1:]}
+
+        out = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in df_dict.items()]))
+        
+        return out
+
+
+
+
+def datetime_to_clock(times):
+    &#39;&#39;&#39;
+    This function converts each date time in an array to a vector
+    of size 2 which represents the time in a continuous way.  The vector represents 
+    the co-ordinates of a cirlce for which the time would represent on a 24-hour analogue clock.
+    
+    Arguments
+    ---------
+    
+    - times: array:
+        This is an array of times to be converted. The shape of this 
+        array should be (N,) or (N,1).
+    
+    Returns
+    ---------
+    
+    - out: array:
+        This is an array containing the transformed times. This array
+        will be of size (N,2). The vector represents the co-ordinates of 
+        a cirlce for which the time would represent on a 24-hour analogue clock.
+    
+    &#39;&#39;&#39;
+
+    times = pd.to_datetime(times, utc=True)
+
+    total_seconds = times.hour * 3600 \
+                    + times.minute * 60 \
+                    + times.second \
+                    + 1e-6 * times.microsecond
+    total_seconds = np.asarray(total_seconds)
+
+    C = 24 * 3600
+    x = (np.sin(2 * np.pi * total_seconds / C) + 1e-12).reshape(-1, 1)
+    y = (np.cos(2 * np.pi * total_seconds / C) + 1e-12).reshape(-1, 1)
+
+    out = np.hstack([x, y])
+
+    return out</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="minder_utils.feature_engineering.TimeFunctions.datetime_to_clock"><code class="name flex">
+<span>def <span class="ident">datetime_to_clock</span></span>(<span>times)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function converts each date time in an array to a vector
+of size 2 which represents the time in a continuous way.
+The vector represents
+the co-ordinates of a cirlce for which the time would represent on a 24-hour analogue clock.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>times: array:
+This is an array of times to be converted. The shape of this
+array should be (N,) or (N,1).</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: array:
+This is an array containing the transformed times. This array
+will be of size (N,2). The vector represents the co-ordinates of
+a cirlce for which the time would represent on a 24-hour analogue clock.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def datetime_to_clock(times):
+    &#39;&#39;&#39;
+    This function converts each date time in an array to a vector
+    of size 2 which represents the time in a continuous way.  The vector represents 
+    the co-ordinates of a cirlce for which the time would represent on a 24-hour analogue clock.
+    
+    Arguments
+    ---------
+    
+    - times: array:
+        This is an array of times to be converted. The shape of this 
+        array should be (N,) or (N,1).
+    
+    Returns
+    ---------
+    
+    - out: array:
+        This is an array containing the transformed times. This array
+        will be of size (N,2). The vector represents the co-ordinates of 
+        a cirlce for which the time would represent on a 24-hour analogue clock.
+    
+    &#39;&#39;&#39;
+
+    times = pd.to_datetime(times, utc=True)
+
+    total_seconds = times.hour * 3600 \
+                    + times.minute * 60 \
+                    + times.second \
+                    + 1e-6 * times.microsecond
+    total_seconds = np.asarray(total_seconds)
+
+    C = 24 * 3600
+    x = (np.sin(2 * np.pi * total_seconds / C) + 1e-12).reshape(-1, 1)
+    y = (np.cos(2 * np.pi * total_seconds / C) + 1e-12).reshape(-1, 1)
+
+    out = np.hstack([x, y])
+
+    return out</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.TimeFunctions.raw_delta_calc"><code class="name flex">
+<span>def <span class="ident">raw_delta_calc</span></span>(<span>times)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Given an array of times, this function calculates the deltas between them.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>times: array:
+This is an array of times that will be used to calculate the deltas.</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: array:
+This is an array of deltas.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def raw_delta_calc(times):
+    &#39;&#39;&#39;
+    Given an array of times, this function calculates the deltas between them.
+
+    Arguments
+    ---------
+    
+    - times: array:
+        This is an array of times that will be used to calculate the deltas.
+
+    Returns
+    ---------
+
+    - out: array:
+        This is an array of deltas.
+
+    &#39;&#39;&#39;
+
+    out = (times[1:] - times[:-1])*1e-9
+
+    out = out.astype(float)
+
+
+    return out</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.TimeFunctions.rp_location_delta"><code class="name flex">
+<span>def <span class="ident">rp_location_delta</span></span>(<span>data, columns={'time': 'start_date', 'location': 'location_name'}, baseline_length_days=7, baseline_offset_days=0, all_loc_as_baseline=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This funciton allows you to calculate the reverse percentage of the delta for each of the locations based on a baseline.
+This function allows you to specify whether to calculate the rp values based on the deltas to the same location or
+whether to calculate them using all locations.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>data: pandas dataframe:
+This is the dataframe containing the time and locations that will be used to calculate the reverse
+percentage deltas</p>
+</li>
+<li>
+<p>columns: dictionary:
+This is the dictionary with the column names in <code>input_df</code> for each of the values of data that we need
+in our calculations.
+This dictionary should be of the form:
+<code>{'time':
+column containing the times of sensor triggers,
+'location':
+column containing the locations of the sensor triggers}</code></p>
+</li>
+<li>
+<p>baseline_length_days: integer:
+This is the length of the baseline in days that will be used. This value is used when finding
+the <code>baseline_length_days</code> complete days of <code>single_location</code> data to use as a baseline.</p>
+</li>
+<li>
+<p>baseline_offset_days: integer:
+This is the offset to the baseline period. <code>0</code> corresponds to a time period ending the morning of the
+current date being calculated on.</p>
+</li>
+<li>
+<p>all_loc_as_baseline: bool:
+This argument dictates whether all the locations are used as part of the calculationg for the reverse
+percentage or if only the values from the <code>to</code> locations are used.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: pandas dataframe:
+This is the outputted data frame, complete with rp values.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rp_location_delta(data, columns = {&#39;time&#39;: &#39;start_date&#39;, &#39;location&#39;: &#39;location_name&#39;}, baseline_length_days = 7,
+                           baseline_offset_days = 0, all_loc_as_baseline = False):
+    &#39;&#39;&#39; 
+    This funciton allows you to calculate the reverse percentage of the delta for each of the locations based on a baseline.
+    This function allows you to specify whether to calculate the rp values based on the deltas to the same location or 
+    whether to calculate them using all locations.
+
+    Arguments
+    ---------
+
+    - data: pandas dataframe:
+        This is the dataframe containing the time and locations that will be used to calculate the reverse 
+        percentage deltas
+    
+    - columns: dictionary:
+        This is the dictionary with the column names in ```input_df``` for each of the values of data that we need 
+        in our calculations.
+        This dictionary should be of the form:
+        ```
+        {&#39;time&#39;:      column containing the times of sensor triggers,
+         &#39;location&#39;:  column containing the locations of the sensor triggers}
+         ```
+
+    - baseline_length_days: integer:
+        This is the length of the baseline in days that will be used. This value is used when finding
+        the ```baseline_length_days``` complete days of ```single_location``` data to use as a baseline.
+    
+    - baseline_offset_days: integer:
+        This is the offset to the baseline period. ```0``` corresponds to a time period ending the morning of the
+        current date being calculated on.
+
+    - all_loc_as_baseline: bool:
+        This argument dictates whether all the locations are used as part of the calculationg for the reverse
+        percentage or if only the values from the ```to``` locations are used.
+
+    Returns
+    ---------
+        
+    - out: pandas dataframe:
+        This is the outputted data frame, complete with rp values.
+        
+    
+    &#39;&#39;&#39;
+    
+    import time
+    
+    time_col = columns[&#39;time&#39;]
+    location_col = columns[&#39;location&#39;]
+
+    data[time_col] = pd.to_datetime(data[time_col])
+
+    data = data.sort_values(time_col)
+
+    if all_loc_as_baseline:
+
+
+
+        times = data[time_col].values
+        raw_delta = raw_delta_calc(times)
+
+        locations = data[location_col].values
+
+        df_dict = {&#39;from&#39;: locations[:-1], &#39;to&#39;: locations[1:], &#39;delta&#39;: raw_delta, time_col: times}
+
+        out = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in df_dict.items()]))
+        out[&#39;date&#39;] = out[time_col].dt.date
+
+        baseline_df = out.groupby(by=&#39;date&#39;)[&#39;delta&#39;].apply(list).reset_index()
+
+        dates = baseline_df[&#39;date&#39;].values
+        deltas = baseline_df[&#39;delta&#39;].values
+
+        rp_col = []
+
+
+        for nd in range(dates.shape[0]):
+            date = dates[nd]
+            this_delta = deltas[nd]
+            index_baseline_end = np.where(dates &lt;= date)[0][-1]
+            index_baseline_end = index_baseline_end - baseline_offset_days
+            index_baseline_start = index_baseline_end - baseline_length_days
+
+            if index_baseline_start &lt; 0:
+                rp_col.extend([np.NAN]*len(this_delta))
+            
+            else:
+                X_fit = np.hstack(deltas[index_baseline_start:index_baseline_end]).reshape(-1,1)
+                X_transform = np.asarray(this_delta).reshape(-1,1)
+                td = TimeDeltaDensity(sample = True, sample_size = 10000, seed = nd, verbose = False)
+                td.fit(X_fit)
+                rp_col.extend(td.transform(X_transform).reshape(-1,))
+
+        out[&#39;rp&#39;] = rp_col
+
+
+        return out
+    
+    else:
+
+
+        unique_locations = data[location_col].unique()
+        data[&#39;date&#39;] = pd.to_datetime(data[time_col].dt.date)
+
+        rp_col = -1*np.ones(data.shape[0])
+
+
+        for location in unique_locations:
+            start_func = time.time()
+            delta_dict = rp_single_location_delta(input_df=data, 
+                                single_location=location, 
+                                baseline_length_days=7, 
+                                baseline_offset_days=0, 
+                                columns=columns, 
+                                recall_value=1)
+            end_func = time.time()
+            location_index = np.where(data[location_col] == location)[0]
+            for date in delta_dict:
+                deltas = delta_dict[pd.Timestamp(date)]
+                
+                start_search = time.time()
+                index_add = location_index[np.where(data[&#39;date&#39;].iloc[location_index] == pd.Timestamp(date))[0]]
+                end_search = time.time()
+                
+                # This accounts for rp_single_location_delta function not calculating 
+                index_add = index_add[-deltas.shape[0]:]
+                rp_col[index_add] = deltas.reshape(-1,)
+
+        data[&#39;rp&#39;] = rp_col
+
+        df_dict = {&#39;from&#39;: data[location_col].values[:-1], &#39;to&#39;: data[location_col].values[1:],
+                    &#39;rp&#39;: data[&#39;rp&#39;].values[1:], time_col: data[time_col].values[1:]}
+
+        out = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in df_dict.items()]))
+        
+        return out</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.TimeFunctions.rp_single_location_delta"><code class="name flex">
+<span>def <span class="ident">rp_single_location_delta</span></span>(<span>input_df, single_location, baseline_length_days=7, baseline_offset_days=0, columns={'time': 'time', 'location': 'location'}, recall_value=5)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function takes the <code>input_df</code> and calculates the reverse percentage time delta between the <code>single_location</code> location time
+and the time of the <code>recall_value</code> number of locations immediately before the <code>single_location</code>. The baseline
+for the reverse percentage calculation is defined by <code>baseline_length_days</code> and <code>baseline_offset_days</code>. </p>
+<p>For example:
+With <code>baseline_length_days = 7</code> and <code>baseline_offset_days = 1</code>, the rp deltas on the day
+<code>pd.Timestamp('2021-06-29')</code> are calculated using the deltas from
+<code>pd.Timestamp('2021-06-21 00:00:00')</code> to <code>pd.Timestamp('2021-06-28 00:00:00')</code>.</p>
+<p>This does not separate on subject. Please pass data from a single subject into this function.</p>
+<p>NOTE: The reverse percentage is calculated based on all of the deltas coming into a location!
+This means that the delta is agnostic to the "from" location.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>input_df: pandas dataframe:
+This is a dataframe that contains columns relating to the time and location of sensor trigger.</p>
+</li>
+<li>
+<p>single_location: string:
+This is the location value that you wish to calculate the delta to.</p>
+</li>
+<li>
+<p>baseline_length_days: integer:
+This is the length of the baseline in days that will be used. This value is used when finding
+the <code>baseline_length_days</code> complete days of <code>single_location</code> data to use as a baseline.</p>
+</li>
+<li>
+<p>baseline_offset_days: integer:
+This is the offset to the baseline period. <code>0</code> corresponds to a time period ending the morning of the
+current date being calculated on.</p>
+</li>
+<li>
+<p>columns: dictionary:
+This is the dictionary with the column names in <code>input_df</code> for each of the values of data that we need
+in our calculations.
+This dictionary should be of the form:
+<code>{'time':
+column containing the times of sensor triggers,
+'location':
+column containing the locations of the sensor triggers}</code></p>
+</li>
+<li>
+<p>recall_value: integer:
+This is the number of previous locations to the single_location trigger</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: dictionary:
+This has the Timestamps of the dates as keys (for example: Timestamp('2021-05-05 00:00:00')) and the
+arrays of deltas as values. The arrays of deltas are of shape <code>(Nt, recall_value)</code> where Nt is the
+number of visits to <code>single_location</code> on a given day.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rp_single_location_delta(input_df, single_location, baseline_length_days = 7, baseline_offset_days = 0,
+                             columns={&#39;time&#39;: &#39;time&#39;, &#39;location&#39;: &#39;location&#39;}, recall_value=5):
+    &#39;&#39;&#39;
+    This function takes the ```input_df``` and calculates the reverse percentage time delta between the ```single_location``` location time
+    and the time of the ```recall_value``` number of locations immediately before the ```single_location```. The baseline
+    for the reverse percentage calculation is defined by ```baseline_length_days``` and ```baseline_offset_days```. 
+
+    For example:
+    With ```baseline_length_days = 7``` and ```baseline_offset_days = 1```, the rp deltas on the day
+    ```pd.Timestamp(&#39;2021-06-29&#39;)``` are calculated using the deltas from 
+    ```pd.Timestamp(&#39;2021-06-21 00:00:00&#39;)``` to ```pd.Timestamp(&#39;2021-06-28 00:00:00&#39;)```.
+
+    This does not separate on subject. Please pass data from a single subject into this function.
+
+    NOTE: The reverse percentage is calculated based on all of the deltas coming into a location!
+    This means that the delta is agnostic to the &#34;from&#34; location.
+
+    Arguments
+    ---------
+
+    - input_df: pandas dataframe:
+        This is a dataframe that contains columns relating to the time and location of sensor trigger.
+
+    - single_location: string:
+        This is the location value that you wish to calculate the delta to.
+    
+    - baseline_length_days: integer:
+        This is the length of the baseline in days that will be used. This value is used when finding
+        the ```baseline_length_days``` complete days of ```single_location``` data to use as a baseline.
+    
+    - baseline_offset_days: integer:
+        This is the offset to the baseline period. ```0``` corresponds to a time period ending the morning of the
+        current date being calculated on.
+    
+    - columns: dictionary:
+        This is the dictionary with the column names in ```input_df``` for each of the values of data that we need 
+        in our calculations.
+        This dictionary should be of the form:
+        ```
+        {&#39;time&#39;:      column containing the times of sensor triggers,
+         &#39;location&#39;:  column containing the locations of the sensor triggers}
+         ```
+
+    - recall_value: integer:
+        This is the number of previous locations to the single_location trigger
+    
+    
+    Returns
+    ---------
+
+    - out: dictionary:
+        This has the Timestamps of the dates as keys (for example: Timestamp(&#39;2021-05-05 00:00:00&#39;)) and the 
+        arrays of deltas as values. The arrays of deltas are of shape ```(Nt, recall_value)``` where Nt is the 
+        number of visits to ```single_location``` on a given day.
+
+    &#39;&#39;&#39;
+
+
+    # column names
+    time_column = columns[&#39;time&#39;]
+    location_column = columns[&#39;location&#39;]
+
+    out = {}
+
+    # format the incoming data to ensure assumptions about structure are met
+    input_df[time_column] = pd.to_datetime(input_df[time_column], utc=True)
+    input_df = input_df.sort_values(time_column)
+
+    # getting the single location raw delta
+    date_list, data_list = single_location_delta(input_df, single_location, columns, recall_value, return_as_list=True)
+
+    # for each date
+    for nd, date in enumerate(date_list):
+        date = pd.to_datetime(date)
+
+
+        &#39;&#39;&#39;
+        if len(baseline_offset)&gt;0:
+            baseline_start_tp = pd.to_datetime(date - pd.Timedelta(**baseline_length) - pd.Timedelta(**baseline_offset))
+            baseline_end_tp = pd.to_datetime(date - pd.Timedelta(**baseline_offset))
+        else:
+            baseline_start_tp = pd.to_datetime(date - pd.Timedelta(**baseline_length))
+            baseline_end_tp = pd.to_datetime(date)
+        &#39;&#39;&#39;
+
+        
+
+        index_baseline_end = np.where(date_list &lt;= date)[0][-1]
+        
+        index_baseline_end = index_baseline_end - baseline_offset_days
+        index_baseline_start = index_baseline_end - baseline_length_days
+
+        if index_baseline_start &lt; 0:
+            out[date] = -1*np.ones_like(data_list[nd])
+            continue
+
+        
+        baseline_delta = np.vstack([data_list[index] for index in range(index_baseline_start, index_baseline_end)])
+
+        
+        td = TimeDeltaDensity(save_baseline_array=True, sample=True, sample_size=10000,
+                                seed=None, verbose=False)
+
+        td.fit(baseline_delta)
+        out[date] = td.transform(data_list[nd])
+        
+    return out</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.TimeFunctions.single_location_delta"><code class="name flex">
+<span>def <span class="ident">single_location_delta</span></span>(<span>input_df, single_location, columns={'time': 'time', 'location': 'location'}, recall_value=5, return_as_list=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function takes the <code>input_df</code> and calculates the raw time delta between the single_location location time
+and the time of the <code>recall_value</code> number of locations immediately before the single_location.</p>
+<p>This does not separate on subject. Please pass data from a single subject into this function.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>input_df: pandas dataframe:
+This is a dataframe that contains columns relating to the subject, time and location of sensor trigger.</p>
+</li>
+<li>
+<p>single_location: string:
+This is the location value that you wish to calculate the delta to.</p>
+</li>
+<li>
+<p>columns: dictionary:
+This is the dictionary with the column names in <code>input_df</code> for each of the values of data that we need
+in our calculations.
+This dictionary should be of the form:
+<code>{'time':
+column containing the times of sensor triggers,
+'location':
+column containing the locations of the sensor triggers}</code></p>
+</li>
+<li>
+<p>recall_value: integer:
+This is the number of previous locations to the single_location trigger</p>
+</li>
+<li>
+<p>return_as_list: bool:
+This option allows the user to return a list of the dates and data if <code>True</code>. This is
+used internally by other functions.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: dictionary:
+This has the Timestamps of the dates as keys (for example: Timestamp('2021-05-05 00:00:00')) and the
+arrays of deltas as values. The arrays of deltas are of shape <code>(Nt, recall_value)</code> where Nt is the
+number of visits to <code>single_location</code> on a given day. If there are no <code>single_location</code> visits
+found in the data, then an empty dictionary will be returned.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def single_location_delta(input_df, single_location, 
+                            columns={&#39;time&#39;: &#39;time&#39;, &#39;location&#39;: &#39;location&#39;}, recall_value=5, 
+                            return_as_list = False):
+    &#39;&#39;&#39;
+    This function takes the ```input_df``` and calculates the raw time delta between the single_location location time
+    and the time of the ```recall_value``` number of locations immediately before the single_location.
+
+    This does not separate on subject. Please pass data from a single subject into this function.
+
+    Arguments
+    ---------
+
+    - input_df: pandas dataframe:
+        This is a dataframe that contains columns relating to the subject, time and location of sensor trigger.
+
+    - single_location: string:
+        This is the location value that you wish to calculate the delta to.
+    
+    - columns: dictionary:
+        This is the dictionary with the column names in ```input_df``` for each of the values of data that we need 
+        in our calculations.
+        This dictionary should be of the form:
+        ```
+        {&#39;time&#39;:      column containing the times of sensor triggers,
+         &#39;location&#39;:  column containing the locations of the sensor triggers}
+         ```
+
+    - recall_value: integer:
+        This is the number of previous locations to the single_location trigger
+
+    - return_as_list: bool:
+        This option allows the user to return a list of the dates and data if ```True```. This is 
+        used internally by other functions.
+
+    
+    Returns
+    ---------
+
+    - out: dictionary:
+        This has the Timestamps of the dates as keys (for example: Timestamp(&#39;2021-05-05 00:00:00&#39;)) and the 
+        arrays of deltas as values. The arrays of deltas are of shape ```(Nt, recall_value)``` where Nt is the 
+        number of visits to ```single_location``` on a given day. If there are no ```single_location``` visits
+        found in the data, then an empty dictionary will be returned.
+
+    &#39;&#39;&#39;
+    time_column = columns[&#39;time&#39;]
+    location_column = columns[&#39;location&#39;]
+
+    # format the incoming data to ensure assumptions about structure are met
+    input_df[time_column] = pd.to_datetime(input_df[time_column], utc=True)
+    input_df = input_df.sort_values(time_column)
+
+    # find the indices of the data that match with the location we want to find the delta to
+    single_location_indices = np.where(input_df[location_column] == single_location)[0].reshape(-1, 1)
+    # making sure that the recall value is not more than the number of sensor triggers before the
+    # first single_location sensor trigger
+    if len(single_location_indices) ==  0:
+        
+        if return_as_list: return [], []
+        else: return {}
+
+    single_location_indices = single_location_indices[np.argmax(recall_value &lt; single_location_indices):]
+
+    # indices of the sensor triggers that we need in our calculations
+    recall_indices = np.hstack([single_location_indices - i for i in range(recall_value + 1)])
+
+    # the times of the sensor triggers
+    recall_times = input_df[time_column].values[recall_indices]
+
+    # the delta between the times for each of the previous sensors to recall_value
+    recall_delta = (recall_times[:, 0, None] - recall_times[:, 1:]) * 1e-9
+
+    # the times of the single_location triggers
+    single_location_times = input_df[time_column].iloc[single_location_indices.reshape(-1, )]
+    # dates of the single_location triggers
+    single_location_dates = single_location_times.dt.date
+
+    # out dictionary
+    out = {}
+
+
+    if return_as_list:
+        date_list = []
+        data_list = []
+        for nd, date in enumerate(single_location_dates.unique()):
+            date_list.append(date)
+            data_to_add = recall_delta[single_location_dates.values == date].astype(float)
+            data_list.append(data_to_add)
+        
+        return pd.to_datetime(date_list), data_list
+
+
+    else:
+        # creating the output dictionary
+        for date in single_location_dates.unique():
+            # saving the delta values for this date to the dictionary
+            out[pd.to_datetime(date)] = recall_delta[single_location_dates.values == date].astype(float)
+
+        return out</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.feature_engineering.TimeFunctions.TimeDeltaDensity"><code class="flex name class">
+<span>class <span class="ident">TimeDeltaDensity</span></span>
+<span>(</span><span>save_baseline_array=True, sample=False, sample_size=10000, seed=None, verbose=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function allows the user to calculate reverse percentiles on some data, given another
+dataset.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TimeDeltaDensity(BaseDensityCalc):
+    &#39;&#39;&#39;
+    This function allows the user to calculate reverse percentiles on some data, given another
+    dataset.
+
+    &#39;&#39;&#39;
+
+    def __init__(self, save_baseline_array=True, sample=False, sample_size=10000,
+                 seed=None, verbose=True):
+        BaseDensityCalc.__init__(self, save_baseline_array=save_baseline_array,
+                                 sample=sample, sample_size=sample_size, seed=seed, verbose=verbose)
+
+        return</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc" href="DensityFunctions.html#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc">BaseDensityCalc</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc" href="DensityFunctions.html#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc">BaseDensityCalc</a></b></code>:
+<ul class="hlist">
+<li><code><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.fit" href="DensityFunctions.html#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.fit">fit</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.predict" href="DensityFunctions.html#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.predict">predict</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.threshold_counter" href="DensityFunctions.html#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.threshold_counter">threshold_counter</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.transform" href="DensityFunctions.html#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.transform">transform</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<header>
+<a class="homelink" rel="home" title="Minder Utils" href="https://minder-utils.github.io">
+<img src="https://github.com/ImperialCollegeLondon/minder_utils/blob/main/UKDRI_logo.jpeg?raw=true" alt=""> Minder Utils
+</a>
+</header>
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="minder_utils.feature_engineering" href="index.html">minder_utils.feature_engineering</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="minder_utils.feature_engineering.TimeFunctions.datetime_to_clock" href="#minder_utils.feature_engineering.TimeFunctions.datetime_to_clock">datetime_to_clock</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.TimeFunctions.raw_delta_calc" href="#minder_utils.feature_engineering.TimeFunctions.raw_delta_calc">raw_delta_calc</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.TimeFunctions.rp_location_delta" href="#minder_utils.feature_engineering.TimeFunctions.rp_location_delta">rp_location_delta</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.TimeFunctions.rp_single_location_delta" href="#minder_utils.feature_engineering.TimeFunctions.rp_single_location_delta">rp_single_location_delta</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.TimeFunctions.single_location_delta" href="#minder_utils.feature_engineering.TimeFunctions.single_location_delta">single_location_delta</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.feature_engineering.TimeFunctions.TimeDeltaDensity" href="#minder_utils.feature_engineering.TimeFunctions.TimeDeltaDensity">TimeDeltaDensity</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

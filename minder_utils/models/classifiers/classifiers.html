@@ -36,10 +36,12 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn import tree
 from sklearn.neighbors import KNeighborsClassifier
 from minder_utils.formatting.format_util import y_to_categorical
+from sklearn.ensemble import AdaBoostClassifier
 
 
 class Classifiers:
-    def __init__(self, model_type=&#39;nn&#39;):
+    def __init__(self, model_type=&#39;nn&#39;, boosting=True):
+        self.boosting = boosting
         self.model_type = model_type
         self.model = getattr(self, model_type)()
         self.callbacks = [EarlyStopping(monitor=&#39;loss&#39;, patience=3)]
@@ -52,7 +54,7 @@ class Classifiers:
     @property
     def methods(self):
         return {
-            &#39;nn&#39;: &#39;neural network&#39;,
+            # &#39;nn&#39;: &#39;neural network&#39;,
             # &#39;lstm&#39;: &#39;LSTM&#39;,
             &#39;lr&#39;: &#39;logistic regression&#39;,
             &#39;bayes&#39;: &#39;naive bayesian&#39;,
@@ -109,24 +111,26 @@ class Classifiers:
         if self.model_type in [&#39;pnn&#39;, &#39;nn&#39;, &#39;lstm&#39;]:
             if self.model_type in [&#39;lstm&#39;, &#39;pnn&#39;]:
                 data = data.reshape(data.shape[0], 24, -1)
-            return self.model.predict(data)[:, 1]
+            return self.model.predict(data)
         else:
             return self.model.predict_proba(data)
 
-    @staticmethod
-    def lr():
-        return LogisticRegression()
+    def lr(self):
+        if self.boosting:
+            return AdaBoostClassifier(LogisticRegression(max_iter=1000), n_estimators=100, random_state=0)
+        return LogisticRegression(max_iter=1000)
 
-    @staticmethod
-    def bayes():
+    def bayes(self):
+        if self.boosting:
+            return AdaBoostClassifier(GaussianNB(), n_estimators=100, random_state=0)
         return GaussianNB()
 
-    @staticmethod
-    def dt():
+    def dt(self):
+        if self.boosting:
+            return AdaBoostClassifier(tree.DecisionTreeClassifier(), n_estimators=100, random_state=0)
         return tree.DecisionTreeClassifier()
 
-    @staticmethod
-    def knn():
+    def knn(self):
         return KNeighborsClassifier()
 
     def __name__(self):
@@ -144,7 +148,7 @@ class Classifiers:
 <dl>
 <dt id="minder_utils.models.classifiers.classifiers.Classifiers"><code class="flex name class">
 <span>class <span class="ident">Classifiers</span></span>
-<span>(</span><span>model_type='nn')</span>
+<span>(</span><span>model_type='nn', boosting=True)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -153,7 +157,8 @@ class Classifiers:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Classifiers:
-    def __init__(self, model_type=&#39;nn&#39;):
+    def __init__(self, model_type=&#39;nn&#39;, boosting=True):
+        self.boosting = boosting
         self.model_type = model_type
         self.model = getattr(self, model_type)()
         self.callbacks = [EarlyStopping(monitor=&#39;loss&#39;, patience=3)]
@@ -166,7 +171,7 @@ class Classifiers:
     @property
     def methods(self):
         return {
-            &#39;nn&#39;: &#39;neural network&#39;,
+            # &#39;nn&#39;: &#39;neural network&#39;,
             # &#39;lstm&#39;: &#39;LSTM&#39;,
             &#39;lr&#39;: &#39;logistic regression&#39;,
             &#39;bayes&#39;: &#39;naive bayesian&#39;,
@@ -223,24 +228,26 @@ class Classifiers:
         if self.model_type in [&#39;pnn&#39;, &#39;nn&#39;, &#39;lstm&#39;]:
             if self.model_type in [&#39;lstm&#39;, &#39;pnn&#39;]:
                 data = data.reshape(data.shape[0], 24, -1)
-            return self.model.predict(data)[:, 1]
+            return self.model.predict(data)
         else:
             return self.model.predict_proba(data)
 
-    @staticmethod
-    def lr():
-        return LogisticRegression()
+    def lr(self):
+        if self.boosting:
+            return AdaBoostClassifier(LogisticRegression(max_iter=1000), n_estimators=100, random_state=0)
+        return LogisticRegression(max_iter=1000)
 
-    @staticmethod
-    def bayes():
+    def bayes(self):
+        if self.boosting:
+            return AdaBoostClassifier(GaussianNB(), n_estimators=100, random_state=0)
         return GaussianNB()
 
-    @staticmethod
-    def dt():
+    def dt(self):
+        if self.boosting:
+            return AdaBoostClassifier(tree.DecisionTreeClassifier(), n_estimators=100, random_state=0)
         return tree.DecisionTreeClassifier()
 
-    @staticmethod
-    def knn():
+    def knn(self):
         return KNeighborsClassifier()
 
     def __name__(self):
@@ -248,62 +255,6 @@ class Classifiers:
 </details>
 <h3>Static methods</h3>
 <dl>
-<dt id="minder_utils.models.classifiers.classifiers.Classifiers.bayes"><code class="name flex">
-<span>def <span class="ident">bayes</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def bayes():
-    return GaussianNB()</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.models.classifiers.classifiers.Classifiers.dt"><code class="name flex">
-<span>def <span class="ident">dt</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def dt():
-    return tree.DecisionTreeClassifier()</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.models.classifiers.classifiers.Classifiers.knn"><code class="name flex">
-<span>def <span class="ident">knn</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def knn():
-    return KNeighborsClassifier()</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.models.classifiers.classifiers.Classifiers.lr"><code class="name flex">
-<span>def <span class="ident">lr</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def lr():
-    return LogisticRegression()</code></pre>
-</details>
-</dd>
 <dt id="minder_utils.models.classifiers.classifiers.Classifiers.lstm"><code class="name flex">
 <span>def <span class="ident">lstm</span></span>(<span>)</span>
 </code></dt>
@@ -353,7 +304,7 @@ def nn():
 <pre><code class="python">@property
 def methods(self):
     return {
-        &#39;nn&#39;: &#39;neural network&#39;,
+        # &#39;nn&#39;: &#39;neural network&#39;,
         # &#39;lstm&#39;: &#39;LSTM&#39;,
         &#39;lr&#39;: &#39;logistic regression&#39;,
         &#39;bayes&#39;: &#39;naive bayesian&#39;,
@@ -365,6 +316,36 @@ def methods(self):
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.bayes"><code class="name flex">
+<span>def <span class="ident">bayes</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bayes(self):
+    if self.boosting:
+        return AdaBoostClassifier(GaussianNB(), n_estimators=100, random_state=0)
+    return GaussianNB()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.dt"><code class="name flex">
+<span>def <span class="ident">dt</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def dt(self):
+    if self.boosting:
+        return AdaBoostClassifier(tree.DecisionTreeClassifier(), n_estimators=100, random_state=0)
+    return tree.DecisionTreeClassifier()</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.models.classifiers.classifiers.Classifiers.fit"><code class="name flex">
 <span>def <span class="ident">fit</span></span>(<span>self, data, targets, cat=False)</span>
 </code></dt>
@@ -404,6 +385,34 @@ def methods(self):
     return self.methods</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.knn"><code class="name flex">
+<span>def <span class="ident">knn</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def knn(self):
+    return KNeighborsClassifier()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.classifiers.classifiers.Classifiers.lr"><code class="name flex">
+<span>def <span class="ident">lr</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def lr(self):
+    if self.boosting:
+        return AdaBoostClassifier(LogisticRegression(max_iter=1000), n_estimators=100, random_state=0)
+    return LogisticRegression(max_iter=1000)</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.models.classifiers.classifiers.Classifiers.predict"><code class="name flex">
 <span>def <span class="ident">predict</span></span>(<span>self, data)</span>
 </code></dt>
@@ -437,7 +446,7 @@ def methods(self):
     if self.model_type in [&#39;pnn&#39;, &#39;nn&#39;, &#39;lstm&#39;]:
         if self.model_type in [&#39;lstm&#39;, &#39;pnn&#39;]:
             data = data.reshape(data.shape[0], 24, -1)
-        return self.model.predict(data)[:, 1]
+        return self.model.predict(data)
     else:
         return self.model.predict_proba(data)</code></pre>
 </details>

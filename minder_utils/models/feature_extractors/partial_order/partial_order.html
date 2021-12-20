@@ -27,23 +27,29 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from minder_utils.models.utils.early_stopping import EarlyStopping
-from minder_utils.models import model_config
-import torch
-from minder_utils.models.feature_extractors.simclr.basic import ResNetSimCLR
-from minder_utils.models.utils.util import get_device
-from minder_utils.models.feature_extractors.partial_order.loss import Ranking
-import numpy as np
-import os
+<pre><code class="python">from .basic import Partial_Order_Models
+from .loss import Ranking
+from minder_utils.models.utils import Feature_extractor
+from minder_utils.dataloader import Partial_Order_Loader
 
 
-class Partial_Order:
+class Partial_Order(Feature_extractor):
     def __init__(self):
-        self.early_stop = EarlyStopping()
-        self.config = model_config.partial_order
-        self.device = get_device()
-        self.model = ResNetSimCLR(**self.config[&#34;model&#34;])
+        super(Partial_Order, self).__init__()
+        self.model = Partial_Order_Models(**self.config[&#34;model&#34;])
         self.criterion = Ranking(**self.config[&#34;loss&#34;])
+
+    def _custom_loader(self, data):
+        X, y = data
+        return Partial_Order_Loader(X, y, **self.config[&#39;loader&#39;])
+
+    def step(self, data):
+        pre_anchor, anchor, post_anchor = data
+        loss = 0
+        for idx_day in range(len(post_anchor) - 1):
+            loss += self._step(post_anchor[idx_day], post_anchor[idx_day + 1], anchor)
+            loss += self._step(pre_anchor[idx_day], pre_anchor[idx_day + 1], anchor)
+        return loss
 
     def _step(self, xi, xj, anchor):
         ris, zis = self.model(xi)
@@ -51,45 +57,9 @@ class Partial_Order:
         ras, zas = self.model(anchor)
         return self.criterion(zis, zjs, zas)
 
-    def train(self, train_loader):
-        optimizer = torch.optim.Adam(self.model.parameters(), 3e-4)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
-                                                               last_epoch=-1)
-        for epoch_counter in range(self.config[&#39;epochs&#39;]):
-            for pre_anchor, anchor, post_anchor in train_loader:
-                optimizer.zero_grad()
-                loss = 0
-                for idx_day in range(len(post_anchor) - 1):
-                    loss += self._step(post_anchor[idx_day], post_anchor[idx_day + 1], anchor)
-                    loss += self._step(pre_anchor[idx_day], pre_anchor[idx_day + 1], anchor)
-
-                loss.backward()
-                print(&#39;loss: &#39;, loss.item(), end=&#39;\n&#39;)
-                optimizer.step()
-                scheduler.step()
-                self.early_stop(loss.item(), self.model)
-                if self.early_stop.early_stop:
-                    break
-            if self.early_stop.early_stop:
-                break
-
-    def test(self, test_loader, save_path=None):
-        &#34;&#34;&#34;
-        :param test_loader: sample validated date only
-        :return:
-        &#34;&#34;&#34;
-        # validation steps
-        with torch.no_grad():
-            self.model.eval()
-            features = []
-            for pre_anchor, anchor, post_anchor in test_loader:
-                feat, _ = self.model(anchor)
-                features.append(feat.numpy())
-
-        if save_path:
-            np.save(os.path.join(save_path, &#39;partial_order.npy&#39;), np.concatenate(features))
-
-        return np.concatenate(features)</code></pre>
+    @staticmethod
+    def which_data(data):
+        return data[0]</code></pre>
 </details>
 </section>
 <section>
@@ -105,18 +75,29 @@ class Partial_Order:
 <span>class <span class="ident">Partial_Order</span></span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Partial_Order:
+<pre><code class="python">class Partial_Order(Feature_extractor):
     def __init__(self):
-        self.early_stop = EarlyStopping()
-        self.config = model_config.partial_order
-        self.device = get_device()
-        self.model = ResNetSimCLR(**self.config[&#34;model&#34;])
+        super(Partial_Order, self).__init__()
+        self.model = Partial_Order_Models(**self.config[&#34;model&#34;])
         self.criterion = Ranking(**self.config[&#34;loss&#34;])
+
+    def _custom_loader(self, data):
+        X, y = data
+        return Partial_Order_Loader(X, y, **self.config[&#39;loader&#39;])
+
+    def step(self, data):
+        pre_anchor, anchor, post_anchor = data
+        loss = 0
+        for idx_day in range(len(post_anchor) - 1):
+            loss += self._step(post_anchor[idx_day], post_anchor[idx_day + 1], anchor)
+            loss += self._step(pre_anchor[idx_day], pre_anchor[idx_day + 1], anchor)
+        return loss
 
     def _step(self, xi, xj, anchor):
         ris, zis = self.model(xi)
@@ -124,79 +105,31 @@ class Partial_Order:
         ras, zas = self.model(anchor)
         return self.criterion(zis, zjs, zas)
 
-    def train(self, train_loader):
-        optimizer = torch.optim.Adam(self.model.parameters(), 3e-4)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
-                                                               last_epoch=-1)
-        for epoch_counter in range(self.config[&#39;epochs&#39;]):
-            for pre_anchor, anchor, post_anchor in train_loader:
-                optimizer.zero_grad()
-                loss = 0
-                for idx_day in range(len(post_anchor) - 1):
-                    loss += self._step(post_anchor[idx_day], post_anchor[idx_day + 1], anchor)
-                    loss += self._step(pre_anchor[idx_day], pre_anchor[idx_day + 1], anchor)
-
-                loss.backward()
-                print(&#39;loss: &#39;, loss.item(), end=&#39;\n&#39;)
-                optimizer.step()
-                scheduler.step()
-                self.early_stop(loss.item(), self.model)
-                if self.early_stop.early_stop:
-                    break
-            if self.early_stop.early_stop:
-                break
-
-    def test(self, test_loader, save_path=None):
-        &#34;&#34;&#34;
-        :param test_loader: sample validated date only
-        :return:
-        &#34;&#34;&#34;
-        # validation steps
-        with torch.no_grad():
-            self.model.eval()
-            features = []
-            for pre_anchor, anchor, post_anchor in test_loader:
-                feat, _ = self.model(anchor)
-                features.append(feat.numpy())
-
-        if save_path:
-            np.save(os.path.join(save_path, &#39;partial_order.npy&#39;), np.concatenate(features))
-
-        return np.concatenate(features)</code></pre>
+    @staticmethod
+    def which_data(data):
+        return data[0]</code></pre>
 </details>
-<h3>Methods</h3>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.utils.feature_extractor.Feature_extractor" href="../../utils/feature_extractor.html#minder_utils.models.utils.feature_extractor.Feature_extractor">Feature_extractor</a></li>
+<li>abc.ABC</li>
+<li>torch.nn.modules.module.Module</li>
+</ul>
+<h3>Class variables</h3>
 <dl>
-<dt id="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.test"><code class="name flex">
-<span>def <span class="ident">test</span></span>(<span>self, test_loader, save_path=None)</span>
-</code></dt>
+<dt id="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.dump_patches"><code class="name">var <span class="ident">dump_patches</span> : bool</code></dt>
 <dd>
-<div class="desc"><p>:param test_loader: sample validated date only
-:return:</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def test(self, test_loader, save_path=None):
-    &#34;&#34;&#34;
-    :param test_loader: sample validated date only
-    :return:
-    &#34;&#34;&#34;
-    # validation steps
-    with torch.no_grad():
-        self.model.eval()
-        features = []
-        for pre_anchor, anchor, post_anchor in test_loader:
-            feat, _ = self.model(anchor)
-            features.append(feat.numpy())
-
-    if save_path:
-        np.save(os.path.join(save_path, &#39;partial_order.npy&#39;), np.concatenate(features))
-
-    return np.concatenate(features)</code></pre>
-</details>
+<div class="desc"></div>
 </dd>
-<dt id="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.train"><code class="name flex">
-<span>def <span class="ident">train</span></span>(<span>self, train_loader)</span>
+<dt id="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.training"><code class="name">var <span class="ident">training</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.which_data"><code class="name flex">
+<span>def <span class="ident">which_data</span></span>(<span>data)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -204,30 +137,42 @@ class Partial_Order:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def train(self, train_loader):
-    optimizer = torch.optim.Adam(self.model.parameters(), 3e-4)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
-                                                           last_epoch=-1)
-    for epoch_counter in range(self.config[&#39;epochs&#39;]):
-        for pre_anchor, anchor, post_anchor in train_loader:
-            optimizer.zero_grad()
-            loss = 0
-            for idx_day in range(len(post_anchor) - 1):
-                loss += self._step(post_anchor[idx_day], post_anchor[idx_day + 1], anchor)
-                loss += self._step(pre_anchor[idx_day], pre_anchor[idx_day + 1], anchor)
-
-            loss.backward()
-            print(&#39;loss: &#39;, loss.item(), end=&#39;\n&#39;)
-            optimizer.step()
-            scheduler.step()
-            self.early_stop(loss.item(), self.model)
-            if self.early_stop.early_stop:
-                break
-        if self.early_stop.early_stop:
-            break</code></pre>
+<pre><code class="python">@staticmethod
+def which_data(data):
+    return data[0]</code></pre>
 </details>
 </dd>
 </dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.step"><code class="name flex">
+<span>def <span class="ident">step</span></span>(<span>self, data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def step(self, data):
+    pre_anchor, anchor, post_anchor = data
+    loss = 0
+    for idx_day in range(len(post_anchor) - 1):
+        loss += self._step(post_anchor[idx_day], post_anchor[idx_day + 1], anchor)
+        loss += self._step(pre_anchor[idx_day], pre_anchor[idx_day + 1], anchor)
+    return loss</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="minder_utils.models.utils.feature_extractor.Feature_extractor" href="../../utils/feature_extractor.html#minder_utils.models.utils.feature_extractor.Feature_extractor">Feature_extractor</a></b></code>:
+<ul class="hlist">
+<li><code><a title="minder_utils.models.utils.feature_extractor.Feature_extractor.forward" href="../../utils/feature_extractor.html#minder_utils.models.utils.feature_extractor.Feature_extractor.forward">forward</a></code></li>
+<li><code><a title="minder_utils.models.utils.feature_extractor.Feature_extractor.transform" href="../../utils/feature_extractor.html#minder_utils.models.utils.feature_extractor.Feature_extractor.transform">transform</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 </dl>
 </section>
@@ -253,8 +198,10 @@ class Partial_Order:
 <li>
 <h4><code><a title="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order" href="#minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order">Partial_Order</a></code></h4>
 <ul class="">
-<li><code><a title="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.test" href="#minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.test">test</a></code></li>
-<li><code><a title="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.train" href="#minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.train">train</a></code></li>
+<li><code><a title="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.dump_patches" href="#minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.dump_patches">dump_patches</a></code></li>
+<li><code><a title="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.step" href="#minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.step">step</a></code></li>
+<li><code><a title="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.training" href="#minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.training">training</a></code></li>
+<li><code><a title="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.which_data" href="#minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order.which_data">which_data</a></code></li>
 </ul>
 </li>
 </ul>

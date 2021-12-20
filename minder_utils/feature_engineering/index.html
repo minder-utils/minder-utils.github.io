@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>minder_utils.feature_engineering API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<style>.homelink{display:block;font-size:2em;font-weight:bold;color:#555;padding-bottom:.5em;border-bottom:1px solid silver}.homelink:hover{color:inherit}.homelink img{max-width:20%;max-height:5em;margin:auto;margin-bottom:.3em}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>minder_utils.feature_engineering</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from minder_utils.feature_engineering.engineer import Feature_engineer
+
+
+__all__ = [&#39;Feature_engineer&#39;]
+
+
+
+&#39;&#39;&#39;
+TODO:
+    1. Feature Engineering
+    2. Evaluate the feature importance (raw data, extra features)
+    3. Evaluate on classifiers
+&#39;&#39;&#39;
+&#39;&#39;&#39;
+Based on https://www.nhs.uk/conditions/urinary-tract-infections-utis/
+
+NOTE:
+    - Every feature should be compared to last n weeks.
+    - The comparison / difference measurement should be encapsulated
+
+1. needing to pee more often than usual during the night (nocturia)
+    - Compare the frequency of bathroom (Night)
+
+2. needing to pee suddenly or more urgently than usual
+    - Compare the time difference between the triggered last sensor and bathroom sensor
+
+3. needing to pee more often than usual
+    - Compare the frequency of bathroom (Daytime)
+
+4. a high temperature, or feeling hot and shivery
+    - Body temperature (High)
+
+5. a very low temperature below 36C
+    - Body temperature (Low)
+&#39;&#39;&#39;</code></pre>
+</details>
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="minder_utils.feature_engineering.DensityFunctions" href="DensityFunctions.html">minder_utils.feature_engineering.DensityFunctions</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.feature_engineering.TimeFunctions" href="TimeFunctions.html">minder_utils.feature_engineering.TimeFunctions</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.feature_engineering.adding_features" href="adding_features.html">minder_utils.feature_engineering.adding_features</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.feature_engineering.calculation" href="calculation.html">minder_utils.feature_engineering.calculation</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.feature_engineering.engineer" href="engineer.html">minder_utils.feature_engineering.engineer</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.feature_engineering.util" href="util.html">minder_utils.feature_engineering.util</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.feature_engineering.Feature_engineer"><code class="flex name class">
+<span>class <span class="ident">Feature_engineer</span></span>
+<span>(</span><span>formatter, agg_method='sum')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Take the formatting as input, re-construct the data in weekly format</p>
+<ol>
+<li>needing to pee more often than usual during the night (nocturia)</li>
+<li>
+<p>Compare the frequency of bathroom (Night)</p>
+</li>
+<li>
+<p>needing to pee suddenly or more urgently than usual</p>
+<ul>
+<li>Compare the time difference between the triggered last sensor and bathroom sensor</li>
+</ul>
+</li>
+<li>
+<p>needing to pee more often than usual</p>
+<ul>
+<li>Compare the frequency of bathroom (Daytime)</li>
+</ul>
+</li>
+<li>
+<p>a high temperature, or feeling hot and shivery</p>
+<ul>
+<li>Body temperature (High)</li>
+</ul>
+</li>
+<li>
+<p>a very low temperature below 36C</p>
+<ul>
+<li>Body temperature (Low)</li>
+</ul>
+</li>
+</ol>
+<p>To view the descriptions of each of the attributes, please use the property
+<code>.info</code></p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Feature_engineer:
+    &#39;&#39;&#39;
+    Take the formatting as input, re-construct the data in weekly format
+
+    1. needing to pee more often than usual during the night (nocturia)
+    - Compare the frequency of bathroom (Night)
+
+    2. needing to pee suddenly or more urgently than usual
+        - Compare the time difference between the triggered last sensor and bathroom sensor
+
+    3. needing to pee more often than usual
+        - Compare the frequency of bathroom (Daytime)
+
+    4. a high temperature, or feeling hot and shivery
+        - Body temperature (High)
+
+    5. a very low temperature below 36C
+        - Body temperature (Low)
+
+    To view the descriptions of each of the attributes, please use the property
+    ```.info```
+    &#39;&#39;&#39;
+
+    def __init__(self, formatter, agg_method = &#39;sum&#39;):
+        self.formatter = formatter
+        self.agg_method = agg_method
+
+    @property
+    def info(self):
+        &#39;&#39;&#39;
+        Descriptions of the attributes.
+        &#39;&#39;&#39;
+        return {
+            &#39;bathroom_night&#39;: &#39;Bathroom activity during the night&#39;,
+            &#39;bathroom_daytime&#39;: &#39;Bathroom activity during the day&#39;,
+             # &#39;bathroom_urgent&#39;: &#39;TODO&#39;,
+            &#39;body_temperature&#39;: &#39;Mean of body temperature of the participant during the week&#39;,
+            &#39;entropy&#39;: &#39;Entropy of the activity&#39;,
+            # &#39;raw_activity&#39;: &#39;Raw activity data (weekly)&#39;,
+            &#39;entropy_rate&#39;: &#39;Entropy rate of markov chain over the week&#39;,
+            &#39;entropy_rate_daily&#39;: &#39;Entropy rate of markov chain over the day&#39;,
+            &#39;bathroom_night_ma&#39;: &#39;Moving average of bathroom activity during the night&#39;,
+            &#39;bathroom_night_ma_delta&#39;: &#39;Delta in the moving average of bathroom activity during the night&#39;,
+            &#39;bathroom_daytime_ma&#39;: &#39;Moving average of bathroom activity during the day&#39;,
+            &#39;bathroom_daytime_ma_delta&#39;: &#39;Delta in the moving average of bathroom activity during the day&#39;,
+            &#39;bathroom_urgent_reverse_percentage&#39;: &#39;Reverse percentile of the time to the bathroom&#39;,
+            &#39;outlier_score_activity&#39;: &#39;Outlier score of the activity&#39;,
+            &#39;rp_location_time_delta&#39;: &#39;Reverse percentile of the time between activities&#39;,
+        }
+
+    @property
+    def agg_info(self):
+        &#39;&#39;&#39;
+        These are the time aggregations of each of the datasets.
+        &#39;&#39;&#39;
+        return {&#39;evently&#39;: [&#39;rp_location_time_delta&#39;], 
+
+                &#39;daily&#39;: [&#39;bathroom_night&#39;,
+                          &#39;bathroom_daytime&#39;,
+                          &#39;outlier_score_activity&#39;,
+                          &#39;bathroom_night_ma&#39;,
+                          &#39;bathroom_night_ma_delta&#39;,
+                          &#39;bathroom_daytime_ma&#39;,
+                         #&#39;bathroom_urgent&#39;,
+                          &#39;bathroom_urgent_reverse_percentage&#39;,
+                          &#39;bathroom_daytime_ma_delta&#39;,
+                          &#39;entropy_rate_daily&#39;], 
+
+                &#39;weekly&#39;: [&#39;body_temperature&#39;, 
+                           &#39;entropy&#39;, 
+                           &#39;entropy_rate&#39;]}
+
+
+
+    
+
+    @property
+    @load_save(**feature_config[&#39;bathroom_night&#39;][&#39;save&#39;])
+    def bathroom_night(self):
+        return get_bathroom_activity(self.formatter.activity_data.sort_values(&#39;time&#39;), feature_config[&#39;nocturia&#39;][&#39;time_range&#39;], &#39;bathroom_night&#39;)
+
+    @property
+    @load_save(**feature_config[&#39;bathroom_night_ma&#39;][&#39;save&#39;])
+    def bathroom_night_ma(self):
+
+        def get_moving_average_groupby(x):
+            x = get_moving_average(x, 
+                                  w=feature_config[&#39;bathroom_night_ma&#39;][&#39;w&#39;], 
+                                  name=&#39;bathroom_night_ma&#39;)
+            return x
+
+        return (self.bathroom_night).groupby(&#39;id&#39;).apply(get_moving_average_groupby)
+
+
+    @property
+    @load_save(**feature_config[&#39;bathroom_night_ma_delta&#39;][&#39;save&#39;])
+    def bathroom_night_ma_delta(self):
+
+        def get_value_delta_groupby(x):
+            x = get_value_delta(x,
+                                name=&#39;bathroom_night_ma_delta&#39;)
+            return x
+
+        return (self.bathroom_night_ma).groupby(&#39;id&#39;).apply(get_value_delta_groupby)
+
+    @property
+    @load_save(**feature_config[&#39;bathroom_daytime&#39;][&#39;save&#39;])
+    def bathroom_daytime(self):
+        return get_bathroom_activity(self.formatter.activity_data.sort_values(&#39;time&#39;), feature_config[&#39;nocturia&#39;][&#39;time_range&#39;][::-1], &#39;bathroom_daytime&#39;)
+
+    @property
+    @load_save(**feature_config[&#39;bathroom_daytime_ma&#39;][&#39;save&#39;])
+    def bathroom_daytime_ma(self):
+
+        def get_moving_average_groupby(x):
+            x = get_moving_average(x, 
+                                  w=feature_config[&#39;bathroom_daytime_ma&#39;][&#39;w&#39;], 
+                                  name=&#39;bathroom_daytime_ma&#39;)
+            return x
+
+        return (self.bathroom_daytime).groupby(by=&#39;id&#39;).apply(get_moving_average_groupby)
+
+
+
+    @property
+    @load_save(**feature_config[&#39;bathroom_daytime_ma_delta&#39;][&#39;save&#39;])
+    def bathroom_daytime_ma_delta(self):
+
+        def get_value_delta_groupby(x):
+            x = get_value_delta(x,
+                                name=&#39;bathroom_daytime_ma_delta&#39;)
+            return x
+
+        return (self.bathroom_daytime_ma).groupby(&#39;id&#39;).apply(get_value_delta_groupby)
+
+
+
+    @property
+    @load_save(**feature_config[&#39;bathroom_urgent&#39;][&#39;save&#39;])
+    def bathroom_urgent(self):
+        return get_bathroom_delta(self.formatter.activity_data.sort_values(&#39;time&#39;), single_location_delta, &#39;bathroom_urgent&#39;)
+
+    @property
+    @load_save(**feature_config[&#39;bathroom_urgent_reverse_percentage&#39;][&#39;save&#39;])
+    def bathroom_urgent_reverse_percentage(self):
+        data = get_bathroom_delta(self.formatter.activity_data.sort_values(&#39;time&#39;), rp_single_location_delta, &#39;bathroom_urgent_reverse_percentage&#39;)
+        def value_group_by(x):
+            x[np.where(x == -1)] = np.nan
+            x = np.nanmean(x)
+            return x
+        data[&#39;value&#39;] = data[&#39;value&#39;].apply(value_group_by)
+        return data
+
+    @property
+    @load_save(**feature_config[&#39;body_temperature&#39;][&#39;save&#39;])
+    def body_temperature(self):
+        return get_body_temperature(self.formatter.physiological_data)
+
+    @property
+    @load_save(**feature_config[&#39;entropy&#39;][&#39;save&#39;])
+    def entropy(self):
+        return calculate_entropy(self.formatter.activity_data.sort_values(&#39;time&#39;), feature_config[&#39;entropy&#39;][&#39;sensors&#39;])
+
+    @property
+    @load_save(**feature_config[&#39;entropy_rate&#39;][&#39;save&#39;])
+    def entropy_rate(self):
+        return get_entropy_rate(df=self.formatter.activity_data.sort_values(&#39;time&#39;), 
+                                sensors=feature_config[&#39;entropy_rate&#39;][&#39;sensors&#39;], 
+                                name=&#39;entropy_rate&#39;,
+                                week_or_day=&#39;week&#39;)
+
+    @property
+    @load_save(**feature_config[&#39;entropy_rate_daily&#39;][&#39;save&#39;])
+    def entropy_rate_daily(self):
+        return get_entropy_rate(df=self.formatter.activity_data.sort_values(&#39;time&#39;), 
+                                sensors=feature_config[&#39;entropy_rate_daily&#39;][&#39;sensors&#39;], 
+                                name=&#39;entropy_rate_daily&#39;,
+                                week_or_day=&#39;day&#39;)
+
+
+    @property
+    @load_save(**feature_config[&#39;raw_activity&#39;][&#39;save&#39;])
+    def raw_activity(self):
+        return get_weekly_activity_data(self.formatter.activity_data)
+
+    @property
+    @load_save(**feature_config[&#39;activity&#39;][&#39;save&#39;])
+    def activity(self):
+        data = []
+        if feature_config[&#39;activity&#39;][&#39;features&#39;] is None:
+            features = self.info.keys()
+        else:
+            features = feature_config[&#39;activity&#39;][&#39;features&#39;]
+        for feat in features:
+            data.append(getattr(self, feat)[[&#39;id&#39;, &#39;week&#39;, &#39;location&#39;, &#39;value&#39;]])
+        data = pd.concat(data)
+        if self.agg_method == &#39;sum&#39;:
+            data = data.groupby([&#39;id&#39;, &#39;week&#39;, &#39;location&#39;])[&#39;value&#39;].sum().reset_index()
+        elif self.agg_method == &#39;median&#39;:
+            data = data.groupby([&#39;id&#39;, &#39;week&#39;, &#39;location&#39;])[&#39;value&#39;].median().reset_index()
+        elif self.agg_method == &#39;mean&#39;:
+            data = data.groupby([&#39;id&#39;, &#39;week&#39;, &#39;location&#39;])[&#39;value&#39;].mean().reset_index()
+        else:
+            raise TypeError(&#39;agg_method={} is not implemented&#39;.format(self.agg_method))
+        data = data.pivot_table(index=[&#39;id&#39;, &#39;week&#39;], columns=&#39;location&#39;,
+                                values=&#39;value&#39;).reset_index().replace(np.nan, 0)
+        data[&#39;time&#39;] = week_to_date(data[&#39;week&#39;])
+        return data
+
+    @property
+    @load_save(**feature_config[&#39;outlier_score_activity&#39;][&#39;save&#39;])
+    def outlier_score_activity(self):
+        return get_outlier_freq(self.formatter.activity_data.sort_values(&#39;time&#39;), anomaly_detection_freq, &#39;outlier_score_activity&#39;)
+
+    @property
+    @load_save(**feature_config[&#39;rp_location_time_delta&#39;][&#39;save&#39;])
+    def rp_location_time_delta(self):
+        print(&#39;This might take a bit of time...&#39;)
+        return get_subject_rp_location_delta(data=self.formatter.activity_data.sort_values(&#39;time&#39;), 
+                                              columns = {&#39;subject&#39;:&#39;id&#39;, &#39;time&#39;:&#39;time&#39;, &#39;location&#39;:&#39;location&#39;}, 
+                                              baseline_length_days = feature_config[&#39;rp_location_time_delta&#39;][&#39;baseline_length_days&#39;],
+                                              baseline_offset_days = feature_config[&#39;rp_location_time_delta&#39;][&#39;baseline_offset_days&#39;],
+                                              all_loc_as_baseline = feature_config[&#39;rp_location_time_delta&#39;][&#39;all_loc_as_baseline&#39;],
+                                              name=&#39;rp_location_time_delta&#39;)
+
+    def activity_specific_agg(self, agg=&#39;daily&#39;, load_smaller_aggs = False):
+        
+        accepted_agg = [&#39;evently&#39;, &#39;daily&#39;, &#39;weekly&#39;]
+        if not agg in accepted_agg:
+            raise TypeError(&#39;Please use an agg from the list {}&#39;.format(accepted_agg))
+
+        data = []
+
+        &#39;&#39;&#39;
+        if feature_config[&#39;activity_{}&#39;.format(agg)][&#39;features&#39;] is None:
+            features = self.info.keys()
+        
+        else:
+            features = feature_config[&#39;activity_{}&#39;.format(agg)][&#39;features&#39;]
+        &#39;&#39;&#39;
+
+        features = self.agg_info[agg]
+        if load_smaller_aggs:
+            if agg == &#39;weekly&#39;:
+                features.extend(self.agg_info[&#39;daily&#39;])
+                #features.extend(self.agg_info[&#39;evently&#39;])
+            elif agg == &#39;daily&#39;:
+                features.extend(self.agg_info[&#39;evently&#39;])
+        for feat in features:
+            if agg ==&#39;weekly&#39;:
+                feat_data = getattr(self, feat)[[&#39;id&#39;, &#39;week&#39;, &#39;location&#39;, &#39;value&#39;]]
+            elif agg ==&#39;daily&#39;:
+                feat_data = getattr(self, feat)[[&#39;id&#39;, &#39;week&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;]]
+            elif agg ==&#39;evently&#39;:
+                feat_data = getattr(self, feat)
+            data.append(feat_data)
+        data = pd.concat(data)
+        if agg == &#39;weekly&#39;:
+            data[&#39;time&#39;] = week_to_date(data[&#39;week&#39;])
+        data[&#39;time&#39;] = pd.to_datetime(data[&#39;time&#39;], utc=True)
+        if not agg == &#39;evently&#39;:
+            columns_agg = [&#39;id&#39;, &#39;week&#39;, &#39;location&#39;]
+            grouper = pd.Grouper(key = &#39;time&#39;, freq = &#39;1d&#39; if agg==&#39;daily&#39; else &#39;1W&#39;, dropna = False)
+            columns_agg.append(grouper)
+            if self.agg_method == &#39;sum&#39;:
+                data = data.groupby(columns_agg)[&#39;value&#39;].sum().reset_index()
+            elif self.agg_method == &#39;median&#39;:
+                data = data.groupby(columns_agg)[&#39;value&#39;].median().reset_index()
+            elif self.agg_method == &#39;mean&#39;:
+                data = data.groupby(columns_agg)[&#39;value&#39;].mean().reset_index()
+            else:
+                raise TypeError(&#39;agg_method={} is not implemented&#39;.format(self.agg_method))
+
+        return data
+
+    @property
+    @load_save(**feature_config[&#39;activity_daily&#39;][&#39;save&#39;])
+    def activity_daily(self):
+        return self.activity_specific_agg(agg=&#39;daily&#39;)
+
+    @property
+    @load_save(**feature_config[&#39;activity_evently&#39;][&#39;save&#39;])
+    def activity_evently(self):
+        return self.activity_specific_agg(agg=&#39;evently&#39;)
+
+    @property
+    @load_save(**feature_config[&#39;activity_weekly&#39;][&#39;save&#39;])
+    def activity_weekly(self):
+        return self.activity_specific_agg(agg=&#39;weekly&#39;)</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.feature_engineering.Feature_engineer.activity"><code class="name">var <span class="ident">activity</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;activity&#39;][&#39;save&#39;])
+def activity(self):
+    data = []
+    if feature_config[&#39;activity&#39;][&#39;features&#39;] is None:
+        features = self.info.keys()
+    else:
+        features = feature_config[&#39;activity&#39;][&#39;features&#39;]
+    for feat in features:
+        data.append(getattr(self, feat)[[&#39;id&#39;, &#39;week&#39;, &#39;location&#39;, &#39;value&#39;]])
+    data = pd.concat(data)
+    if self.agg_method == &#39;sum&#39;:
+        data = data.groupby([&#39;id&#39;, &#39;week&#39;, &#39;location&#39;])[&#39;value&#39;].sum().reset_index()
+    elif self.agg_method == &#39;median&#39;:
+        data = data.groupby([&#39;id&#39;, &#39;week&#39;, &#39;location&#39;])[&#39;value&#39;].median().reset_index()
+    elif self.agg_method == &#39;mean&#39;:
+        data = data.groupby([&#39;id&#39;, &#39;week&#39;, &#39;location&#39;])[&#39;value&#39;].mean().reset_index()
+    else:
+        raise TypeError(&#39;agg_method={} is not implemented&#39;.format(self.agg_method))
+    data = data.pivot_table(index=[&#39;id&#39;, &#39;week&#39;], columns=&#39;location&#39;,
+                            values=&#39;value&#39;).reset_index().replace(np.nan, 0)
+    data[&#39;time&#39;] = week_to_date(data[&#39;week&#39;])
+    return data</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.activity_daily"><code class="name">var <span class="ident">activity_daily</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;activity_daily&#39;][&#39;save&#39;])
+def activity_daily(self):
+    return self.activity_specific_agg(agg=&#39;daily&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.activity_evently"><code class="name">var <span class="ident">activity_evently</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;activity_evently&#39;][&#39;save&#39;])
+def activity_evently(self):
+    return self.activity_specific_agg(agg=&#39;evently&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.activity_weekly"><code class="name">var <span class="ident">activity_weekly</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;activity_weekly&#39;][&#39;save&#39;])
+def activity_weekly(self):
+    return self.activity_specific_agg(agg=&#39;weekly&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.agg_info"><code class="name">var <span class="ident">agg_info</span></code></dt>
+<dd>
+<div class="desc"><p>These are the time aggregations of each of the datasets.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def agg_info(self):
+    &#39;&#39;&#39;
+    These are the time aggregations of each of the datasets.
+    &#39;&#39;&#39;
+    return {&#39;evently&#39;: [&#39;rp_location_time_delta&#39;], 
+
+            &#39;daily&#39;: [&#39;bathroom_night&#39;,
+                      &#39;bathroom_daytime&#39;,
+                      &#39;outlier_score_activity&#39;,
+                      &#39;bathroom_night_ma&#39;,
+                      &#39;bathroom_night_ma_delta&#39;,
+                      &#39;bathroom_daytime_ma&#39;,
+                     #&#39;bathroom_urgent&#39;,
+                      &#39;bathroom_urgent_reverse_percentage&#39;,
+                      &#39;bathroom_daytime_ma_delta&#39;,
+                      &#39;entropy_rate_daily&#39;], 
+
+            &#39;weekly&#39;: [&#39;body_temperature&#39;, 
+                       &#39;entropy&#39;, 
+                       &#39;entropy_rate&#39;]}</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.bathroom_daytime"><code class="name">var <span class="ident">bathroom_daytime</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bathroom_daytime&#39;][&#39;save&#39;])
+def bathroom_daytime(self):
+    return get_bathroom_activity(self.formatter.activity_data.sort_values(&#39;time&#39;), feature_config[&#39;nocturia&#39;][&#39;time_range&#39;][::-1], &#39;bathroom_daytime&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.bathroom_daytime_ma"><code class="name">var <span class="ident">bathroom_daytime_ma</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bathroom_daytime_ma&#39;][&#39;save&#39;])
+def bathroom_daytime_ma(self):
+
+    def get_moving_average_groupby(x):
+        x = get_moving_average(x, 
+                              w=feature_config[&#39;bathroom_daytime_ma&#39;][&#39;w&#39;], 
+                              name=&#39;bathroom_daytime_ma&#39;)
+        return x
+
+    return (self.bathroom_daytime).groupby(by=&#39;id&#39;).apply(get_moving_average_groupby)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.bathroom_daytime_ma_delta"><code class="name">var <span class="ident">bathroom_daytime_ma_delta</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bathroom_daytime_ma_delta&#39;][&#39;save&#39;])
+def bathroom_daytime_ma_delta(self):
+
+    def get_value_delta_groupby(x):
+        x = get_value_delta(x,
+                            name=&#39;bathroom_daytime_ma_delta&#39;)
+        return x
+
+    return (self.bathroom_daytime_ma).groupby(&#39;id&#39;).apply(get_value_delta_groupby)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.bathroom_night"><code class="name">var <span class="ident">bathroom_night</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bathroom_night&#39;][&#39;save&#39;])
+def bathroom_night(self):
+    return get_bathroom_activity(self.formatter.activity_data.sort_values(&#39;time&#39;), feature_config[&#39;nocturia&#39;][&#39;time_range&#39;], &#39;bathroom_night&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.bathroom_night_ma"><code class="name">var <span class="ident">bathroom_night_ma</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bathroom_night_ma&#39;][&#39;save&#39;])
+def bathroom_night_ma(self):
+
+    def get_moving_average_groupby(x):
+        x = get_moving_average(x, 
+                              w=feature_config[&#39;bathroom_night_ma&#39;][&#39;w&#39;], 
+                              name=&#39;bathroom_night_ma&#39;)
+        return x
+
+    return (self.bathroom_night).groupby(&#39;id&#39;).apply(get_moving_average_groupby)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.bathroom_night_ma_delta"><code class="name">var <span class="ident">bathroom_night_ma_delta</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bathroom_night_ma_delta&#39;][&#39;save&#39;])
+def bathroom_night_ma_delta(self):
+
+    def get_value_delta_groupby(x):
+        x = get_value_delta(x,
+                            name=&#39;bathroom_night_ma_delta&#39;)
+        return x
+
+    return (self.bathroom_night_ma).groupby(&#39;id&#39;).apply(get_value_delta_groupby)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.bathroom_urgent"><code class="name">var <span class="ident">bathroom_urgent</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bathroom_urgent&#39;][&#39;save&#39;])
+def bathroom_urgent(self):
+    return get_bathroom_delta(self.formatter.activity_data.sort_values(&#39;time&#39;), single_location_delta, &#39;bathroom_urgent&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.bathroom_urgent_reverse_percentage"><code class="name">var <span class="ident">bathroom_urgent_reverse_percentage</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bathroom_urgent_reverse_percentage&#39;][&#39;save&#39;])
+def bathroom_urgent_reverse_percentage(self):
+    data = get_bathroom_delta(self.formatter.activity_data.sort_values(&#39;time&#39;), rp_single_location_delta, &#39;bathroom_urgent_reverse_percentage&#39;)
+    def value_group_by(x):
+        x[np.where(x == -1)] = np.nan
+        x = np.nanmean(x)
+        return x
+    data[&#39;value&#39;] = data[&#39;value&#39;].apply(value_group_by)
+    return data</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.body_temperature"><code class="name">var <span class="ident">body_temperature</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;body_temperature&#39;][&#39;save&#39;])
+def body_temperature(self):
+    return get_body_temperature(self.formatter.physiological_data)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.entropy"><code class="name">var <span class="ident">entropy</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;entropy&#39;][&#39;save&#39;])
+def entropy(self):
+    return calculate_entropy(self.formatter.activity_data.sort_values(&#39;time&#39;), feature_config[&#39;entropy&#39;][&#39;sensors&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.entropy_rate"><code class="name">var <span class="ident">entropy_rate</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;entropy_rate&#39;][&#39;save&#39;])
+def entropy_rate(self):
+    return get_entropy_rate(df=self.formatter.activity_data.sort_values(&#39;time&#39;), 
+                            sensors=feature_config[&#39;entropy_rate&#39;][&#39;sensors&#39;], 
+                            name=&#39;entropy_rate&#39;,
+                            week_or_day=&#39;week&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.entropy_rate_daily"><code class="name">var <span class="ident">entropy_rate_daily</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;entropy_rate_daily&#39;][&#39;save&#39;])
+def entropy_rate_daily(self):
+    return get_entropy_rate(df=self.formatter.activity_data.sort_values(&#39;time&#39;), 
+                            sensors=feature_config[&#39;entropy_rate_daily&#39;][&#39;sensors&#39;], 
+                            name=&#39;entropy_rate_daily&#39;,
+                            week_or_day=&#39;day&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.info"><code class="name">var <span class="ident">info</span></code></dt>
+<dd>
+<div class="desc"><p>Descriptions of the attributes.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def info(self):
+    &#39;&#39;&#39;
+    Descriptions of the attributes.
+    &#39;&#39;&#39;
+    return {
+        &#39;bathroom_night&#39;: &#39;Bathroom activity during the night&#39;,
+        &#39;bathroom_daytime&#39;: &#39;Bathroom activity during the day&#39;,
+         # &#39;bathroom_urgent&#39;: &#39;TODO&#39;,
+        &#39;body_temperature&#39;: &#39;Mean of body temperature of the participant during the week&#39;,
+        &#39;entropy&#39;: &#39;Entropy of the activity&#39;,
+        # &#39;raw_activity&#39;: &#39;Raw activity data (weekly)&#39;,
+        &#39;entropy_rate&#39;: &#39;Entropy rate of markov chain over the week&#39;,
+        &#39;entropy_rate_daily&#39;: &#39;Entropy rate of markov chain over the day&#39;,
+        &#39;bathroom_night_ma&#39;: &#39;Moving average of bathroom activity during the night&#39;,
+        &#39;bathroom_night_ma_delta&#39;: &#39;Delta in the moving average of bathroom activity during the night&#39;,
+        &#39;bathroom_daytime_ma&#39;: &#39;Moving average of bathroom activity during the day&#39;,
+        &#39;bathroom_daytime_ma_delta&#39;: &#39;Delta in the moving average of bathroom activity during the day&#39;,
+        &#39;bathroom_urgent_reverse_percentage&#39;: &#39;Reverse percentile of the time to the bathroom&#39;,
+        &#39;outlier_score_activity&#39;: &#39;Outlier score of the activity&#39;,
+        &#39;rp_location_time_delta&#39;: &#39;Reverse percentile of the time between activities&#39;,
+    }</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.outlier_score_activity"><code class="name">var <span class="ident">outlier_score_activity</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;outlier_score_activity&#39;][&#39;save&#39;])
+def outlier_score_activity(self):
+    return get_outlier_freq(self.formatter.activity_data.sort_values(&#39;time&#39;), anomaly_detection_freq, &#39;outlier_score_activity&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.raw_activity"><code class="name">var <span class="ident">raw_activity</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;raw_activity&#39;][&#39;save&#39;])
+def raw_activity(self):
+    return get_weekly_activity_data(self.formatter.activity_data)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.Feature_engineer.rp_location_time_delta"><code class="name">var <span class="ident">rp_location_time_delta</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;rp_location_time_delta&#39;][&#39;save&#39;])
+def rp_location_time_delta(self):
+    print(&#39;This might take a bit of time...&#39;)
+    return get_subject_rp_location_delta(data=self.formatter.activity_data.sort_values(&#39;time&#39;), 
+                                          columns = {&#39;subject&#39;:&#39;id&#39;, &#39;time&#39;:&#39;time&#39;, &#39;location&#39;:&#39;location&#39;}, 
+                                          baseline_length_days = feature_config[&#39;rp_location_time_delta&#39;][&#39;baseline_length_days&#39;],
+                                          baseline_offset_days = feature_config[&#39;rp_location_time_delta&#39;][&#39;baseline_offset_days&#39;],
+                                          all_loc_as_baseline = feature_config[&#39;rp_location_time_delta&#39;][&#39;all_loc_as_baseline&#39;],
+                                          name=&#39;rp_location_time_delta&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.feature_engineering.Feature_engineer.activity_specific_agg"><code class="name flex">
+<span>def <span class="ident">activity_specific_agg</span></span>(<span>self, agg='daily', load_smaller_aggs=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def activity_specific_agg(self, agg=&#39;daily&#39;, load_smaller_aggs = False):
+    
+    accepted_agg = [&#39;evently&#39;, &#39;daily&#39;, &#39;weekly&#39;]
+    if not agg in accepted_agg:
+        raise TypeError(&#39;Please use an agg from the list {}&#39;.format(accepted_agg))
+
+    data = []
+
+    &#39;&#39;&#39;
+    if feature_config[&#39;activity_{}&#39;.format(agg)][&#39;features&#39;] is None:
+        features = self.info.keys()
+    
+    else:
+        features = feature_config[&#39;activity_{}&#39;.format(agg)][&#39;features&#39;]
+    &#39;&#39;&#39;
+
+    features = self.agg_info[agg]
+    if load_smaller_aggs:
+        if agg == &#39;weekly&#39;:
+            features.extend(self.agg_info[&#39;daily&#39;])
+            #features.extend(self.agg_info[&#39;evently&#39;])
+        elif agg == &#39;daily&#39;:
+            features.extend(self.agg_info[&#39;evently&#39;])
+    for feat in features:
+        if agg ==&#39;weekly&#39;:
+            feat_data = getattr(self, feat)[[&#39;id&#39;, &#39;week&#39;, &#39;location&#39;, &#39;value&#39;]]
+        elif agg ==&#39;daily&#39;:
+            feat_data = getattr(self, feat)[[&#39;id&#39;, &#39;week&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;]]
+        elif agg ==&#39;evently&#39;:
+            feat_data = getattr(self, feat)
+        data.append(feat_data)
+    data = pd.concat(data)
+    if agg == &#39;weekly&#39;:
+        data[&#39;time&#39;] = week_to_date(data[&#39;week&#39;])
+    data[&#39;time&#39;] = pd.to_datetime(data[&#39;time&#39;], utc=True)
+    if not agg == &#39;evently&#39;:
+        columns_agg = [&#39;id&#39;, &#39;week&#39;, &#39;location&#39;]
+        grouper = pd.Grouper(key = &#39;time&#39;, freq = &#39;1d&#39; if agg==&#39;daily&#39; else &#39;1W&#39;, dropna = False)
+        columns_agg.append(grouper)
+        if self.agg_method == &#39;sum&#39;:
+            data = data.groupby(columns_agg)[&#39;value&#39;].sum().reset_index()
+        elif self.agg_method == &#39;median&#39;:
+            data = data.groupby(columns_agg)[&#39;value&#39;].median().reset_index()
+        elif self.agg_method == &#39;mean&#39;:
+            data = data.groupby(columns_agg)[&#39;value&#39;].mean().reset_index()
+        else:
+            raise TypeError(&#39;agg_method={} is not implemented&#39;.format(self.agg_method))
+
+    return data</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<header>
+<a class="homelink" rel="home" title="Minder Utils" href="https://minder-utils.github.io">
+<img src="https://github.com/ImperialCollegeLondon/minder_utils/blob/main/UKDRI_logo.jpeg?raw=true" alt=""> Minder Utils
+</a>
+</header>
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="minder_utils" href="../index.html">minder_utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="minder_utils.feature_engineering.DensityFunctions" href="DensityFunctions.html">minder_utils.feature_engineering.DensityFunctions</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.TimeFunctions" href="TimeFunctions.html">minder_utils.feature_engineering.TimeFunctions</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.adding_features" href="adding_features.html">minder_utils.feature_engineering.adding_features</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.calculation" href="calculation.html">minder_utils.feature_engineering.calculation</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer" href="engineer.html">minder_utils.feature_engineering.engineer</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.util" href="util.html">minder_utils.feature_engineering.util</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.feature_engineering.Feature_engineer" href="#minder_utils.feature_engineering.Feature_engineer">Feature_engineer</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.activity" href="#minder_utils.feature_engineering.Feature_engineer.activity">activity</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.activity_daily" href="#minder_utils.feature_engineering.Feature_engineer.activity_daily">activity_daily</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.activity_evently" href="#minder_utils.feature_engineering.Feature_engineer.activity_evently">activity_evently</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.activity_specific_agg" href="#minder_utils.feature_engineering.Feature_engineer.activity_specific_agg">activity_specific_agg</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.activity_weekly" href="#minder_utils.feature_engineering.Feature_engineer.activity_weekly">activity_weekly</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.agg_info" href="#minder_utils.feature_engineering.Feature_engineer.agg_info">agg_info</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.bathroom_daytime" href="#minder_utils.feature_engineering.Feature_engineer.bathroom_daytime">bathroom_daytime</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.bathroom_daytime_ma" href="#minder_utils.feature_engineering.Feature_engineer.bathroom_daytime_ma">bathroom_daytime_ma</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.bathroom_daytime_ma_delta" href="#minder_utils.feature_engineering.Feature_engineer.bathroom_daytime_ma_delta">bathroom_daytime_ma_delta</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.bathroom_night" href="#minder_utils.feature_engineering.Feature_engineer.bathroom_night">bathroom_night</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.bathroom_night_ma" href="#minder_utils.feature_engineering.Feature_engineer.bathroom_night_ma">bathroom_night_ma</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.bathroom_night_ma_delta" href="#minder_utils.feature_engineering.Feature_engineer.bathroom_night_ma_delta">bathroom_night_ma_delta</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.bathroom_urgent" href="#minder_utils.feature_engineering.Feature_engineer.bathroom_urgent">bathroom_urgent</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.bathroom_urgent_reverse_percentage" href="#minder_utils.feature_engineering.Feature_engineer.bathroom_urgent_reverse_percentage">bathroom_urgent_reverse_percentage</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.body_temperature" href="#minder_utils.feature_engineering.Feature_engineer.body_temperature">body_temperature</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.entropy" href="#minder_utils.feature_engineering.Feature_engineer.entropy">entropy</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.entropy_rate" href="#minder_utils.feature_engineering.Feature_engineer.entropy_rate">entropy_rate</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.entropy_rate_daily" href="#minder_utils.feature_engineering.Feature_engineer.entropy_rate_daily">entropy_rate_daily</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.info" href="#minder_utils.feature_engineering.Feature_engineer.info">info</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.outlier_score_activity" href="#minder_utils.feature_engineering.Feature_engineer.outlier_score_activity">outlier_score_activity</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.raw_activity" href="#minder_utils.feature_engineering.Feature_engineer.raw_activity">raw_activity</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.Feature_engineer.rp_location_time_delta" href="#minder_utils.feature_engineering.Feature_engineer.rp_location_time_delta">rp_location_time_delta</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

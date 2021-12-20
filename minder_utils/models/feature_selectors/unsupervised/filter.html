@@ -28,10 +28,10 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from sklearn.feature_selection import VarianceThreshold
-from minder_utils.models.feature_selectors import Feature_selector_template
+from minder_utils.models.utils import Feature_selector
 
 
-class Unsupervised_Filter(Feature_selector_template):
+class Unsupervised_Filter(Feature_selector):
     &#39;&#39;&#39;
     This class provide a set of unsupervised feature selection methods.
 
@@ -110,7 +110,7 @@ X = selector.transform(X)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Unsupervised_Filter(Feature_selector_template):
+<pre><code class="python">class Unsupervised_Filter(Feature_selector):
     &#39;&#39;&#39;
     This class provide a set of unsupervised feature selection methods.
 
@@ -156,7 +156,7 @@ X = selector.transform(X)
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="minder_utils.models.feature_selectors.Feature_selector_template" href="../index.html#minder_utils.models.feature_selectors.Feature_selector_template">Feature_selector_template</a></li>
+<li><a title="minder_utils.models.utils.feature_selector.Feature_selector" href="../../utils/feature_selector.html#minder_utils.models.utils.feature_selector.Feature_selector">Feature_selector</a></li>
 <li>abc.ABC</li>
 </ul>
 <h3>Static methods</h3>

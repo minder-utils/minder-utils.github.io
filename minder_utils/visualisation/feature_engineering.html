@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>minder_utils.visualisation.feature_engineering API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<style>.homelink{display:block;font-size:2em;font-weight:bold;color:#555;padding-bottom:.5em;border-bottom:1px solid silver}.homelink:hover{color:inherit}.homelink img{max-width:20%;max-height:5em;margin:auto;margin-bottom:.3em}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>minder_utils.visualisation.feature_engineering</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import seaborn as sns
+import pandas as pd
+from minder_utils.formatting.label import label_by_week, label_dataframe
+from minder_utils.feature_engineering import Feature_engineer
+from minder_utils.feature_engineering.calculation import *
+from minder_utils.util import formatting_plots
+from minder_utils.formatting import Formatting
+
+fe = Feature_engineer(Formatting())
+
+sns.set()
+
+att = &#39;bathroom_night&#39;
+figure_title = {
+    &#39;bathroom_night&#39;: &#39;Bathroom activity during the night&#39;,
+    &#39;bathroom_daytime&#39;: &#39;Bathroom activity during the day&#39;,
+}
+
+patient_id = &#39;&#39;
+
+
+def process_dataframe(df, week_shift=0):
+    df = df[df.id == patient_id]
+    map_dict = {i: j - week_shift for j, i in enumerate(df.week.sort_values().unique())}
+    df.week = df.week.map(map_dict)
+    return df
+
+
+def visualise_flags(df):
+    for v in [True, False]:
+        data = df[df.valid == v]
+        not_labelled = True
+        for week in data.week.unique():
+            if v is True:
+                plt.axvline(week, 0, 0.17, color=&#39;red&#39;, label=&#39;UTI&#39; if not_labelled else None)
+                not_labelled = False
+            elif v is False:
+                plt.axvline(week, 0, 0.17, color=&#39;blue&#39;, label=&#39;not UTI&#39; if not_labelled else None)
+                not_labelled = False
+
+
+@formatting_plots(figure_title[att])
+def visualise_weekly_data(df):
+    df = process_dataframe(df)
+    sns.violinplot(data=df, x=&#39;week&#39;, y=&#39;value&#39;)
+    visualise_flags(df)
+    return df
+
+
+@formatting_plots(&#39;P value, &#39; + figure_title[att])
+def visualise_weekly_statistical_analysis(df, results):
+    df = process_dataframe(df, 1)
+    visualise_flags(df)
+    data = results[patient_id]
+    df = {&#39;week&#39;: [], &#39;p_value&#39;: []}
+    for idx, sta in enumerate(data):
+        df[&#39;week&#39;].append(idx + 1)
+        df[&#39;p_value&#39;].append(sta[1])
+    sns.lineplot(df[&#39;week&#39;], df[&#39;p_value&#39;])
+
+
+@formatting_plots(&#39;Body temperature&#39;)
+def visualise_body_temperature(df):
+    df = process_dataframe(df)
+    visualise_flags(df)
+    sns.lineplot(df.week, df.value)
+
+
+
+def visualise_data_time_lineplot(time_array, values_array, name, fill_either_side_array=None, fig = None, ax = None):
+    &#39;&#39;&#39;
+    This function accepts a dataframe that has a ```&#39;time&#39;``` column and 
+    and a ```&#39;value&#39;``` column.
+
+    &#39;&#39;&#39;
+    
+    if ax is None:
+        fig, ax = plt.subplots(1,1,figsize = (10,6))
+
+    ax.plot(time_array, values_array)
+    
+    if not fill_either_side_array is None:
+        ax.fill_between(time_array, 
+                        y1=values_array-fill_either_side_array, 
+                        y2=values_array+fill_either_side_array,
+                        alpha = 0.3)
+
+
+    return fig, ax
+
+
+
+
+def visualise_data_time_heatmap(data_plot, name, fig = None, ax = None):
+    &#39;&#39;&#39;
+    This function accepts a dataframe in which the columns are the days and 
+    the rows are the aggregated times of the day.
+
+
+    &#39;&#39;&#39;
+
+    if ax is None:
+        fig, axes = plt.subplots(1,1,figsize = (10,6))
+
+
+    ax = sns.heatmap(data_plot.values, cmap = &#39;Blues&#39;, cbar_kws={&#39;label&#39;: name})
+    ax.invert_yaxis()
+
+    x_tick_loc = np.arange(0, data_plot.shape[1], 90)
+    ax.set_xticks(x_tick_loc + 0.5)
+    ax.set_xticklabels(data_plot.columns.astype(str)[x_tick_loc].values)
+
+    y_tick_loc = np.arange(0, data_plot.shape[0], 3)
+    ax.set_yticks(y_tick_loc + 0.5)
+    ax.set_yticklabels([pd.to_datetime(time).strftime(&#34;%H:%M&#34;) for time in data_plot.index.values[y_tick_loc]], rotation = 0)
+
+    ax.set_xlabel(&#39;Day&#39;)
+    ax.set_ylabel(&#39;Time of Day&#39;)
+
+    return fig, ax
+
+
+def visualise_activity_daily_data(fe):
+    &#39;&#39;&#39;
+    Arguments
+    ---------
+
+    - fe: class:
+        The feature engineering class that produces the data.
+
+    &#39;&#39;&#39;
+
+    activity_daily = fe.activity_specific_agg(agg=&#39;daily&#39;, load_smaller_aggs = True)
+    activity_daily = label_dataframe(activity_daily, days_either_side=0)
+    activity_daily=activity_daily.rename(columns = {&#39;valid&#39;:&#39;UTI Label&#39;})
+    activity_daily[&#39;Feature&#39;] = activity_daily[&#39;location&#39;].map(fe.info)
+
+    sns.set_theme(&#39;talk&#39;)
+
+    fig_list = []
+    axes_list = []
+
+    for feature in activity_daily[&#39;location&#39;].unique():
+        data_plot = activity_daily[activity_daily[&#39;location&#39;].isin([feature])]
+
+        fig, ax = plt.subplots(1,1,figsize = (8,6))
+        ax = sns.boxplot(data=data_plot, x=&#39;value&#39;, y = &#39;Feature&#39;, hue=&#39;UTI Label&#39;, ax=ax, **{&#39;showfliers&#39;:False})
+        ax.set_ylabel(None)
+        ax.set_yticks([])
+        ax.set_title(&#39;{}&#39;.format(fe.info[feature]))
+        ax.set_xlabel(&#39;Value&#39;)
+
+        fig_list.append(fig)
+        axes_list.append(ax)
+
+    return fig_list, axes_list
+
+
+
+
+def visualise_activity_weekly_data(fe):
+    &#39;&#39;&#39;
+    Arguments
+    ---------
+
+    - fe: class:
+        The feature engineering class that produces the data.
+
+    &#39;&#39;&#39;
+
+    activity_weekly = fe.activity_specific_agg(agg=&#39;weekly&#39;, load_smaller_aggs = True)
+    activity_weekly = label_by_week(activity_weekly)
+    activity_weekly=activity_weekly.rename(columns = {&#39;valid&#39;:&#39;UTI Label&#39;})
+    activity_weekly[&#39;Feature&#39;] = activity_weekly[&#39;location&#39;].map(fe.info)
+
+    sns.set_theme(&#39;talk&#39;)
+
+    fig_list = []
+    axes_list = []
+
+    for feature in activity_weekly[&#39;location&#39;].unique():
+        data_plot = activity_weekly[activity_weekly[&#39;location&#39;].isin([feature])]
+
+        fig, ax = plt.subplots(1,1,figsize = (8,6))
+        ax = sns.boxplot(data=data_plot, x=&#39;value&#39;, y = &#39;Feature&#39;, hue=&#39;UTI Label&#39;, ax=ax, **{&#39;showfliers&#39;:False})
+        ax.set_ylabel(None)
+        ax.set_yticks([])
+        ax.set_title(&#39;{}&#39;.format(fe.info[feature]))
+        ax.set_xlabel(&#39;Value&#39;)
+
+        fig_list.append(fig)
+        axes_list.append(ax)
+
+    return fig_list, axes_list
+
+
+
+def visualise_activity_evently_data(fe):
+    &#39;&#39;&#39;
+    Arguments
+    ---------
+
+    - fe: class:
+        The feature engineering class that produces the data.
+
+    &#39;&#39;&#39;
+
+    activity_evently = fe.activity_specific_agg(agg=&#39;evently&#39;, load_smaller_aggs = True)
+    activity_evently = label_dataframe(activity_evently, days_either_side=0)
+    activity_evently=activity_evently.rename(columns = {&#39;valid&#39;:&#39;UTI Label&#39;})
+    activity_evently[&#39;Feature&#39;] = activity_evently[&#39;location&#39;].map(fe.info)
+
+    sns.set_theme(&#39;talk&#39;)
+
+    fig_list = []
+    axes_list = []
+
+    for feature in activity_evently[&#39;location&#39;].unique():
+        data_plot = activity_evently[activity_evently[&#39;location&#39;].isin([feature])]
+
+        fig, ax = plt.subplots(1,1,figsize = (8,6))
+        ax = sns.boxplot(data=data_plot, x=&#39;value&#39;, y = &#39;Feature&#39;, hue=&#39;UTI Label&#39;, ax=ax, **{&#39;showfliers&#39;:False})
+        ax.set_ylabel(None)
+        ax.set_yticks([])
+        ax.set_title(&#39;{}&#39;.format(fe.info[feature]))
+        ax.set_xlabel(&#39;Value&#39;)
+
+        fig_list.append(fig)
+        axes_list.append(ax)
+
+    return fig_list, axes_list
+
+
+
+
+
+
+if __name__ == &#39;__main__&#39;:
+    results = weekly_compare(getattr(fe, att), kolmogorov_smirnov)
+    df = label_by_week(getattr(fe, att))
+    visualise_weekly_data(df)
+    visualise_weekly_statistical_analysis(df)
+    visualise_body_temperature(label_by_week(fe.body_temperature))</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="minder_utils.visualisation.feature_engineering.process_dataframe"><code class="name flex">
+<span>def <span class="ident">process_dataframe</span></span>(<span>df, week_shift=0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_dataframe(df, week_shift=0):
+    df = df[df.id == patient_id]
+    map_dict = {i: j - week_shift for j, i in enumerate(df.week.sort_values().unique())}
+    df.week = df.week.map(map_dict)
+    return df</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.feature_engineering.visualise_activity_daily_data"><code class="name flex">
+<span>def <span class="ident">visualise_activity_daily_data</span></span>(<span>fe)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="arguments">Arguments</h2>
+<ul>
+<li>fe: class:
+The feature engineering class that produces the data.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def visualise_activity_daily_data(fe):
+    &#39;&#39;&#39;
+    Arguments
+    ---------
+
+    - fe: class:
+        The feature engineering class that produces the data.
+
+    &#39;&#39;&#39;
+
+    activity_daily = fe.activity_specific_agg(agg=&#39;daily&#39;, load_smaller_aggs = True)
+    activity_daily = label_dataframe(activity_daily, days_either_side=0)
+    activity_daily=activity_daily.rename(columns = {&#39;valid&#39;:&#39;UTI Label&#39;})
+    activity_daily[&#39;Feature&#39;] = activity_daily[&#39;location&#39;].map(fe.info)
+
+    sns.set_theme(&#39;talk&#39;)
+
+    fig_list = []
+    axes_list = []
+
+    for feature in activity_daily[&#39;location&#39;].unique():
+        data_plot = activity_daily[activity_daily[&#39;location&#39;].isin([feature])]
+
+        fig, ax = plt.subplots(1,1,figsize = (8,6))
+        ax = sns.boxplot(data=data_plot, x=&#39;value&#39;, y = &#39;Feature&#39;, hue=&#39;UTI Label&#39;, ax=ax, **{&#39;showfliers&#39;:False})
+        ax.set_ylabel(None)
+        ax.set_yticks([])
+        ax.set_title(&#39;{}&#39;.format(fe.info[feature]))
+        ax.set_xlabel(&#39;Value&#39;)
+
+        fig_list.append(fig)
+        axes_list.append(ax)
+
+    return fig_list, axes_list</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.feature_engineering.visualise_activity_evently_data"><code class="name flex">
+<span>def <span class="ident">visualise_activity_evently_data</span></span>(<span>fe)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="arguments">Arguments</h2>
+<ul>
+<li>fe: class:
+The feature engineering class that produces the data.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def visualise_activity_evently_data(fe):
+    &#39;&#39;&#39;
+    Arguments
+    ---------
+
+    - fe: class:
+        The feature engineering class that produces the data.
+
+    &#39;&#39;&#39;
+
+    activity_evently = fe.activity_specific_agg(agg=&#39;evently&#39;, load_smaller_aggs = True)
+    activity_evently = label_dataframe(activity_evently, days_either_side=0)
+    activity_evently=activity_evently.rename(columns = {&#39;valid&#39;:&#39;UTI Label&#39;})
+    activity_evently[&#39;Feature&#39;] = activity_evently[&#39;location&#39;].map(fe.info)
+
+    sns.set_theme(&#39;talk&#39;)
+
+    fig_list = []
+    axes_list = []
+
+    for feature in activity_evently[&#39;location&#39;].unique():
+        data_plot = activity_evently[activity_evently[&#39;location&#39;].isin([feature])]
+
+        fig, ax = plt.subplots(1,1,figsize = (8,6))
+        ax = sns.boxplot(data=data_plot, x=&#39;value&#39;, y = &#39;Feature&#39;, hue=&#39;UTI Label&#39;, ax=ax, **{&#39;showfliers&#39;:False})
+        ax.set_ylabel(None)
+        ax.set_yticks([])
+        ax.set_title(&#39;{}&#39;.format(fe.info[feature]))
+        ax.set_xlabel(&#39;Value&#39;)
+
+        fig_list.append(fig)
+        axes_list.append(ax)
+
+    return fig_list, axes_list</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.feature_engineering.visualise_activity_weekly_data"><code class="name flex">
+<span>def <span class="ident">visualise_activity_weekly_data</span></span>(<span>fe)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="arguments">Arguments</h2>
+<ul>
+<li>fe: class:
+The feature engineering class that produces the data.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def visualise_activity_weekly_data(fe):
+    &#39;&#39;&#39;
+    Arguments
+    ---------
+
+    - fe: class:
+        The feature engineering class that produces the data.
+
+    &#39;&#39;&#39;
+
+    activity_weekly = fe.activity_specific_agg(agg=&#39;weekly&#39;, load_smaller_aggs = True)
+    activity_weekly = label_by_week(activity_weekly)
+    activity_weekly=activity_weekly.rename(columns = {&#39;valid&#39;:&#39;UTI Label&#39;})
+    activity_weekly[&#39;Feature&#39;] = activity_weekly[&#39;location&#39;].map(fe.info)
+
+    sns.set_theme(&#39;talk&#39;)
+
+    fig_list = []
+    axes_list = []
+
+    for feature in activity_weekly[&#39;location&#39;].unique():
+        data_plot = activity_weekly[activity_weekly[&#39;location&#39;].isin([feature])]
+
+        fig, ax = plt.subplots(1,1,figsize = (8,6))
+        ax = sns.boxplot(data=data_plot, x=&#39;value&#39;, y = &#39;Feature&#39;, hue=&#39;UTI Label&#39;, ax=ax, **{&#39;showfliers&#39;:False})
+        ax.set_ylabel(None)
+        ax.set_yticks([])
+        ax.set_title(&#39;{}&#39;.format(fe.info[feature]))
+        ax.set_xlabel(&#39;Value&#39;)
+
+        fig_list.append(fig)
+        axes_list.append(ax)
+
+    return fig_list, axes_list</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.feature_engineering.visualise_body_temperature"><code class="name flex">
+<span>def <span class="ident">visualise_body_temperature</span></span>(<span>df)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(&#39;Body temperature&#39;)
+def visualise_body_temperature(df):
+    df = process_dataframe(df)
+    visualise_flags(df)
+    sns.lineplot(df.week, df.value)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.feature_engineering.visualise_data_time_heatmap"><code class="name flex">
+<span>def <span class="ident">visualise_data_time_heatmap</span></span>(<span>data_plot, name, fig=None, ax=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function accepts a dataframe in which the columns are the days and
+the rows are the aggregated times of the day.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def visualise_data_time_heatmap(data_plot, name, fig = None, ax = None):
+    &#39;&#39;&#39;
+    This function accepts a dataframe in which the columns are the days and 
+    the rows are the aggregated times of the day.
+
+
+    &#39;&#39;&#39;
+
+    if ax is None:
+        fig, axes = plt.subplots(1,1,figsize = (10,6))
+
+
+    ax = sns.heatmap(data_plot.values, cmap = &#39;Blues&#39;, cbar_kws={&#39;label&#39;: name})
+    ax.invert_yaxis()
+
+    x_tick_loc = np.arange(0, data_plot.shape[1], 90)
+    ax.set_xticks(x_tick_loc + 0.5)
+    ax.set_xticklabels(data_plot.columns.astype(str)[x_tick_loc].values)
+
+    y_tick_loc = np.arange(0, data_plot.shape[0], 3)
+    ax.set_yticks(y_tick_loc + 0.5)
+    ax.set_yticklabels([pd.to_datetime(time).strftime(&#34;%H:%M&#34;) for time in data_plot.index.values[y_tick_loc]], rotation = 0)
+
+    ax.set_xlabel(&#39;Day&#39;)
+    ax.set_ylabel(&#39;Time of Day&#39;)
+
+    return fig, ax</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.feature_engineering.visualise_data_time_lineplot"><code class="name flex">
+<span>def <span class="ident">visualise_data_time_lineplot</span></span>(<span>time_array, values_array, name, fill_either_side_array=None, fig=None, ax=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function accepts a dataframe that has a <code>'time'</code> column and
+and a <code>'value'</code> column.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def visualise_data_time_lineplot(time_array, values_array, name, fill_either_side_array=None, fig = None, ax = None):
+    &#39;&#39;&#39;
+    This function accepts a dataframe that has a ```&#39;time&#39;``` column and 
+    and a ```&#39;value&#39;``` column.
+
+    &#39;&#39;&#39;
+    
+    if ax is None:
+        fig, ax = plt.subplots(1,1,figsize = (10,6))
+
+    ax.plot(time_array, values_array)
+    
+    if not fill_either_side_array is None:
+        ax.fill_between(time_array, 
+                        y1=values_array-fill_either_side_array, 
+                        y2=values_array+fill_either_side_array,
+                        alpha = 0.3)
+
+
+    return fig, ax</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.feature_engineering.visualise_flags"><code class="name flex">
+<span>def <span class="ident">visualise_flags</span></span>(<span>df)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def visualise_flags(df):
+    for v in [True, False]:
+        data = df[df.valid == v]
+        not_labelled = True
+        for week in data.week.unique():
+            if v is True:
+                plt.axvline(week, 0, 0.17, color=&#39;red&#39;, label=&#39;UTI&#39; if not_labelled else None)
+                not_labelled = False
+            elif v is False:
+                plt.axvline(week, 0, 0.17, color=&#39;blue&#39;, label=&#39;not UTI&#39; if not_labelled else None)
+                not_labelled = False</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.feature_engineering.visualise_weekly_data"><code class="name flex">
+<span>def <span class="ident">visualise_weekly_data</span></span>(<span>df)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(figure_title[att])
+def visualise_weekly_data(df):
+    df = process_dataframe(df)
+    sns.violinplot(data=df, x=&#39;week&#39;, y=&#39;value&#39;)
+    visualise_flags(df)
+    return df</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.feature_engineering.visualise_weekly_statistical_analysis"><code class="name flex">
+<span>def <span class="ident">visualise_weekly_statistical_analysis</span></span>(<span>df, results)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(&#39;P value, &#39; + figure_title[att])
+def visualise_weekly_statistical_analysis(df, results):
+    df = process_dataframe(df, 1)
+    visualise_flags(df)
+    data = results[patient_id]
+    df = {&#39;week&#39;: [], &#39;p_value&#39;: []}
+    for idx, sta in enumerate(data):
+        df[&#39;week&#39;].append(idx + 1)
+        df[&#39;p_value&#39;].append(sta[1])
+    sns.lineplot(df[&#39;week&#39;], df[&#39;p_value&#39;])</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<header>
+<a class="homelink" rel="home" title="Minder Utils" href="https://minder-utils.github.io">
+<img src="https://github.com/ImperialCollegeLondon/minder_utils/blob/main/UKDRI_logo.jpeg?raw=true" alt=""> Minder Utils
+</a>
+</header>
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="minder_utils.visualisation" href="index.html">minder_utils.visualisation</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="minder_utils.visualisation.feature_engineering.process_dataframe" href="#minder_utils.visualisation.feature_engineering.process_dataframe">process_dataframe</a></code></li>
+<li><code><a title="minder_utils.visualisation.feature_engineering.visualise_activity_daily_data" href="#minder_utils.visualisation.feature_engineering.visualise_activity_daily_data">visualise_activity_daily_data</a></code></li>
+<li><code><a title="minder_utils.visualisation.feature_engineering.visualise_activity_evently_data" href="#minder_utils.visualisation.feature_engineering.visualise_activity_evently_data">visualise_activity_evently_data</a></code></li>
+<li><code><a title="minder_utils.visualisation.feature_engineering.visualise_activity_weekly_data" href="#minder_utils.visualisation.feature_engineering.visualise_activity_weekly_data">visualise_activity_weekly_data</a></code></li>
+<li><code><a title="minder_utils.visualisation.feature_engineering.visualise_body_temperature" href="#minder_utils.visualisation.feature_engineering.visualise_body_temperature">visualise_body_temperature</a></code></li>
+<li><code><a title="minder_utils.visualisation.feature_engineering.visualise_data_time_heatmap" href="#minder_utils.visualisation.feature_engineering.visualise_data_time_heatmap">visualise_data_time_heatmap</a></code></li>
+<li><code><a title="minder_utils.visualisation.feature_engineering.visualise_data_time_lineplot" href="#minder_utils.visualisation.feature_engineering.visualise_data_time_lineplot">visualise_data_time_lineplot</a></code></li>
+<li><code><a title="minder_utils.visualisation.feature_engineering.visualise_flags" href="#minder_utils.visualisation.feature_engineering.visualise_flags">visualise_flags</a></code></li>
+<li><code><a title="minder_utils.visualisation.feature_engineering.visualise_weekly_data" href="#minder_utils.visualisation.feature_engineering.visualise_weekly_data">visualise_weekly_data</a></code></li>
+<li><code><a title="minder_utils.visualisation.feature_engineering.visualise_weekly_statistical_analysis" href="#minder_utils.visualisation.feature_engineering.visualise_weekly_statistical_analysis">visualise_weekly_statistical_analysis</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>minder_utils.feature_engineering.calculation API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<style>.homelink{display:block;font-size:2em;font-weight:bold;color:#555;padding-bottom:.5em;border-bottom:1px solid silver}.homelink:hover{color:inherit}.homelink img{max-width:20%;max-height:5em;margin:auto;margin-bottom:.3em}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>minder_utils.feature_engineering.calculation</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from scipy.stats import ks_2samp
+import pandas as pd
+import numpy as np
+from typing import Union
+from scipy.stats import entropy as cal_entropy
+from minder_utils.models.outlier_detection import ZScore
+from sklearn.preprocessing import StandardScaler
+from .util import frequencies_tp, compute_week_number
+from sklearn.ensemble import IsolationForest
+
+
+def weekly_compare(df: pd.DataFrame, func, num_previous_week=1) -&gt; dict:
+    &#39;&#39;&#39;
+    Function to compare the values of each patient in current week to previous weeks
+    Args:
+        df: Dataframe, it should contains at least three columns, which are [&#39;id&#39;, &#39;week&#39;, &#39;value&#39;],
+            where the id is the patient ids, week is the numeric numbers got from dt.week, value is the
+            sensor readings.
+        func: function, used to compare the difference between current week and previous week.
+        num_previous_week: int, optional, default is 1, number of previous weeks
+    Returns:
+        results: dictionary, key is the patient id, value is a list containing the values calculated by func.
+    &#39;&#39;&#39;
+    assert num_previous_week &gt;= 1, &#39;num_previous_week must be equal or greater than 1&#39;
+    num_weeks = df.week.sort_values().unique()
+    results = {}
+    for p_id in df.id.unique():
+        results[p_id] = []
+    for idx, week in enumerate(num_weeks):
+        if idx &lt; num_previous_week:
+            continue
+        current_week = df[df.week == week]
+        previous_week = df[df.week.isin([week - i for i in range(1, num_previous_week + 1)])]
+        for p_id in df.id.unique():
+            previous_patient_data = previous_week[previous_week.id == p_id].value.to_numpy()
+            current_patient_data = current_week[current_week.id == p_id].value.to_numpy()
+            if current_patient_data.shape[0] == 0 or previous_patient_data.shape[0] == 0:
+                continue
+            try:
+                results[p_id].append(func(current_patient_data, previous_patient_data))
+            except ValueError:
+                pass
+    return results
+
+
+def threshold_compare(df: pd.DataFrame, func=&#39;&gt;&#39;, threshold=36) -&gt; pd.DataFrame:
+    &#39;&#39;&#39;
+    Function to filter the dataframe by threshold
+    Args:
+        df:
+        func:
+        threshold:
+    Returns:
+    &#39;&#39;&#39;
+    if func == &#39;&gt;&#39;:
+        return df[df.value &gt; threshold]
+    elif func == &#39;&lt;&#39;:
+        return df[df.value &lt; threshold]
+
+
+def calculate_entropy(df: pd.DataFrame, sensors: Union[list, str]) -&gt; pd.DataFrame:
+    &#39;&#39;&#39;
+    Return a dataframe with research id, week id, and entropy value
+    based on list of sensors given. If resulting activity count of
+    any of the sensors given in the list is zero, the value of the
+    entropy will be NaN.
+    Args:
+        df: Dataframe, contains at least 4 columns [&#39;id&#39;, &#39;week&#39;, &#39;location&#39;, &#39;value&#39;]
+        sensors: List or string, if list,  will calculate the entropy based on the list
+            of sensors; if string, only accept &#39;all&#39;, which means use all sensors.
+    Returns:
+    &#39;&#39;&#39;
+
+    
+    df[&#39;week&#39;] = compute_week_number(df[&#39;time&#39;])
+
+    assert len(sensors) &gt;= 2, &#39;need at least two sensors to calculate the entropy&#39;
+
+    # Filter the sensors
+    if isinstance(sensors, list):
+        df = df[df.location.isin(sensors)]
+    elif isinstance(sensors, str):
+        assert sensors == &#39;all&#39;, &#39;only accept all as a string input for sensors&#39;
+
+    # Sum the the number of readings of sensors weekly
+    sensor_summation = df.groupby([&#39;id&#39;, &#39;week&#39;])[&#39;value&#39;].sum().reset_index()
+    sensor_summation.columns = [&#39;id&#39;, &#39;week&#39;, &#39;summation&#39;]
+
+    # Merge with existing dataframe
+    df = pd.merge(df, sensor_summation)
+
+    # Calculate the probabilities
+    df[&#39;probabilities&#39;] = df[&#39;value&#39;] / df[&#39;summation&#39;]
+
+    # entropy function used in groupby
+    def cal_entropy_groupby(x):
+        x = cal_entropy(list(x))
+        return x
+
+    # Calculate the entropy
+    df = df.groupby(by=[&#39;id&#39;, &#39;week&#39;])[&#39;probabilities&#39;].apply(cal_entropy_groupby).reset_index()
+
+    df.columns = [&#39;id&#39;, &#39;week&#39;, &#39;value&#39;]
+    df[&#39;location&#39;] = &#39;entropy&#39;
+    return df
+
+
+def entropy_rate_from_p_matrix(p_matrix, normalised=True):
+    &#39;&#39;&#39;
+    This function allows the user to calculate the entropy rate of
+    a stochastic matrix.
+
+
+
+    Arguments
+    ---------
+
+    - p_matrix: numpy.array:
+        This is the matrix that will be used to calculate the entropy rate.
+        The rows of this matrix should sum to 1.
+
+    - normalised: bool, optional:
+        This dictates whether the entropy rate will be normalised or not.
+        Defaults to ```True```.
+
+
+
+    Returns
+    --------
+
+    - h: float :
+        The entropy value, either between 0 and 1 if ```normalised=True``` or
+        as a raw value.
+
+
+    &#39;&#39;&#39;
+
+    a_matrix = (p_matrix &gt; 0.0).astype(int)
+
+    eig_val, eig_vec = np.linalg.eig(p_matrix.T)
+    eig_val_a, _ = np.linalg.eig(a_matrix.T)
+
+    max_eig_val_a = np.max(eig_val_a)
+
+    stationary_dist = eig_vec[:, np.argmax(np.abs(eig_val - 1) &lt; 1e-10)]
+    stationary_dist = stationary_dist / np.sum(stationary_dist)
+
+    if (max_eig_val_a != 1.) &amp; (max_eig_val_a != 0.):
+        divide = np.log(max_eig_val_a) if normalised else 1
+        h = -np.sum(stationary_dist * np.sum(p_matrix * np.log(p_matrix,
+                                                               out=np.zeros_like(p_matrix),
+                                                               where=(p_matrix != 0)), axis=1)) / divide
+
+
+    else:
+        h = -np.sum(stationary_dist * np.sum(p_matrix * np.log(p_matrix,
+                                                               out=np.zeros_like(p_matrix),
+                                                               where=(p_matrix != 0)), axis=1))
+
+    return np.abs(h)
+
+
+def build_p_matrix(sequence, return_events=False):
+    &#39;&#39;&#39;
+    This function allows the user to create a stochastic matrix from a 
+    sequence of events.
+    
+    
+    
+    Arguments
+    ---------
+    
+    - sequence: numpy.array: 
+        A sequence of events that will be used to calculate the stochastic matrix.
+
+    - return_events: bool:
+        Dictates whether a list of the events should be returned, in the 
+        order of their appearance in the stochastic matrix, ```p_martix```.
+        Defaults to ```False```
+    
+    
+    
+    Returns
+    --------
+    
+    - p_matrix: numpy.array : 
+        A stochastic matrix, in which all of the rows sum to 1.
+
+    - unique_locations: list:
+        A list of the events in the order of their appearance in the stochastic
+        matrix, ```p_martix```. This is only returned if ```return_events=True```
+    
+    
+    &#39;&#39;&#39;
+
+    sequence_df = pd.DataFrame()
+
+    sequence_df[&#39;from&#39;] = sequence[:-1]
+    sequence_df[&#39;to&#39;] = sequence[1:]
+    sequence_df[&#39;count&#39;] = 1
+
+    pm = sequence_df.groupby(by=[&#39;from&#39;,&#39;to&#39;]).count().reset_index()
+    pm_total = pm.groupby(by=&#39;from&#39;)[&#39;count&#39;].sum().to_dict()
+    pm[&#39;total&#39;] = pm[&#39;from&#39;].map(pm_total)
+
+    def calc_prob(x):
+        return x[&#39;count&#39;]/x[&#39;total&#39;]
+
+    if pm.shape[0] &lt; 2:
+        return np.nan
+
+    pm[&#39;probability&#39;] = pm.apply(calc_prob, axis = 1)
+
+    
+
+    unique_locations = list(np.unique(pm[[&#39;from&#39;, &#39;to&#39;]].values.ravel()))
+    
+    p_matrix = np.zeros((len(unique_locations),len(unique_locations)))
+
+    for (from_loc, to_loc, probability_loc) in pm[[&#39;from&#39;, &#39;to&#39;, &#39;probability&#39;]].values:
+        
+
+        i = unique_locations.index(from_loc)
+        j = unique_locations.index(to_loc)
+
+
+        p_matrix[i,j] = probability_loc
+    
+    if return_events:
+        return p_matrix, unique_locations
+    else:
+        return p_matrix
+
+
+def entropy_rate_from_sequence(sequence, pydtmc = False):
+    &#39;&#39;&#39;
+    This function allows the user to calculate the entropy rate based on
+    a sequence of events.
+
+
+
+    Arguments
+    ---------
+
+    - sequence: numpy.array:
+        A sequence of events to calculate the entropy rate on.
+
+
+
+    Returns
+    --------
+
+    - out: float :
+        Entropy rate
+
+
+    &#39;&#39;&#39;
+
+    p_matrix = build_p_matrix(sequence)
+
+    if type(p_matrix) != np.ndarray:
+        return np.nan
+
+    if pydtmc:
+        from pydtmc import MarkovChain
+        mc = MarkovChain(p_matrix)
+        return mc.entropy_rate_normalized
+
+
+    else:
+        return entropy_rate_from_p_matrix(p_matrix)
+
+
+def calculate_entropy_rate(df: pd.DataFrame, sensors: Union[list, str] = &#39;all&#39;) -&gt; pd.DataFrame:
+    &#39;&#39;&#39;
+    This function allows the user to return a pandas.DataFrame with the entropy rate calculated
+    for every week.
+
+
+
+    Arguments
+    ---------
+
+    - df: pandas.DataFrame:
+        A pandas.DataFrame containing ```&#39;id&#39;```, ```&#39;week&#39;```, ```&#39;location&#39;```.
+
+    - sensors: Union[list, str]:
+        The values of the ```&#39;location&#39;``` column of ```df``` that will be
+        used in the entropy calculations.
+        Defaults to ```&#39;all&#39;```.
+
+
+
+    Returns
+    --------
+
+    - out: pd.DataFrame :
+        This is a dataframe, in which the entropy rate is located in the ```&#39;value&#39;``` column.
+
+
+    &#39;&#39;&#39;
+
+    assert len(sensors) &gt;= 2, &#39;need at least two sensors to calculate the entropy&#39;
+
+    # Filter the sensors
+    if isinstance(sensors, list):
+        df = df[df.location.isin(sensors)]
+    elif isinstance(sensors, str):
+        assert sensors == &#39;all&#39;, &#39;only accept all as a string input for sensors&#39;
+
+    df[&#39;week&#39;] = compute_week_number(df[&#39;time&#39;])
+
+    def entropy_rate_from_sequence_groupby(x):
+        x = entropy_rate_from_sequence(x.values)
+        return x
+
+    df = df.groupby(by=[&#39;id&#39;, &#39;week&#39;])[&#39;location&#39;].apply(entropy_rate_from_sequence_groupby).reset_index()
+    df.columns = [&#39;id&#39;, &#39;week&#39;, &#39;value&#39;]
+    df[&#39;location&#39;] = &#39;entropy&#39;
+
+    return df
+
+
+def kolmogorov_smirnov(freq1, freq2):
+    return ks_2samp(freq1, freq2)
+
+
+def anomaly_detection_freq(input_df, outlier_class, tp_for_outlier_hours=3, baseline_length_days=7,
+                           baseline_offset_days=0):
+    &#39;&#39;&#39;
+    Given an outlier function, and an input, this function calculates an outlier score
+    for every point based on a window of ```baseline_length_days``` days. Because this
+    function fits the class for every new point, using a complicated outlier detection
+    class is not possible. Please consider using a light class.
+
+    Arguments
+    ---------
+    - input_df: pandas dataframe:
+        This dataframe must have the columns ```&#39;time&#39;``` and ```&#39;location&#39;```. This is the
+        data to calculate outlier scores on.
+    - outlier_class: class or string
+        This is the class that will be used to calculate the outlier scores. This class must have
+        the functions ```.fit()``` to fit the class and ```.decision_function()``` to produce the
+        outlier scores. Inputs to these functions will always be 2d. The input to ```.fit()``` will
+        be an array of shape ```(N_t, N_f)``` where ```N_t``` is the number of points that fit in the
+        ```baseline_length_days```. Each point will represent the frequencies of location visits for
+        a given ```tp_for_outlier_hours``` hour time period. The input to ```.decision_function()```
+        will be an array of shape ```(1, N_f)``` as it will be a single point.
+        If string, make sure it is one of [&#39;zscore&#39;, &#39;isolation_forest&#39;]
+    - tp_for_outlier_hours: int:
+        This is the number of hours to aggregate the frequency data by. This is the ```tp```
+        input to the function ```minder_utils.feature_engineering.util.frequencies_tp```.
+    - baseline_length_days: integer:
+        This is the length of the baseline in days that will be used. This value is used when finding
+        the ```baseline_length_days``` complete days of the frequency data to use as a baseline.
+
+    - baseline_offset_days: integer:
+        This is the offset to the baseline period. ```0``` corresponds to a time period ending the morning of the
+        current date being calculated on.
+    Returns
+    ---------
+    &#39;&#39;&#39;
+
+    frequency_df, locations = frequencies_tp(input_df, tp=tp_for_outlier_hours, return_locations=True)
+    X = frequency_df[locations].values
+
+    scaler = StandardScaler()
+    X_s = scaler.fit_transform(X)
+
+    out = np.zeros(frequency_df.shape[0])
+
+    dates = frequency_df[&#39;time&#39;].values
+
+    baseline_length_tps = int(np.ceil(24 / tp_for_outlier_hours * baseline_length_days))
+    baseline_offset_tps = int(np.ceil(24 / tp_for_outlier_hours * baseline_offset_days))
+
+    if outlier_class == &#39;zscore&#39;:
+        outlier_class = ZScore()
+    elif outlier_class == &#39;isolation_forest&#39;:
+        outlier_class = IsolationForest()
+
+    for nd, date in enumerate(dates):
+        index_baseline_end = np.where(dates &lt;= date)[0][-1]
+
+        index_baseline_end = index_baseline_end - baseline_offset_tps
+        index_baseline_start = index_baseline_end - baseline_length_tps
+
+        if index_baseline_start &lt; 0:
+            out[nd] = np.NAN
+
+        else:
+            X_s_input = X_s[index_baseline_start:index_baseline_end]
+            X_s_current = X_s[nd].reshape(1, -1)
+
+            outlier_class.fit(X_s_input)
+            outlier_scores = outlier_class.decision_function(X_s_current)
+            out[nd] = outlier_scores
+
+    frequency_df[&#39;outlier_score&#39;] = out
+
+    return frequency_df</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="minder_utils.feature_engineering.calculation.anomaly_detection_freq"><code class="name flex">
+<span>def <span class="ident">anomaly_detection_freq</span></span>(<span>input_df, outlier_class, tp_for_outlier_hours=3, baseline_length_days=7, baseline_offset_days=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Given an outlier function, and an input, this function calculates an outlier score
+for every point based on a window of <code>baseline_length_days</code> days. Because this
+function fits the class for every new point, using a complicated outlier detection
+class is not possible. Please consider using a light class.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>input_df: pandas dataframe:
+This dataframe must have the columns <code>'time'</code> and <code>'location'</code>. This is the
+data to calculate outlier scores on.</li>
+<li>outlier_class: class or string
+This is the class that will be used to calculate the outlier scores. This class must have
+the functions <code>.fit()</code> to fit the class and <code>.decision_function()</code> to produce the
+outlier scores. Inputs to these functions will always be 2d. The input to <code>.fit()</code> will
+be an array of shape <code>(N_t, N_f)</code> where <code>N_t</code> is the number of points that fit in the
+<code>baseline_length_days</code>. Each point will represent the frequencies of location visits for
+a given <code>tp_for_outlier_hours</code> hour time period. The input to <code>.decision_function()</code>
+will be an array of shape <code>(1, N_f)</code> as it will be a single point.
+If string, make sure it is one of ['zscore', 'isolation_forest']</li>
+<li>tp_for_outlier_hours: int:
+This is the number of hours to aggregate the frequency data by. This is the <code>tp</code>
+input to the function <code>minder_utils.feature_engineering.util.frequencies_tp</code>.</li>
+<li>
+<p>baseline_length_days: integer:
+This is the length of the baseline in days that will be used. This value is used when finding
+the <code>baseline_length_days</code> complete days of the frequency data to use as a baseline.</p>
+</li>
+<li>
+<p>baseline_offset_days: integer:
+This is the offset to the baseline period. <code>0</code> corresponds to a time period ending the morning of the
+current date being calculated on.
+Returns</p>
+</li>
+</ul>
+<hr></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def anomaly_detection_freq(input_df, outlier_class, tp_for_outlier_hours=3, baseline_length_days=7,
+                           baseline_offset_days=0):
+    &#39;&#39;&#39;
+    Given an outlier function, and an input, this function calculates an outlier score
+    for every point based on a window of ```baseline_length_days``` days. Because this
+    function fits the class for every new point, using a complicated outlier detection
+    class is not possible. Please consider using a light class.
+
+    Arguments
+    ---------
+    - input_df: pandas dataframe:
+        This dataframe must have the columns ```&#39;time&#39;``` and ```&#39;location&#39;```. This is the
+        data to calculate outlier scores on.
+    - outlier_class: class or string
+        This is the class that will be used to calculate the outlier scores. This class must have
+        the functions ```.fit()``` to fit the class and ```.decision_function()``` to produce the
+        outlier scores. Inputs to these functions will always be 2d. The input to ```.fit()``` will
+        be an array of shape ```(N_t, N_f)``` where ```N_t``` is the number of points that fit in the
+        ```baseline_length_days```. Each point will represent the frequencies of location visits for
+        a given ```tp_for_outlier_hours``` hour time period. The input to ```.decision_function()```
+        will be an array of shape ```(1, N_f)``` as it will be a single point.
+        If string, make sure it is one of [&#39;zscore&#39;, &#39;isolation_forest&#39;]
+    - tp_for_outlier_hours: int:
+        This is the number of hours to aggregate the frequency data by. This is the ```tp```
+        input to the function ```minder_utils.feature_engineering.util.frequencies_tp```.
+    - baseline_length_days: integer:
+        This is the length of the baseline in days that will be used. This value is used when finding
+        the ```baseline_length_days``` complete days of the frequency data to use as a baseline.
+
+    - baseline_offset_days: integer:
+        This is the offset to the baseline period. ```0``` corresponds to a time period ending the morning of the
+        current date being calculated on.
+    Returns
+    ---------
+    &#39;&#39;&#39;
+
+    frequency_df, locations = frequencies_tp(input_df, tp=tp_for_outlier_hours, return_locations=True)
+    X = frequency_df[locations].values
+
+    scaler = StandardScaler()
+    X_s = scaler.fit_transform(X)
+
+    out = np.zeros(frequency_df.shape[0])
+
+    dates = frequency_df[&#39;time&#39;].values
+
+    baseline_length_tps = int(np.ceil(24 / tp_for_outlier_hours * baseline_length_days))
+    baseline_offset_tps = int(np.ceil(24 / tp_for_outlier_hours * baseline_offset_days))
+
+    if outlier_class == &#39;zscore&#39;:
+        outlier_class = ZScore()
+    elif outlier_class == &#39;isolation_forest&#39;:
+        outlier_class = IsolationForest()
+
+    for nd, date in enumerate(dates):
+        index_baseline_end = np.where(dates &lt;= date)[0][-1]
+
+        index_baseline_end = index_baseline_end - baseline_offset_tps
+        index_baseline_start = index_baseline_end - baseline_length_tps
+
+        if index_baseline_start &lt; 0:
+            out[nd] = np.NAN
+
+        else:
+            X_s_input = X_s[index_baseline_start:index_baseline_end]
+            X_s_current = X_s[nd].reshape(1, -1)
+
+            outlier_class.fit(X_s_input)
+            outlier_scores = outlier_class.decision_function(X_s_current)
+            out[nd] = outlier_scores
+
+    frequency_df[&#39;outlier_score&#39;] = out
+
+    return frequency_df</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.calculation.build_p_matrix"><code class="name flex">
+<span>def <span class="ident">build_p_matrix</span></span>(<span>sequence, return_events=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function allows the user to create a stochastic matrix from a
+sequence of events.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>sequence: numpy.array:
+A sequence of events that will be used to calculate the stochastic matrix.</p>
+</li>
+<li>
+<p>return_events: bool:
+Dictates whether a list of the events should be returned, in the
+order of their appearance in the stochastic matrix, <code>p_martix</code>.
+Defaults to <code>False</code></p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>
+<p>p_matrix: numpy.array :
+A stochastic matrix, in which all of the rows sum to 1.</p>
+</li>
+<li>
+<p>unique_locations: list:
+A list of the events in the order of their appearance in the stochastic
+matrix, <code>p_martix</code>. This is only returned if <code>return_events=True</code></p>
+</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_p_matrix(sequence, return_events=False):
+    &#39;&#39;&#39;
+    This function allows the user to create a stochastic matrix from a 
+    sequence of events.
+    
+    
+    
+    Arguments
+    ---------
+    
+    - sequence: numpy.array: 
+        A sequence of events that will be used to calculate the stochastic matrix.
+
+    - return_events: bool:
+        Dictates whether a list of the events should be returned, in the 
+        order of their appearance in the stochastic matrix, ```p_martix```.
+        Defaults to ```False```
+    
+    
+    
+    Returns
+    --------
+    
+    - p_matrix: numpy.array : 
+        A stochastic matrix, in which all of the rows sum to 1.
+
+    - unique_locations: list:
+        A list of the events in the order of their appearance in the stochastic
+        matrix, ```p_martix```. This is only returned if ```return_events=True```
+    
+    
+    &#39;&#39;&#39;
+
+    sequence_df = pd.DataFrame()
+
+    sequence_df[&#39;from&#39;] = sequence[:-1]
+    sequence_df[&#39;to&#39;] = sequence[1:]
+    sequence_df[&#39;count&#39;] = 1
+
+    pm = sequence_df.groupby(by=[&#39;from&#39;,&#39;to&#39;]).count().reset_index()
+    pm_total = pm.groupby(by=&#39;from&#39;)[&#39;count&#39;].sum().to_dict()
+    pm[&#39;total&#39;] = pm[&#39;from&#39;].map(pm_total)
+
+    def calc_prob(x):
+        return x[&#39;count&#39;]/x[&#39;total&#39;]
+
+    if pm.shape[0] &lt; 2:
+        return np.nan
+
+    pm[&#39;probability&#39;] = pm.apply(calc_prob, axis = 1)
+
+    
+
+    unique_locations = list(np.unique(pm[[&#39;from&#39;, &#39;to&#39;]].values.ravel()))
+    
+    p_matrix = np.zeros((len(unique_locations),len(unique_locations)))
+
+    for (from_loc, to_loc, probability_loc) in pm[[&#39;from&#39;, &#39;to&#39;, &#39;probability&#39;]].values:
+        
+
+        i = unique_locations.index(from_loc)
+        j = unique_locations.index(to_loc)
+
+
+        p_matrix[i,j] = probability_loc
+    
+    if return_events:
+        return p_matrix, unique_locations
+    else:
+        return p_matrix</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.calculation.calculate_entropy"><code class="name flex">
+<span>def <span class="ident">calculate_entropy</span></span>(<span>df: pandas.core.frame.DataFrame, sensors: Union[list, str]) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a dataframe with research id, week id, and entropy value
+based on list of sensors given. If resulting activity count of
+any of the sensors given in the list is zero, the value of the
+entropy will be NaN.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong></dt>
+<dd>Dataframe, contains at least 4 columns ['id', 'week', 'location', 'value']</dd>
+<dt><strong><code>sensors</code></strong></dt>
+<dd>List or string, if list,
+will calculate the entropy based on the list
+of sensors; if string, only accept 'all', which means use all sensors.</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calculate_entropy(df: pd.DataFrame, sensors: Union[list, str]) -&gt; pd.DataFrame:
+    &#39;&#39;&#39;
+    Return a dataframe with research id, week id, and entropy value
+    based on list of sensors given. If resulting activity count of
+    any of the sensors given in the list is zero, the value of the
+    entropy will be NaN.
+    Args:
+        df: Dataframe, contains at least 4 columns [&#39;id&#39;, &#39;week&#39;, &#39;location&#39;, &#39;value&#39;]
+        sensors: List or string, if list,  will calculate the entropy based on the list
+            of sensors; if string, only accept &#39;all&#39;, which means use all sensors.
+    Returns:
+    &#39;&#39;&#39;
+
+    
+    df[&#39;week&#39;] = compute_week_number(df[&#39;time&#39;])
+
+    assert len(sensors) &gt;= 2, &#39;need at least two sensors to calculate the entropy&#39;
+
+    # Filter the sensors
+    if isinstance(sensors, list):
+        df = df[df.location.isin(sensors)]
+    elif isinstance(sensors, str):
+        assert sensors == &#39;all&#39;, &#39;only accept all as a string input for sensors&#39;
+
+    # Sum the the number of readings of sensors weekly
+    sensor_summation = df.groupby([&#39;id&#39;, &#39;week&#39;])[&#39;value&#39;].sum().reset_index()
+    sensor_summation.columns = [&#39;id&#39;, &#39;week&#39;, &#39;summation&#39;]
+
+    # Merge with existing dataframe
+    df = pd.merge(df, sensor_summation)
+
+    # Calculate the probabilities
+    df[&#39;probabilities&#39;] = df[&#39;value&#39;] / df[&#39;summation&#39;]
+
+    # entropy function used in groupby
+    def cal_entropy_groupby(x):
+        x = cal_entropy(list(x))
+        return x
+
+    # Calculate the entropy
+    df = df.groupby(by=[&#39;id&#39;, &#39;week&#39;])[&#39;probabilities&#39;].apply(cal_entropy_groupby).reset_index()
+
+    df.columns = [&#39;id&#39;, &#39;week&#39;, &#39;value&#39;]
+    df[&#39;location&#39;] = &#39;entropy&#39;
+    return df</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.calculation.calculate_entropy_rate"><code class="name flex">
+<span>def <span class="ident">calculate_entropy_rate</span></span>(<span>df: pandas.core.frame.DataFrame, sensors: Union[list, str] = 'all') ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function allows the user to return a pandas.DataFrame with the entropy rate calculated
+for every week.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>df: pandas.DataFrame:
+A pandas.DataFrame containing <code>'id'</code>, <code>'week'</code>, <code>'location'</code>.</p>
+</li>
+<li>
+<p>sensors: Union[list, str]:
+The values of the <code>'location'</code> column of <code>df</code> that will be
+used in the entropy calculations.
+Defaults to <code>'all'</code>.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: pd.DataFrame :
+This is a dataframe, in which the entropy rate is located in the <code>'value'</code> column.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calculate_entropy_rate(df: pd.DataFrame, sensors: Union[list, str] = &#39;all&#39;) -&gt; pd.DataFrame:
+    &#39;&#39;&#39;
+    This function allows the user to return a pandas.DataFrame with the entropy rate calculated
+    for every week.
+
+
+
+    Arguments
+    ---------
+
+    - df: pandas.DataFrame:
+        A pandas.DataFrame containing ```&#39;id&#39;```, ```&#39;week&#39;```, ```&#39;location&#39;```.
+
+    - sensors: Union[list, str]:
+        The values of the ```&#39;location&#39;``` column of ```df``` that will be
+        used in the entropy calculations.
+        Defaults to ```&#39;all&#39;```.
+
+
+
+    Returns
+    --------
+
+    - out: pd.DataFrame :
+        This is a dataframe, in which the entropy rate is located in the ```&#39;value&#39;``` column.
+
+
+    &#39;&#39;&#39;
+
+    assert len(sensors) &gt;= 2, &#39;need at least two sensors to calculate the entropy&#39;
+
+    # Filter the sensors
+    if isinstance(sensors, list):
+        df = df[df.location.isin(sensors)]
+    elif isinstance(sensors, str):
+        assert sensors == &#39;all&#39;, &#39;only accept all as a string input for sensors&#39;
+
+    df[&#39;week&#39;] = compute_week_number(df[&#39;time&#39;])
+
+    def entropy_rate_from_sequence_groupby(x):
+        x = entropy_rate_from_sequence(x.values)
+        return x
+
+    df = df.groupby(by=[&#39;id&#39;, &#39;week&#39;])[&#39;location&#39;].apply(entropy_rate_from_sequence_groupby).reset_index()
+    df.columns = [&#39;id&#39;, &#39;week&#39;, &#39;value&#39;]
+    df[&#39;location&#39;] = &#39;entropy&#39;
+
+    return df</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.calculation.entropy_rate_from_p_matrix"><code class="name flex">
+<span>def <span class="ident">entropy_rate_from_p_matrix</span></span>(<span>p_matrix, normalised=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function allows the user to calculate the entropy rate of
+a stochastic matrix.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>p_matrix: numpy.array:
+This is the matrix that will be used to calculate the entropy rate.
+The rows of this matrix should sum to 1.</p>
+</li>
+<li>
+<p>normalised: bool, optional:
+This dictates whether the entropy rate will be normalised or not.
+Defaults to <code>True</code>.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>h: float :
+The entropy value, either between 0 and 1 if <code>normalised=True</code> or
+as a raw value.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def entropy_rate_from_p_matrix(p_matrix, normalised=True):
+    &#39;&#39;&#39;
+    This function allows the user to calculate the entropy rate of
+    a stochastic matrix.
+
+
+
+    Arguments
+    ---------
+
+    - p_matrix: numpy.array:
+        This is the matrix that will be used to calculate the entropy rate.
+        The rows of this matrix should sum to 1.
+
+    - normalised: bool, optional:
+        This dictates whether the entropy rate will be normalised or not.
+        Defaults to ```True```.
+
+
+
+    Returns
+    --------
+
+    - h: float :
+        The entropy value, either between 0 and 1 if ```normalised=True``` or
+        as a raw value.
+
+
+    &#39;&#39;&#39;
+
+    a_matrix = (p_matrix &gt; 0.0).astype(int)
+
+    eig_val, eig_vec = np.linalg.eig(p_matrix.T)
+    eig_val_a, _ = np.linalg.eig(a_matrix.T)
+
+    max_eig_val_a = np.max(eig_val_a)
+
+    stationary_dist = eig_vec[:, np.argmax(np.abs(eig_val - 1) &lt; 1e-10)]
+    stationary_dist = stationary_dist / np.sum(stationary_dist)
+
+    if (max_eig_val_a != 1.) &amp; (max_eig_val_a != 0.):
+        divide = np.log(max_eig_val_a) if normalised else 1
+        h = -np.sum(stationary_dist * np.sum(p_matrix * np.log(p_matrix,
+                                                               out=np.zeros_like(p_matrix),
+                                                               where=(p_matrix != 0)), axis=1)) / divide
+
+
+    else:
+        h = -np.sum(stationary_dist * np.sum(p_matrix * np.log(p_matrix,
+                                                               out=np.zeros_like(p_matrix),
+                                                               where=(p_matrix != 0)), axis=1))
+
+    return np.abs(h)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.calculation.entropy_rate_from_sequence"><code class="name flex">
+<span>def <span class="ident">entropy_rate_from_sequence</span></span>(<span>sequence, pydtmc=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function allows the user to calculate the entropy rate based on
+a sequence of events.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>sequence: numpy.array:
+A sequence of events to calculate the entropy rate on.</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: float :
+Entropy rate</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def entropy_rate_from_sequence(sequence, pydtmc = False):
+    &#39;&#39;&#39;
+    This function allows the user to calculate the entropy rate based on
+    a sequence of events.
+
+
+
+    Arguments
+    ---------
+
+    - sequence: numpy.array:
+        A sequence of events to calculate the entropy rate on.
+
+
+
+    Returns
+    --------
+
+    - out: float :
+        Entropy rate
+
+
+    &#39;&#39;&#39;
+
+    p_matrix = build_p_matrix(sequence)
+
+    if type(p_matrix) != np.ndarray:
+        return np.nan
+
+    if pydtmc:
+        from pydtmc import MarkovChain
+        mc = MarkovChain(p_matrix)
+        return mc.entropy_rate_normalized
+
+
+    else:
+        return entropy_rate_from_p_matrix(p_matrix)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.calculation.kolmogorov_smirnov"><code class="name flex">
+<span>def <span class="ident">kolmogorov_smirnov</span></span>(<span>freq1, freq2)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def kolmogorov_smirnov(freq1, freq2):
+    return ks_2samp(freq1, freq2)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.calculation.threshold_compare"><code class="name flex">
+<span>def <span class="ident">threshold_compare</span></span>(<span>df: pandas.core.frame.DataFrame, func=&#x27;&gt;&#x27;, threshold=36) ‑> pandas.core.frame.DataFrame</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to filter the dataframe by threshold</p>
+<h2 id="args">Args</h2>
+<p>df:
+func:
+threshold:
+Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def threshold_compare(df: pd.DataFrame, func=&#39;&gt;&#39;, threshold=36) -&gt; pd.DataFrame:
+    &#39;&#39;&#39;
+    Function to filter the dataframe by threshold
+    Args:
+        df:
+        func:
+        threshold:
+    Returns:
+    &#39;&#39;&#39;
+    if func == &#39;&gt;&#39;:
+        return df[df.value &gt; threshold]
+    elif func == &#39;&lt;&#39;:
+        return df[df.value &lt; threshold]</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.calculation.weekly_compare"><code class="name flex">
+<span>def <span class="ident">weekly_compare</span></span>(<span>df: pandas.core.frame.DataFrame, func, num_previous_week=1) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to compare the values of each patient in current week to previous weeks</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong></dt>
+<dd>Dataframe, it should contains at least three columns, which are ['id', 'week', 'value'],
+where the id is the patient ids, week is the numeric numbers got from dt.week, value is the
+sensor readings.</dd>
+<dt><strong><code>func</code></strong></dt>
+<dd>function, used to compare the difference between current week and previous week.</dd>
+<dt><strong><code>num_previous_week</code></strong></dt>
+<dd>int, optional, default is 1, number of previous weeks</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>results</code></dt>
+<dd>dictionary, key is the patient id, value is a list containing the values calculated by func.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def weekly_compare(df: pd.DataFrame, func, num_previous_week=1) -&gt; dict:
+    &#39;&#39;&#39;
+    Function to compare the values of each patient in current week to previous weeks
+    Args:
+        df: Dataframe, it should contains at least three columns, which are [&#39;id&#39;, &#39;week&#39;, &#39;value&#39;],
+            where the id is the patient ids, week is the numeric numbers got from dt.week, value is the
+            sensor readings.
+        func: function, used to compare the difference between current week and previous week.
+        num_previous_week: int, optional, default is 1, number of previous weeks
+    Returns:
+        results: dictionary, key is the patient id, value is a list containing the values calculated by func.
+    &#39;&#39;&#39;
+    assert num_previous_week &gt;= 1, &#39;num_previous_week must be equal or greater than 1&#39;
+    num_weeks = df.week.sort_values().unique()
+    results = {}
+    for p_id in df.id.unique():
+        results[p_id] = []
+    for idx, week in enumerate(num_weeks):
+        if idx &lt; num_previous_week:
+            continue
+        current_week = df[df.week == week]
+        previous_week = df[df.week.isin([week - i for i in range(1, num_previous_week + 1)])]
+        for p_id in df.id.unique():
+            previous_patient_data = previous_week[previous_week.id == p_id].value.to_numpy()
+            current_patient_data = current_week[current_week.id == p_id].value.to_numpy()
+            if current_patient_data.shape[0] == 0 or previous_patient_data.shape[0] == 0:
+                continue
+            try:
+                results[p_id].append(func(current_patient_data, previous_patient_data))
+            except ValueError:
+                pass
+    return results</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<header>
+<a class="homelink" rel="home" title="Minder Utils" href="https://minder-utils.github.io">
+<img src="https://github.com/ImperialCollegeLondon/minder_utils/blob/main/UKDRI_logo.jpeg?raw=true" alt=""> Minder Utils
+</a>
+</header>
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="minder_utils.feature_engineering" href="index.html">minder_utils.feature_engineering</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="minder_utils.feature_engineering.calculation.anomaly_detection_freq" href="#minder_utils.feature_engineering.calculation.anomaly_detection_freq">anomaly_detection_freq</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.calculation.build_p_matrix" href="#minder_utils.feature_engineering.calculation.build_p_matrix">build_p_matrix</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.calculation.calculate_entropy" href="#minder_utils.feature_engineering.calculation.calculate_entropy">calculate_entropy</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.calculation.calculate_entropy_rate" href="#minder_utils.feature_engineering.calculation.calculate_entropy_rate">calculate_entropy_rate</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.calculation.entropy_rate_from_p_matrix" href="#minder_utils.feature_engineering.calculation.entropy_rate_from_p_matrix">entropy_rate_from_p_matrix</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.calculation.entropy_rate_from_sequence" href="#minder_utils.feature_engineering.calculation.entropy_rate_from_sequence">entropy_rate_from_sequence</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.calculation.kolmogorov_smirnov" href="#minder_utils.feature_engineering.calculation.kolmogorov_smirnov">kolmogorov_smirnov</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.calculation.threshold_compare" href="#minder_utils.feature_engineering.calculation.threshold_compare">threshold_compare</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.calculation.weekly_compare" href="#minder_utils.feature_engineering.calculation.weekly_compare">weekly_compare</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

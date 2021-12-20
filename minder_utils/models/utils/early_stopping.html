@@ -29,12 +29,15 @@
 </summary>
 <pre><code class="python">import numpy as np
 import torch
+import os
+from minder_utils.util import save_mkdir
 
 
 class EarlyStopping:
     &#34;&#34;&#34;Early stops the training if validation loss doesn&#39;t improve after a given patience.&#34;&#34;&#34;
 
-    def __init__(self, patience=20, verbose=False, delta=0, path=&#39;checkpoint.pt&#39;, save_model=False, trace_func=print):
+    def __init__(self, patience=20, verbose=False, delta=0, path=&#39;./ckpt&#39;, save_model=False,
+                 trace_func=print, **kwargs):
         &#34;&#34;&#34;
         Args:
             patience (int): How long to wait after last time validation loss improved.
@@ -59,14 +62,14 @@ class EarlyStopping:
         self.trace_func = trace_func
         self.save_model = save_model
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_loss, model, save_name):
 
         score = -val_loss
 
         if self.best_score is None:
             self.best_score = score
             if self.save_model:
-                self.save_checkpoint(val_loss, model)
+                self.save_checkpoint(val_loss, model, save_name)
         elif score &lt; self.best_score + self.delta:
             self.counter += 1
             # self.trace_func(f&#39;EarlyStopping counter: {self.counter} out of {self.patience}&#39;)
@@ -76,15 +79,16 @@ class EarlyStopping:
         else:
             self.best_score = score
             if self.save_model:
-                self.save_checkpoint(val_loss, model)
+                self.save_checkpoint(val_loss, model, save_name)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model):
+    def save_checkpoint(self, val_loss, model, save_name):
         &#39;&#39;&#39;Saves model when validation loss decrease.&#39;&#39;&#39;
         if self.verbose:
             self.trace_func(
                 f&#39;Validation loss decreased ({self.val_loss_min:.6f} --&gt; {val_loss:.6f}).  Saving model ...&#39;)
-        torch.save(model.state_dict(), self.path)
+        save_mkdir(self.path)
+        torch.save(model.state_dict(), os.path.join(self.path, save_name))
         self.val_loss_min = val_loss</code></pre>
 </details>
 </section>
@@ -99,7 +103,7 @@ class EarlyStopping:
 <dl>
 <dt id="minder_utils.models.utils.early_stopping.EarlyStopping"><code class="flex name class">
 <span>class <span class="ident">EarlyStopping</span></span>
-<span>(</span><span>patience=20, verbose=False, delta=0, path='checkpoint.pt', save_model=False, trace_func=&lt;built-in function print&gt;)</span>
+<span>(</span><span>patience=20, verbose=False, delta=0, path='./ckpt', save_model=False, trace_func=&lt;built-in function print&gt;, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Early stops the training if validation loss doesn't improve after a given patience.</p>
@@ -128,7 +132,8 @@ Default: print</dd>
 <pre><code class="python">class EarlyStopping:
     &#34;&#34;&#34;Early stops the training if validation loss doesn&#39;t improve after a given patience.&#34;&#34;&#34;
 
-    def __init__(self, patience=20, verbose=False, delta=0, path=&#39;checkpoint.pt&#39;, save_model=False, trace_func=print):
+    def __init__(self, patience=20, verbose=False, delta=0, path=&#39;./ckpt&#39;, save_model=False,
+                 trace_func=print, **kwargs):
         &#34;&#34;&#34;
         Args:
             patience (int): How long to wait after last time validation loss improved.
@@ -153,14 +158,14 @@ Default: print</dd>
         self.trace_func = trace_func
         self.save_model = save_model
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_loss, model, save_name):
 
         score = -val_loss
 
         if self.best_score is None:
             self.best_score = score
             if self.save_model:
-                self.save_checkpoint(val_loss, model)
+                self.save_checkpoint(val_loss, model, save_name)
         elif score &lt; self.best_score + self.delta:
             self.counter += 1
             # self.trace_func(f&#39;EarlyStopping counter: {self.counter} out of {self.patience}&#39;)
@@ -170,21 +175,22 @@ Default: print</dd>
         else:
             self.best_score = score
             if self.save_model:
-                self.save_checkpoint(val_loss, model)
+                self.save_checkpoint(val_loss, model, save_name)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model):
+    def save_checkpoint(self, val_loss, model, save_name):
         &#39;&#39;&#39;Saves model when validation loss decrease.&#39;&#39;&#39;
         if self.verbose:
             self.trace_func(
                 f&#39;Validation loss decreased ({self.val_loss_min:.6f} --&gt; {val_loss:.6f}).  Saving model ...&#39;)
-        torch.save(model.state_dict(), self.path)
+        save_mkdir(self.path)
+        torch.save(model.state_dict(), os.path.join(self.path, save_name))
         self.val_loss_min = val_loss</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
 <dt id="minder_utils.models.utils.early_stopping.EarlyStopping.save_checkpoint"><code class="name flex">
-<span>def <span class="ident">save_checkpoint</span></span>(<span>self, val_loss, model)</span>
+<span>def <span class="ident">save_checkpoint</span></span>(<span>self, val_loss, model, save_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Saves model when validation loss decrease.</p></div>
@@ -192,12 +198,13 @@ Default: print</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def save_checkpoint(self, val_loss, model):
+<pre><code class="python">def save_checkpoint(self, val_loss, model, save_name):
     &#39;&#39;&#39;Saves model when validation loss decrease.&#39;&#39;&#39;
     if self.verbose:
         self.trace_func(
             f&#39;Validation loss decreased ({self.val_loss_min:.6f} --&gt; {val_loss:.6f}).  Saving model ...&#39;)
-    torch.save(model.state_dict(), self.path)
+    save_mkdir(self.path)
+    torch.save(model.state_dict(), os.path.join(self.path, save_name))
     self.val_loss_min = val_loss</code></pre>
 </details>
 </dd>

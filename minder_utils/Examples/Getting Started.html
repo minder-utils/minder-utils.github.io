@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>minder_utils.Examples.Getting Started API documentation</title>
+<meta name="description" content="&lt;h1&gt;Getting Started&lt;/h1&gt;
+To use the package, please: …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<style>.homelink{display:block;font-size:2em;font-weight:bold;color:#555;padding-bottom:.5em;border-bottom:1px solid silver}.homelink:hover{color:inherit}.homelink img{max-width:20%;max-height:5em;margin:auto;margin-bottom:.3em}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>minder_utils.Examples.Getting Started</code></h1>
+</header>
+<section id="section-intro">
+<h1>Getting Started</h1>
+<p>To use the package, please:</p>
+<ol>
+<li>
+<p>access RDS to download the necessary files including mapping.json, validated_date.py
+and random_id_to_research_id.json (optional, for TIHM data).</p>
+</li>
+<li>
+<p>acess the research portal to get the access token</p>
+</li>
+<li>
+<p>Optional, download the TIHM data from research portal.</p>
+</li>
+<li>
+<p>use the <code>Get Started.ipynb</code> to set the paths to the files and set the token.</p>
+</li>
+<li>
+<p>Check the examples in <code>Instruction.ipynb</code>.</p>
+</li>
+</ol>
+<h1>Introduction</h1>
+<p>Currently, the package provides the functions:</p>
+<ul>
+<li>download: download and refresh the data</li>
+<li>download weekly data: download and refresh the data weekly</li>
+<li>loading the raw data: the data (both tihm and dri) will be re-format to a standard format</li>
+<li>loading the weekly data: the data (both tihm and dri) will be processed in weekly format
+and provided engineering features. </li>
+<li>pre-processing data: the data (both tihm and dri) will be processed (aggregated hourly/daily) into array,
+which is ready for machine learning models (note normalisation techniques need to be specified).
+</li>
+</ul>
+<p>Here is an overview of this package,</p>
+<ol>
+<li>
+<p><code>Downloader</code>
+<p><b>Intro</b>:
+<code>Downloader</code> can download all types of data and
+refresh the downloaded data.<p>
+<p><b>Usage</b>:</p>
+<p><code>from download.download import Downloader
+Downloader().export(since='2021-10-10', until='2021-10-12',
+reload=True, save_path='./data/activity/', categories=['raw_activity_pir'])</code></p>
+</li>
+<li>
+<p><code>Formatting</code></p>
+<p><p><b>Intro</b>:</p>
+<p><code>Formatting</code> will reformat the data to a dataframe contains
+<code>['id', 'time', 'location', 'value']</code>. Furthermore, it can automatically
+change the TIHM data same as DRI and concatenate them (optional).</p></p>
+<p><p><b>Usage</b>:</p>
+<p><code>from minder_utils.formatting import Formatting
+formater = Formatting()
+print(formater.activity_data)</code></p></p>
+</li>
+<li>
+<p><code>Feature_engineer</code></p>
+<p><p><b>Intro</b>:</p>
+<p><code>Feature_engineer</code> will reformat the data to a dataframe contains
+<code>['id', 'time', 'location', 'value', 'week']</code>, where week is the week index
+of a date, e.g. the week for 2020.01.01 is 2001 (first week of the year 20).
+Furthermore, it can statistically analysis the weekly data. Please check the
+documentation for details.</p></p>
+<p><p><b>Usage</b>:</p>
+<p><code>from minder_utils.feature_engineering import Feature_engineer
+fe = Feature_engineer(Formatting())
+print(fe.activity)</code></p></p>
+</li>
+</ol>
+<h1>Configurations</h1>
+<p>In the <code>./configurations</code>, there are two editable files:</p>
+<ul>
+<li>```config_dri.yaml```: configurations for the data</li>
+<li>```config_engineering_feature.yaml```: configurations for the feature engineering</li>
+</ul>
+<p>Here's some important attributes you man changed according to your need. In the table below,
+dri is the <code>config_dri.yaml</code>, fe is the <code>config_engineering_feature.yaml</code>.</p>
+<table>
+<colgroup>
+<col span="1" style="width: 15%;">
+<col span="1" style="width: 15%;">
+<col span="1" style="width: 70%;">
+</colgroup>
+<tbody>
+<tr>
+<th>config name</th>
+<th>which file</th>
+<th>description</th>
+</tr>
+<tr>
+<td>save_path</td>
+<td>both</td>
+<td>the path to save the data so you won't need to process it next time.</td>
+</tr>
+<tr>
+<td>save_name</td>
+<td>both</td>
+<td>the name to save the data. <b>NOTE</b>: RECOMMEND NOT TO CHANGE. If you want to
+save the data in a different name, please edit the ```save``` attribute under
+corresponding item.</td>
+</tr>
+<tr>
+<td>verbose</td>
+<td>both</td>
+<td>print the message in console</td>
+</tr>
+<tr>
+<td>refresh</td>
+<td>both</td>
+<td>use the processed data or re-process the data again. <b>NOTE</b>: if you use
+```weekly_loader``` to refresh the data every week, please set it as True</td>
+</tr>
+<tr>
+<td>add_tihm</td>
+<td>dri</td>
+<td>concatenate the TIHM data to the DRI data.</td>
+</tr>
+<tr>
+<td>nocturia</td>
+<td>fe</td>
+<td>The time range to calculate the activities of bathroom during the night.
+The time outside this range will be used to calculate the bathroom activity
+during the day.</td>
+</tr>
+<tr>
+<td>activity</td>
+<td>fe</td>
+<td>What attributes will be returned to calculate the weekly activities (used for
+training the models)</td>
+</tr>
+</tbody>
+</table>
+<p>The other attributes basically can explain themselves.</p>
+<h1>Queries</h1>
+<p>If you have any problems while using it, please reach us on slack or create an issue on git. Thanks!</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#39;&#39;&#39;
+&lt;h1&gt;Getting Started&lt;/h1&gt;
+To use the package, please:
+
+1. access RDS to download the necessary files including mapping.json, validated_date.py
+    and random_id_to_research_id.json (optional, for TIHM data).
+
+2. acess the research portal to get the access token
+
+3. Optional, download the TIHM data from research portal.
+
+4. use the ```Get Started.ipynb``` to set the paths to the files and set the token.
+
+5. Check the examples in ```Instruction.ipynb```.
+
+&lt;h1&gt;Introduction&lt;/h1&gt;
+Currently, the package provides the functions:
+&lt;ul&gt;
+  &lt;li&gt;download: download and refresh the data&lt;/li&gt;
+  &lt;li&gt;download weekly data: download and refresh the data weekly&lt;/li&gt;
+  &lt;li&gt;loading the raw data: the data (both tihm and dri) will be re-format to a standard format&lt;/li&gt;
+  &lt;li&gt;loading the weekly data: the data (both tihm and dri) will be processed in weekly format
+  and provided engineering features. &lt;/li&gt;
+  &lt;li&gt;pre-processing data: the data (both tihm and dri) will be processed (aggregated hourly/daily) into array,
+  which is ready for machine learning models (note normalisation techniques need to be specified).
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+Here is an overview of this package,
+
+1. ```Downloader```
+    &lt;p&gt;&lt;b&gt;Intro&lt;/b&gt;:
+        ```Downloader``` can download all types of data and
+        refresh the downloaded data.&lt;p&gt;
+    &lt;p&gt;&lt;b&gt;Usage&lt;/b&gt;:
+
+    ```
+    from download.download import Downloader
+    Downloader().export(since=&#39;2021-10-10&#39;, until=&#39;2021-10-12&#39;,
+    reload=True, save_path=&#39;./data/activity/&#39;, categories=[&#39;raw_activity_pir&#39;])
+    ```
+
+
+2. ```Formatting```
+
+    &lt;p&gt;&lt;b&gt;Intro&lt;/b&gt;:
+
+    ```Formatting``` will reformat the data to a dataframe contains
+     ```[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;]```. Furthermore, it can automatically
+     change the TIHM data same as DRI and concatenate them (optional).&lt;/p&gt;
+
+     &lt;p&gt;&lt;b&gt;Usage&lt;/b&gt;:
+
+     ```
+     from minder_utils.formatting import Formatting
+    formater = Formatting()
+    print(formater.activity_data)
+     ```&lt;/p&gt;
+
+3. ```Feature_engineer```
+
+    &lt;p&gt;&lt;b&gt;Intro&lt;/b&gt;:
+
+    ```Feature_engineer``` will reformat the data to a dataframe contains
+     ```[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;, &#39;value&#39;, &#39;week&#39;]```, where week is the week index
+        of a date, e.g. the week for 2020.01.01 is 2001 (first week of the year 20).
+        Furthermore, it can statistically analysis the weekly data. Please check the
+        documentation for details.&lt;/p&gt;
+
+     &lt;p&gt;&lt;b&gt;Usage&lt;/b&gt;:
+
+     ```
+     from minder_utils.feature_engineering import Feature_engineer
+    fe = Feature_engineer(Formatting())
+    print(fe.activity)
+     ```&lt;/p&gt;
+
+&lt;h1&gt;Configurations&lt;/h1&gt;
+
+In the ```./configurations```, there are two editable files:
+
+&lt;ul&gt;
+  &lt;li&gt;```config_dri.yaml```: configurations for the data&lt;/li&gt;
+  &lt;li&gt;```config_engineering_feature.yaml```: configurations for the feature engineering&lt;/li&gt;
+&lt;/ul&gt;
+
+Here&#39;s some important attributes you man changed according to your need. In the table below,
+dri is the ```config_dri.yaml```, fe is the ```config_engineering_feature.yaml```.
+
+
+&lt;table&gt;
+    &lt;colgroup&gt;
+       &lt;col span=&#34;1&#34; style=&#34;width: 15%;&#34;&gt;
+       &lt;col span=&#34;1&#34; style=&#34;width: 15%;&#34;&gt;
+       &lt;col span=&#34;1&#34; style=&#34;width: 70%;&#34;&gt;
+    &lt;/colgroup&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+    &lt;th&gt;config name&lt;/th&gt;
+    &lt;th&gt;which file&lt;/th&gt;
+    &lt;th&gt;description&lt;/th&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;save_path&lt;/td&gt;
+    &lt;td&gt;both&lt;/td&gt;
+    &lt;td&gt;the path to save the data so you won&#39;t need to process it next time.&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;save_name&lt;/td&gt;
+    &lt;td&gt;both&lt;/td&gt;
+    &lt;td&gt;the name to save the data. &lt;b&gt;NOTE&lt;/b&gt;: RECOMMEND NOT TO CHANGE. If you want to
+    save the data in a different name, please edit the ```save``` attribute under
+    corresponding item.&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;verbose&lt;/td&gt;
+    &lt;td&gt;both&lt;/td&gt;
+    &lt;td&gt;print the message in console&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;refresh&lt;/td&gt;
+    &lt;td&gt;both&lt;/td&gt;
+    &lt;td&gt;use the processed data or re-process the data again. &lt;b&gt;NOTE&lt;/b&gt;: if you use
+    ```weekly_loader``` to refresh the data every week, please set it as True&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;add_tihm&lt;/td&gt;
+    &lt;td&gt;dri&lt;/td&gt;
+    &lt;td&gt;concatenate the TIHM data to the DRI data.&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;nocturia&lt;/td&gt;
+    &lt;td&gt;fe&lt;/td&gt;
+    &lt;td&gt;The time range to calculate the activities of bathroom during the night.
+    The time outside this range will be used to calculate the bathroom activity
+    during the day.&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;activity&lt;/td&gt;
+    &lt;td&gt;fe&lt;/td&gt;
+    &lt;td&gt;What attributes will be returned to calculate the weekly activities (used for
+     training the models)&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+The other attributes basically can explain themselves.
+
+&lt;h1&gt;Queries&lt;/h1&gt;
+If you have any problems while using it, please reach us on slack or create an issue on git. Thanks!
+&#39;&#39;&#39;</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<header>
+<a class="homelink" rel="home" title="Minder Utils" href="https://minder-utils.github.io">
+<img src="https://github.com/ImperialCollegeLondon/minder_utils/blob/main/UKDRI_logo.jpeg?raw=true" alt=""> Minder Utils
+</a>
+</header>
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="minder_utils.Examples" href="index.html">minder_utils.Examples</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

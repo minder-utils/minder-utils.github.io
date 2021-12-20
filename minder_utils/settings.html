@@ -30,7 +30,7 @@
 <pre><code class="python">import json
 import pandas as pd
 import datetime as DT
-from minder_utils.configurations import data_path, dates_path, token_path, delta_path
+from minder_utils.configurations import data_path, dates_path, token_path, delta_path, tihm_data_path
 
 
 def token_save(token):
@@ -165,6 +165,38 @@ def set_data_dir(path=&#39;./data/&#39;):
         file_write.write(path)
 
     print(&#39;Path Saved&#39;)
+
+    return
+
+
+def set_tihm_dir(path=&#39;./data/&#39;):
+    &#39;&#39;&#39;
+    Only used in ```minder_utils``` and not ```minder_utils_lite```.
+
+    This allows you to set the path to the folder containing tihm data
+
+    Arguments
+    ---------
+
+    - path: string:
+        Please supply a string value that contains the relative path from your current
+        working directory to the folder containing the data.
+        Default: ```&#39;./data/&#39;```.
+
+
+    &#39;&#39;&#39;
+
+    def ensure_folder(path):
+        if path[-1] != &#39;/&#39;:
+            path = path + (&#39;/&#39;)
+        return path
+
+    path = ensure_folder(path)
+
+    with open(tihm_data_path, &#39;w&#39;) as file_write:
+        file_write.write(path)
+
+    print(&#39;TIHM Path Saved&#39;)
 
     return</code></pre>
 </details>
@@ -357,6 +389,55 @@ Default: <code>1</code>.</li>
     return</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.settings.set_tihm_dir"><code class="name flex">
+<span>def <span class="ident">set_tihm_dir</span></span>(<span>path='./data/')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Only used in <code>minder_utils</code> and not <code>minder_utils_lite</code>.</p>
+<p>This allows you to set the path to the folder containing tihm data</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>path: string:
+Please supply a string value that contains the relative path from your current
+working directory to the folder containing the data.
+Default: <code>'./data/'</code>.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_tihm_dir(path=&#39;./data/&#39;):
+    &#39;&#39;&#39;
+    Only used in ```minder_utils``` and not ```minder_utils_lite```.
+
+    This allows you to set the path to the folder containing tihm data
+
+    Arguments
+    ---------
+
+    - path: string:
+        Please supply a string value that contains the relative path from your current
+        working directory to the folder containing the data.
+        Default: ```&#39;./data/&#39;```.
+
+
+    &#39;&#39;&#39;
+
+    def ensure_folder(path):
+        if path[-1] != &#39;/&#39;:
+            path = path + (&#39;/&#39;)
+        return path
+
+    path = ensure_folder(path)
+
+    with open(tihm_data_path, &#39;w&#39;) as file_write:
+        file_write.write(path)
+
+    print(&#39;TIHM Path Saved&#39;)
+
+    return</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.settings.token_save"><code class="name flex">
 <span>def <span class="ident">token_save</span></span>(<span>token)</span>
 </code></dt>
@@ -419,6 +500,7 @@ This is the user token that can be used to access minder.</li>
 <li><code><a title="minder_utils.settings.dates_save" href="#minder_utils.settings.dates_save">dates_save</a></code></li>
 <li><code><a title="minder_utils.settings.set_data_dir" href="#minder_utils.settings.set_data_dir">set_data_dir</a></code></li>
 <li><code><a title="minder_utils.settings.set_delta" href="#minder_utils.settings.set_delta">set_delta</a></code></li>
+<li><code><a title="minder_utils.settings.set_tihm_dir" href="#minder_utils.settings.set_tihm_dir">set_tihm_dir</a></code></li>
 <li><code><a title="minder_utils.settings.token_save" href="#minder_utils.settings.token_save">token_save</a></code></li>
 </ul>
 </li>

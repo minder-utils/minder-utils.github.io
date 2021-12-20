@@ -28,11 +28,11 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from sklearn.feature_selection import SelectPercentile, chi2, f_classif, mutual_info_classif
-from minder_utils.models.feature_selectors import Feature_selector_template
+from minder_utils.models.utils import Feature_selector
 import numpy as np
 
 
-class Supervised_Filter(Feature_selector_template):
+class Supervised_Filter(Feature_selector):
     &#39;&#39;&#39;
     This class provide a set of supervised feature selection methods.
     Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.
@@ -97,13 +97,18 @@ class Supervised_Filter(Feature_selector_template):
     def fit(self, X, y):
         if y.ndim &gt; 1:
             y = np.argmax(y, axis=1)
-        return self.selector.fit(X, y)
+        y[y &lt; 0] = 0
+        y[y &gt; 0] = 1
+        return self.selector.fit(X, y.astype(float))
 
     def transform(self, X):
         return self.selector.transform(X)
 
     def __name__(self):
-        return &#39;Supervised Filter&#39;, self.name</code></pre>
+        return &#39;Supervised Filter&#39;, self.name
+
+    def get_importance(self):
+        return self.selector.scores_</code></pre>
 </details>
 </section>
 <section>
@@ -151,7 +156,7 @@ X = selector.transform(X)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Supervised_Filter(Feature_selector_template):
+<pre><code class="python">class Supervised_Filter(Feature_selector):
     &#39;&#39;&#39;
     This class provide a set of supervised feature selection methods.
     Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.
@@ -216,17 +221,22 @@ X = selector.transform(X)
     def fit(self, X, y):
         if y.ndim &gt; 1:
             y = np.argmax(y, axis=1)
-        return self.selector.fit(X, y)
+        y[y &lt; 0] = 0
+        y[y &gt; 0] = 1
+        return self.selector.fit(X, y.astype(float))
 
     def transform(self, X):
         return self.selector.transform(X)
 
     def __name__(self):
-        return &#39;Supervised Filter&#39;, self.name</code></pre>
+        return &#39;Supervised Filter&#39;, self.name
+
+    def get_importance(self):
+        return self.selector.scores_</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="minder_utils.models.feature_selectors.Feature_selector_template" href="../index.html#minder_utils.models.feature_selectors.Feature_selector_template">Feature_selector_template</a></li>
+<li><a title="minder_utils.models.utils.feature_selector.Feature_selector" href="../../utils/feature_selector.html#minder_utils.models.utils.feature_selector.Feature_selector">Feature_selector</a></li>
 <li>abc.ABC</li>
 </ul>
 <h3>Static methods</h3>
@@ -307,7 +317,22 @@ def methods(self):
 <pre><code class="python">def fit(self, X, y):
     if y.ndim &gt; 1:
         y = np.argmax(y, axis=1)
-    return self.selector.fit(X, y)</code></pre>
+    y[y &lt; 0] = 0
+    y[y &gt; 0] = 1
+    return self.selector.fit(X, y.astype(float))</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.get_importance"><code class="name flex">
+<span>def <span class="ident">get_importance</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_importance(self):
+    return self.selector.scores_</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.reset_model"><code class="name flex">
@@ -368,6 +393,7 @@ def methods(self):
 <li><code><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.chi" href="#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.chi">chi</a></code></li>
 <li><code><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.f_class" href="#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.f_class">f_class</a></code></li>
 <li><code><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.fit" href="#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.get_importance" href="#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.get_importance">get_importance</a></code></li>
 <li><code><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.methods" href="#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.methods">methods</a></code></li>
 <li><code><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.mi" href="#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.mi">mi</a></code></li>
 <li><code><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.reset_model" href="#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter.reset_model">reset_model</a></code></li>

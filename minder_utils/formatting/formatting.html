@@ -33,7 +33,11 @@ import time
 from minder_utils.configurations import config
 from .format_util import iter_dir
 from minder_utils.download.download import Downloader
+from minder_utils.util.decorators import load_save
+from minder_utils.formatting.format_tihm import format_tihm_data
 import numpy as np
+from minder_utils.util.util import reformat_path
+from .label import label_dataframe
 
 
 class Formatting:
@@ -43,50 +47,97 @@ class Formatting:
     Patient id, device type, time, value
     &#34;&#34;&#34;
 
-    def __init__(self, path=&#39;./data/raw_data/&#39;):
-        self.path = path
+    def __init__(self, path=os.path.join(&#39;./data&#39;, &#39;raw_data&#39;), add_tihm=None):
+        self.path = reformat_path(path)
+        self.add_tihm = add_tihm
+        self.activity_nice_locations = {
+        &#39;hallway&#39;: &#39;Hallway&#39;, 
+        &#39;kitchen&#39;: &#39;Kitchen&#39;, 
+        &#39;lounge&#39;:&#39;Lounge&#39;, 
+        &#39;bathroom1&#39;: &#39;Bathroom&#39;, 
+        &#39;bedroom1&#39;:&#39;Bedroom&#39;,
+        &#39;kettle&#39;: &#39;Kettle&#39;,
+        &#39;toaster&#39;: &#39;Toaster&#39;,
+        &#39;fridge door&#39;: &#39;Fridge Door&#39;,
+        &#39;back door&#39;: &#39;Back Door&#39;,
+        &#39;front door&#39;: &#39;Front Door&#39;,
+        &#39;microwave&#39;: &#39;Microwave&#39;,
+        &#39;study&#39;: &#39;Study&#39;,
+        &#39;dining room&#39;: &#39;Dining Room&#39;,
+        &#39;living room&#39;: &#39;Living Room&#39;,
+        &#39;iron&#39;: &#39;Iron&#39;,
+        &#39;corridor1&#39;: &#39;Corridor&#39;,
+        &#39;WC1&#39;: &#39;WC&#39;,
+        &#39;main door&#39;: &#39;Main Door&#39;,
+        &#39;utility&#39;: &#39;Utility&#39;, 
+        &#39;office&#39;: &#39;Office&#39;, 
+        &#39;multi&#39;: &#39;Multi&#39;, 
+        &#39;conservatory&#39;: &#39;Conservatory&#39;,
+        &#39;garage&#39;: &#39;Garage&#39;, 
+        &#39;secondary&#39;: &#39;Secondary&#39;, 
+        &#39;cellar&#39;: &#39;Cellar&#39;
+                                                        }
 
         categories_check = [&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;]
         if not np.all([os.path.exists(os.path.join(path, category + &#39;.csv&#39;)) for category in categories_check]):
             print(&#39;Downloading required files for formatting&#39;)
             dl = Downloader()
             dl.export(categories=[&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;],
-                      reload=True, since=None, until=None, save_path=path)
+                      reload=True, since=None, until=None, save_path=path, append = False)
             print(&#39;Required files downloaded&#39;)
 
         self.device_type = \
             pd.read_csv(os.path.join(self.path, &#39;device_types.csv&#39;))[[&#39;id&#39;, &#39;type&#39;]].set_index(&#39;id&#39;).to_dict()[&#39;type&#39;]
         self.config = config
-        self.physiological_data = pd.DataFrame(columns=self.config[&#39;physiological&#39;][&#39;columns&#39;])
-        self.activity_data = pd.DataFrame(columns=self.config[&#39;activity&#39;][&#39;columns&#39;])
-        self.environmental_data = pd.DataFrame(columns=self.config[&#39;environmental&#39;][&#39;columns&#39;])
-        self.process_data()
 
-    def process_data(self):
+    @property
+    @load_save(**config[&#39;physiological&#39;][&#39;save&#39;])
+    def physiological_data(self):
+        add_tihm = config[&#39;physiological&#39;][&#39;add_tihm&#39;] if self.add_tihm is None else self.add_tihm
+        if add_tihm:
+            data = self.process_data(&#39;physiological&#39;)
+            tihm_data = format_tihm_data()
+            return pd.concat([data, tihm_data[&#39;physiological&#39;]])
+        return label_dataframe(self.process_data(&#39;physiological&#39;).drop_duplicates())
+
+    @property
+    @load_save(**config[&#39;activity&#39;][&#39;save&#39;])
+    def activity_data(self):
+        add_tihm = config[&#39;activity&#39;][&#39;add_tihm&#39;] if self.add_tihm is None else self.add_tihm
+        if add_tihm:
+            data = self.process_data(&#39;activity&#39;)
+            tihm_data = format_tihm_data()
+            return pd.concat([data, tihm_data[&#39;activity&#39;]]).drop_duplicates().sort_values(&#39;time&#39;)
+        return label_dataframe(self.process_data(&#39;activity&#39;)).sort_values(&#39;time&#39;)
+
+    @property
+    @load_save(**config[&#39;environmental&#39;][&#39;save&#39;])
+    def environmental_data(self):
+        return label_dataframe(self.process_data(&#39;environmental&#39;))
+
+    def process_data(self, datatype):
+        assert datatype in [&#39;physiological&#39;, &#39;activity&#39;, &#39;environmental&#39;], &#39;not a valid type&#39;
+        process_func = getattr(self, &#39;process_{}_data&#39;.format(datatype))
+        dataframe = pd.DataFrame(columns=self.config[datatype][&#39;columns&#39;])
         for name in iter_dir(self.path):
             start_time = time.time()
-            print(&#39;Processing: {}&#39;.format(name).ljust(50, &#39; &#39;), end=&#39;&#39;)
-            if name in self.config[&#39;physiological&#39;][&#39;type&#39;]:
-                self.process_physiological_data(name)
-            elif name in self.config[&#39;activity&#39;][&#39;type&#39;]:
-                self.process_activity_data(name)
-            elif name in self.config[&#39;environmental&#39;][&#39;type&#39;]:
-                self.process_environmental_data(name)
-            elif name in self.config[&#39;individuals&#39;][&#39;text&#39;] or name in self.config[&#39;individuals&#39;][&#39;measure&#39;]:
-                print(&#39;TODO&#39;)
-                continue
+            print(&#39;Processing: {} -------&gt;  {}&#39;.format(datatype, name).ljust(80, &#39; &#39;), end=&#39;&#39;)
+            if name in self.config[datatype][&#39;type&#39;]:
+                dataframe = process_func(name, dataframe)
             end_time = time.time()
             print(&#39;Finished in {:.2f} seconds&#39;.format(end_time - start_time))
+        return dataframe
 
-    def process_physiological_data(self, name):
+    def process_physiological_data(self, name, df):
         &#34;&#34;&#34;
         process the physiological data, the data will be append to the self.physiological_data
 
         NOTE:
             the data will be averaged by date and patient id
 
-        :param name: file name to load the data.
+        :param name: string, file name to load the data.
             data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+        :param df: dataframe, dataframe to append the data
         :return: append to the self.physiological_data
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;]
@@ -101,9 +152,10 @@ class Formatting:
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;]).mean().reset_index()
         data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
         data.location = data.location.apply(lambda x: x.split(&#39;-&gt;&#39;)[-1])
-        self.physiological_data = self.physiological_data.append(data)
+        data.time = pd.to_datetime(data.time, utc=True)
+        return df.append(data)
 
-    def process_activity_data(self, name):
+    def process_activity_data(self, name, df):
         &#34;&#34;&#34;
         process the activity data, the data will be append to the self.activity_data
 
@@ -113,6 +165,7 @@ class Formatting:
                             the names of the values, e.g. iron-use -&gt; location_name: iron, value: 1
         :param name: the file name to load the data
             the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
+        :param df: dataframe, dataframe to append the data
         :return: append to the self.activity_data
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
@@ -120,9 +173,10 @@ class Formatting:
         data = data[data[&#39;location_name&#39;] != &#39;location_name&#39;]
         data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
         data.columns = self.config[&#39;activity&#39;][&#39;columns&#39;]
-        self.activity_data = self.activity_data.append(data)
+        data.time = pd.to_datetime(data.time, utc=True)
+        return df.append(data)
 
-    def process_environmental_data(self, name):
+    def process_environmental_data(self, name, df):
         &#34;&#34;&#34;
         process the environmental data, the data will be append to the self.environmental_data
 
@@ -130,6 +184,7 @@ class Formatting:
             the data will be averaged by date and patient id
         :param name: file name to load the data.
             data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+        :param df: dataframe, dataframe to append the data
         :return: append to the self.environmental_data
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
@@ -141,22 +196,27 @@ class Formatting:
         data.value = data.value.astype(float)
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;]).mean().reset_index()
         data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
-        self.environmental_data = self.environmental_data.append(data)
+        data.time = pd.to_datetime(data.time, utc=True)
+        return df.append(data)
 
-    def process_raw_door_sensor(self, data):
+    @staticmethod
+    def process_raw_door_sensor(data):
         data[&#39;value&#39;] = 1
         return data
 
-    def process_raw_activity_pir(self, data):
+    @staticmethod
+    def process_raw_activity_pir(data):
         data[&#39;value&#39;] = 1
         return data
 
-    def process_raw_appliance_use(self, data):
+    @staticmethod
+    def process_raw_appliance_use(data):
         data.location_name = data.value.apply(lambda x: x.split(&#39;-&#39;)[0])
         data.value = 1
         return data
 
-    def process_raw_blood_pressure(self, data):
+    @staticmethod
+    def process_raw_blood_pressure(data):
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
         blood_pressure = []
         for value in [&#39;systolic_value&#39;, &#39;diastolic_value&#39;]:
@@ -231,7 +291,7 @@ if __name__ == &#39;__main__&#39;:
 <dl>
 <dt id="minder_utils.formatting.formatting.Formatting"><code class="flex name class">
 <span>class <span class="ident">Formatting</span></span>
-<span>(</span><span>path='./data/raw_data/')</span>
+<span>(</span><span>path='./data\\raw_data', add_tihm=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Process the data to the following dataframe:</p>
@@ -247,50 +307,97 @@ if __name__ == &#39;__main__&#39;:
     Patient id, device type, time, value
     &#34;&#34;&#34;
 
-    def __init__(self, path=&#39;./data/raw_data/&#39;):
-        self.path = path
+    def __init__(self, path=os.path.join(&#39;./data&#39;, &#39;raw_data&#39;), add_tihm=None):
+        self.path = reformat_path(path)
+        self.add_tihm = add_tihm
+        self.activity_nice_locations = {
+        &#39;hallway&#39;: &#39;Hallway&#39;, 
+        &#39;kitchen&#39;: &#39;Kitchen&#39;, 
+        &#39;lounge&#39;:&#39;Lounge&#39;, 
+        &#39;bathroom1&#39;: &#39;Bathroom&#39;, 
+        &#39;bedroom1&#39;:&#39;Bedroom&#39;,
+        &#39;kettle&#39;: &#39;Kettle&#39;,
+        &#39;toaster&#39;: &#39;Toaster&#39;,
+        &#39;fridge door&#39;: &#39;Fridge Door&#39;,
+        &#39;back door&#39;: &#39;Back Door&#39;,
+        &#39;front door&#39;: &#39;Front Door&#39;,
+        &#39;microwave&#39;: &#39;Microwave&#39;,
+        &#39;study&#39;: &#39;Study&#39;,
+        &#39;dining room&#39;: &#39;Dining Room&#39;,
+        &#39;living room&#39;: &#39;Living Room&#39;,
+        &#39;iron&#39;: &#39;Iron&#39;,
+        &#39;corridor1&#39;: &#39;Corridor&#39;,
+        &#39;WC1&#39;: &#39;WC&#39;,
+        &#39;main door&#39;: &#39;Main Door&#39;,
+        &#39;utility&#39;: &#39;Utility&#39;, 
+        &#39;office&#39;: &#39;Office&#39;, 
+        &#39;multi&#39;: &#39;Multi&#39;, 
+        &#39;conservatory&#39;: &#39;Conservatory&#39;,
+        &#39;garage&#39;: &#39;Garage&#39;, 
+        &#39;secondary&#39;: &#39;Secondary&#39;, 
+        &#39;cellar&#39;: &#39;Cellar&#39;
+                                                        }
 
         categories_check = [&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;]
         if not np.all([os.path.exists(os.path.join(path, category + &#39;.csv&#39;)) for category in categories_check]):
             print(&#39;Downloading required files for formatting&#39;)
             dl = Downloader()
             dl.export(categories=[&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;],
-                      reload=True, since=None, until=None, save_path=path)
+                      reload=True, since=None, until=None, save_path=path, append = False)
             print(&#39;Required files downloaded&#39;)
 
         self.device_type = \
             pd.read_csv(os.path.join(self.path, &#39;device_types.csv&#39;))[[&#39;id&#39;, &#39;type&#39;]].set_index(&#39;id&#39;).to_dict()[&#39;type&#39;]
         self.config = config
-        self.physiological_data = pd.DataFrame(columns=self.config[&#39;physiological&#39;][&#39;columns&#39;])
-        self.activity_data = pd.DataFrame(columns=self.config[&#39;activity&#39;][&#39;columns&#39;])
-        self.environmental_data = pd.DataFrame(columns=self.config[&#39;environmental&#39;][&#39;columns&#39;])
-        self.process_data()
 
-    def process_data(self):
+    @property
+    @load_save(**config[&#39;physiological&#39;][&#39;save&#39;])
+    def physiological_data(self):
+        add_tihm = config[&#39;physiological&#39;][&#39;add_tihm&#39;] if self.add_tihm is None else self.add_tihm
+        if add_tihm:
+            data = self.process_data(&#39;physiological&#39;)
+            tihm_data = format_tihm_data()
+            return pd.concat([data, tihm_data[&#39;physiological&#39;]])
+        return label_dataframe(self.process_data(&#39;physiological&#39;).drop_duplicates())
+
+    @property
+    @load_save(**config[&#39;activity&#39;][&#39;save&#39;])
+    def activity_data(self):
+        add_tihm = config[&#39;activity&#39;][&#39;add_tihm&#39;] if self.add_tihm is None else self.add_tihm
+        if add_tihm:
+            data = self.process_data(&#39;activity&#39;)
+            tihm_data = format_tihm_data()
+            return pd.concat([data, tihm_data[&#39;activity&#39;]]).drop_duplicates().sort_values(&#39;time&#39;)
+        return label_dataframe(self.process_data(&#39;activity&#39;)).sort_values(&#39;time&#39;)
+
+    @property
+    @load_save(**config[&#39;environmental&#39;][&#39;save&#39;])
+    def environmental_data(self):
+        return label_dataframe(self.process_data(&#39;environmental&#39;))
+
+    def process_data(self, datatype):
+        assert datatype in [&#39;physiological&#39;, &#39;activity&#39;, &#39;environmental&#39;], &#39;not a valid type&#39;
+        process_func = getattr(self, &#39;process_{}_data&#39;.format(datatype))
+        dataframe = pd.DataFrame(columns=self.config[datatype][&#39;columns&#39;])
         for name in iter_dir(self.path):
             start_time = time.time()
-            print(&#39;Processing: {}&#39;.format(name).ljust(50, &#39; &#39;), end=&#39;&#39;)
-            if name in self.config[&#39;physiological&#39;][&#39;type&#39;]:
-                self.process_physiological_data(name)
-            elif name in self.config[&#39;activity&#39;][&#39;type&#39;]:
-                self.process_activity_data(name)
-            elif name in self.config[&#39;environmental&#39;][&#39;type&#39;]:
-                self.process_environmental_data(name)
-            elif name in self.config[&#39;individuals&#39;][&#39;text&#39;] or name in self.config[&#39;individuals&#39;][&#39;measure&#39;]:
-                print(&#39;TODO&#39;)
-                continue
+            print(&#39;Processing: {} -------&gt;  {}&#39;.format(datatype, name).ljust(80, &#39; &#39;), end=&#39;&#39;)
+            if name in self.config[datatype][&#39;type&#39;]:
+                dataframe = process_func(name, dataframe)
             end_time = time.time()
             print(&#39;Finished in {:.2f} seconds&#39;.format(end_time - start_time))
+        return dataframe
 
-    def process_physiological_data(self, name):
+    def process_physiological_data(self, name, df):
         &#34;&#34;&#34;
         process the physiological data, the data will be append to the self.physiological_data
 
         NOTE:
             the data will be averaged by date and patient id
 
-        :param name: file name to load the data.
+        :param name: string, file name to load the data.
             data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+        :param df: dataframe, dataframe to append the data
         :return: append to the self.physiological_data
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;]
@@ -305,9 +412,10 @@ if __name__ == &#39;__main__&#39;:
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;]).mean().reset_index()
         data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
         data.location = data.location.apply(lambda x: x.split(&#39;-&gt;&#39;)[-1])
-        self.physiological_data = self.physiological_data.append(data)
+        data.time = pd.to_datetime(data.time, utc=True)
+        return df.append(data)
 
-    def process_activity_data(self, name):
+    def process_activity_data(self, name, df):
         &#34;&#34;&#34;
         process the activity data, the data will be append to the self.activity_data
 
@@ -317,6 +425,7 @@ if __name__ == &#39;__main__&#39;:
                             the names of the values, e.g. iron-use -&gt; location_name: iron, value: 1
         :param name: the file name to load the data
             the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
+        :param df: dataframe, dataframe to append the data
         :return: append to the self.activity_data
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
@@ -324,9 +433,10 @@ if __name__ == &#39;__main__&#39;:
         data = data[data[&#39;location_name&#39;] != &#39;location_name&#39;]
         data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
         data.columns = self.config[&#39;activity&#39;][&#39;columns&#39;]
-        self.activity_data = self.activity_data.append(data)
+        data.time = pd.to_datetime(data.time, utc=True)
+        return df.append(data)
 
-    def process_environmental_data(self, name):
+    def process_environmental_data(self, name, df):
         &#34;&#34;&#34;
         process the environmental data, the data will be append to the self.environmental_data
 
@@ -334,6 +444,7 @@ if __name__ == &#39;__main__&#39;:
             the data will be averaged by date and patient id
         :param name: file name to load the data.
             data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+        :param df: dataframe, dataframe to append the data
         :return: append to the self.environmental_data
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
@@ -345,22 +456,27 @@ if __name__ == &#39;__main__&#39;:
         data.value = data.value.astype(float)
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;]).mean().reset_index()
         data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
-        self.environmental_data = self.environmental_data.append(data)
+        data.time = pd.to_datetime(data.time, utc=True)
+        return df.append(data)
 
-    def process_raw_door_sensor(self, data):
+    @staticmethod
+    def process_raw_door_sensor(data):
         data[&#39;value&#39;] = 1
         return data
 
-    def process_raw_activity_pir(self, data):
+    @staticmethod
+    def process_raw_activity_pir(data):
         data[&#39;value&#39;] = 1
         return data
 
-    def process_raw_appliance_use(self, data):
+    @staticmethod
+    def process_raw_appliance_use(data):
         data.location_name = data.value.apply(lambda x: x.split(&#39;-&#39;)[0])
         data.value = 1
         return data
 
-    def process_raw_blood_pressure(self, data):
+    @staticmethod
+    def process_raw_blood_pressure(data):
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
         blood_pressure = []
         for value in [&#39;systolic_value&#39;, &#39;diastolic_value&#39;]:
@@ -419,10 +535,134 @@ if __name__ == &#39;__main__&#39;:
         &#34;&#34;&#34;
         return False</code></pre>
 </details>
+<h3>Static methods</h3>
+<dl>
+<dt id="minder_utils.formatting.formatting.Formatting.process_raw_activity_pir"><code class="name flex">
+<span>def <span class="ident">process_raw_activity_pir</span></span>(<span>data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def process_raw_activity_pir(data):
+    data[&#39;value&#39;] = 1
+    return data</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.formatting.formatting.Formatting.process_raw_appliance_use"><code class="name flex">
+<span>def <span class="ident">process_raw_appliance_use</span></span>(<span>data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def process_raw_appliance_use(data):
+    data.location_name = data.value.apply(lambda x: x.split(&#39;-&#39;)[0])
+    data.value = 1
+    return data</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.formatting.formatting.Formatting.process_raw_blood_pressure"><code class="name flex">
+<span>def <span class="ident">process_raw_blood_pressure</span></span>(<span>data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def process_raw_blood_pressure(data):
+    col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+    blood_pressure = []
+    for value in [&#39;systolic_value&#39;, &#39;diastolic_value&#39;]:
+        tmp_filter = col_filter.copy()
+        tmp_filter[3] = value
+        tmp_data = data[tmp_filter]
+        tmp_data.device_type += &#39;-&gt;&#39; + value.split(&#39;_&#39;)[0]
+        tmp_data[&#39;value&#39;] = tmp_data[value]
+        blood_pressure.append(tmp_data[col_filter])
+    return pd.concat(blood_pressure)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.formatting.formatting.Formatting.process_raw_door_sensor"><code class="name flex">
+<span>def <span class="ident">process_raw_door_sensor</span></span>(<span>data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def process_raw_door_sensor(data):
+    data[&#39;value&#39;] = 1
+    return data</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.formatting.formatting.Formatting.activity_data"><code class="name">var <span class="ident">activity_data</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**config[&#39;activity&#39;][&#39;save&#39;])
+def activity_data(self):
+    add_tihm = config[&#39;activity&#39;][&#39;add_tihm&#39;] if self.add_tihm is None else self.add_tihm
+    if add_tihm:
+        data = self.process_data(&#39;activity&#39;)
+        tihm_data = format_tihm_data()
+        return pd.concat([data, tihm_data[&#39;activity&#39;]]).drop_duplicates().sort_values(&#39;time&#39;)
+    return label_dataframe(self.process_data(&#39;activity&#39;)).sort_values(&#39;time&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.formatting.formatting.Formatting.environmental_data"><code class="name">var <span class="ident">environmental_data</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**config[&#39;environmental&#39;][&#39;save&#39;])
+def environmental_data(self):
+    return label_dataframe(self.process_data(&#39;environmental&#39;))</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.formatting.formatting.Formatting.physiological_data"><code class="name">var <span class="ident">physiological_data</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**config[&#39;physiological&#39;][&#39;save&#39;])
+def physiological_data(self):
+    add_tihm = config[&#39;physiological&#39;][&#39;add_tihm&#39;] if self.add_tihm is None else self.add_tihm
+    if add_tihm:
+        data = self.process_data(&#39;physiological&#39;)
+        tihm_data = format_tihm_data()
+        return pd.concat([data, tihm_data[&#39;physiological&#39;]])
+    return label_dataframe(self.process_data(&#39;physiological&#39;).drop_duplicates())</code></pre>
+</details>
+</dd>
+</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="minder_utils.formatting.formatting.Formatting.process_activity_data"><code class="name flex">
-<span>def <span class="ident">process_activity_data</span></span>(<span>self, name)</span>
+<span>def <span class="ident">process_activity_data</span></span>(<span>self, name, df)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>process the activity data, the data will be append to the self.activity_data</p>
@@ -433,12 +673,13 @@ application -&gt; the values will be set to 1, the location_name will be set bas
 the names of the values, e.g. iron-use -&gt; location_name: iron, value: 1
 :param name: the file name to load the data
 the data must contains ['patient_id', 'start_date', 'location_name', 'value']
+:param df: dataframe, dataframe to append the data
 :return: append to the self.activity_data</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def process_activity_data(self, name):
+<pre><code class="python">def process_activity_data(self, name, df):
     &#34;&#34;&#34;
     process the activity data, the data will be append to the self.activity_data
 
@@ -448,6 +689,7 @@ the data must contains ['patient_id', 'start_date', 'location_name', 'value']
                         the names of the values, e.g. iron-use -&gt; location_name: iron, value: 1
     :param name: the file name to load the data
         the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
+    :param df: dataframe, dataframe to append the data
     :return: append to the self.activity_data
     &#34;&#34;&#34;
     col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
@@ -455,11 +697,12 @@ the data must contains ['patient_id', 'start_date', 'location_name', 'value']
     data = data[data[&#39;location_name&#39;] != &#39;location_name&#39;]
     data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
     data.columns = self.config[&#39;activity&#39;][&#39;columns&#39;]
-    self.activity_data = self.activity_data.append(data)</code></pre>
+    data.time = pd.to_datetime(data.time, utc=True)
+    return df.append(data)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.formatting.formatting.Formatting.process_data"><code class="name flex">
-<span>def <span class="ident">process_data</span></span>(<span>self)</span>
+<span>def <span class="ident">process_data</span></span>(<span>self, datatype)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -467,21 +710,18 @@ the data must contains ['patient_id', 'start_date', 'location_name', 'value']
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def process_data(self):
+<pre><code class="python">def process_data(self, datatype):
+    assert datatype in [&#39;physiological&#39;, &#39;activity&#39;, &#39;environmental&#39;], &#39;not a valid type&#39;
+    process_func = getattr(self, &#39;process_{}_data&#39;.format(datatype))
+    dataframe = pd.DataFrame(columns=self.config[datatype][&#39;columns&#39;])
     for name in iter_dir(self.path):
         start_time = time.time()
-        print(&#39;Processing: {}&#39;.format(name).ljust(50, &#39; &#39;), end=&#39;&#39;)
-        if name in self.config[&#39;physiological&#39;][&#39;type&#39;]:
-            self.process_physiological_data(name)
-        elif name in self.config[&#39;activity&#39;][&#39;type&#39;]:
-            self.process_activity_data(name)
-        elif name in self.config[&#39;environmental&#39;][&#39;type&#39;]:
-            self.process_environmental_data(name)
-        elif name in self.config[&#39;individuals&#39;][&#39;text&#39;] or name in self.config[&#39;individuals&#39;][&#39;measure&#39;]:
-            print(&#39;TODO&#39;)
-            continue
+        print(&#39;Processing: {} -------&gt;  {}&#39;.format(datatype, name).ljust(80, &#39; &#39;), end=&#39;&#39;)
+        if name in self.config[datatype][&#39;type&#39;]:
+            dataframe = process_func(name, dataframe)
         end_time = time.time()
-        print(&#39;Finished in {:.2f} seconds&#39;.format(end_time - start_time))</code></pre>
+        print(&#39;Finished in {:.2f} seconds&#39;.format(end_time - start_time))
+    return dataframe</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.formatting.formatting.Formatting.process_encounter"><code class="name flex">
@@ -503,7 +743,7 @@ the data must contains ['patient_id', 'start_date', 'location_name', 'value']
 </details>
 </dd>
 <dt id="minder_utils.formatting.formatting.Formatting.process_environmental_data"><code class="name flex">
-<span>def <span class="ident">process_environmental_data</span></span>(<span>self, name)</span>
+<span>def <span class="ident">process_environmental_data</span></span>(<span>self, name, df)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>process the environmental data, the data will be append to the self.environmental_data</p>
@@ -511,12 +751,13 @@ the data must contains ['patient_id', 'start_date', 'location_name', 'value']
 <p>the data will be averaged by date and patient id
 :param name: file name to load the data.
 data: the data must contains ['patient_id', 'start_date', 'location_name', 'device_type', 'value', 'unit']
+:param df: dataframe, dataframe to append the data
 :return: append to the self.environmental_data</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def process_environmental_data(self, name):
+<pre><code class="python">def process_environmental_data(self, name, df):
     &#34;&#34;&#34;
     process the environmental data, the data will be append to the self.environmental_data
 
@@ -524,6 +765,7 @@ data: the data must contains ['patient_id', 'start_date', 'location_name', 'devi
         the data will be averaged by date and patient id
     :param name: file name to load the data.
         data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+    :param df: dataframe, dataframe to append the data
     :return: append to the self.environmental_data
     &#34;&#34;&#34;
     col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
@@ -535,7 +777,8 @@ data: the data must contains ['patient_id', 'start_date', 'location_name', 'devi
     data.value = data.value.astype(float)
     data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;]).mean().reset_index()
     data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
-    self.environmental_data = self.environmental_data.append(data)</code></pre>
+    data.time = pd.to_datetime(data.time, utc=True)
+    return df.append(data)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.formatting.formatting.Formatting.process_homes"><code class="name flex">
@@ -599,28 +842,30 @@ need to be process by NLP maybe
 </details>
 </dd>
 <dt id="minder_utils.formatting.formatting.Formatting.process_physiological_data"><code class="name flex">
-<span>def <span class="ident">process_physiological_data</span></span>(<span>self, name)</span>
+<span>def <span class="ident">process_physiological_data</span></span>(<span>self, name, df)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>process the physiological data, the data will be append to the self.physiological_data</p>
 <h2 id="note">Note</h2>
 <p>the data will be averaged by date and patient id</p>
-<p>:param name: file name to load the data.
+<p>:param name: string, file name to load the data.
 data: the data must contains ['patient_id', 'start_date', 'device_type', 'value', 'unit']
+:param df: dataframe, dataframe to append the data
 :return: append to the self.physiological_data</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def process_physiological_data(self, name):
+<pre><code class="python">def process_physiological_data(self, name, df):
     &#34;&#34;&#34;
     process the physiological data, the data will be append to the self.physiological_data
 
     NOTE:
         the data will be averaged by date and patient id
 
-    :param name: file name to load the data.
+    :param name: string, file name to load the data.
         data: the data must contains [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
+    :param df: dataframe, dataframe to append the data
     :return: append to the self.physiological_data
     &#34;&#34;&#34;
     col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;]
@@ -635,7 +880,8 @@ data: the data must contains ['patient_id', 'start_date', 'device_type', 'value'
     data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;]).mean().reset_index()
     data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
     data.location = data.location.apply(lambda x: x.split(&#39;-&gt;&#39;)[-1])
-    self.physiological_data = self.physiological_data.append(data)</code></pre>
+    data.time = pd.to_datetime(data.time, utc=True)
+    return df.append(data)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.formatting.formatting.Formatting.process_procedure"><code class="name flex">
@@ -658,35 +904,6 @@ need to be process by NLP maybe
     return False</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.formatting.formatting.Formatting.process_raw_activity_pir"><code class="name flex">
-<span>def <span class="ident">process_raw_activity_pir</span></span>(<span>self, data)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def process_raw_activity_pir(self, data):
-    data[&#39;value&#39;] = 1
-    return data</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.formatting.formatting.Formatting.process_raw_appliance_use"><code class="name flex">
-<span>def <span class="ident">process_raw_appliance_use</span></span>(<span>self, data)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def process_raw_appliance_use(self, data):
-    data.location_name = data.value.apply(lambda x: x.split(&#39;-&#39;)[0])
-    data.value = 1
-    return data</code></pre>
-</details>
-</dd>
 <dt id="minder_utils.formatting.formatting.Formatting.process_raw_behavioural"><code class="name flex">
 <span>def <span class="ident">process_raw_behavioural</span></span>(<span>self)</span>
 </code></dt>
@@ -705,42 +922,6 @@ need to be process by NLP maybe
     :return:
     &#34;&#34;&#34;
     return False</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.formatting.formatting.Formatting.process_raw_blood_pressure"><code class="name flex">
-<span>def <span class="ident">process_raw_blood_pressure</span></span>(<span>self, data)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def process_raw_blood_pressure(self, data):
-    col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;, &#39;unit&#39;]
-    blood_pressure = []
-    for value in [&#39;systolic_value&#39;, &#39;diastolic_value&#39;]:
-        tmp_filter = col_filter.copy()
-        tmp_filter[3] = value
-        tmp_data = data[tmp_filter]
-        tmp_data.device_type += &#39;-&gt;&#39; + value.split(&#39;_&#39;)[0]
-        tmp_data[&#39;value&#39;] = tmp_data[value]
-        blood_pressure.append(tmp_data[col_filter])
-    return pd.concat(blood_pressure)</code></pre>
-</details>
-</dd>
-<dt id="minder_utils.formatting.formatting.Formatting.process_raw_door_sensor"><code class="name flex">
-<span>def <span class="ident">process_raw_door_sensor</span></span>(<span>self, data)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def process_raw_door_sensor(self, data):
-    data[&#39;value&#39;] = 1
-    return data</code></pre>
 </details>
 </dd>
 </dl>
@@ -769,6 +950,9 @@ need to be process by NLP maybe
 <li>
 <h4><code><a title="minder_utils.formatting.formatting.Formatting" href="#minder_utils.formatting.formatting.Formatting">Formatting</a></code></h4>
 <ul class="">
+<li><code><a title="minder_utils.formatting.formatting.Formatting.activity_data" href="#minder_utils.formatting.formatting.Formatting.activity_data">activity_data</a></code></li>
+<li><code><a title="minder_utils.formatting.formatting.Formatting.environmental_data" href="#minder_utils.formatting.formatting.Formatting.environmental_data">environmental_data</a></code></li>
+<li><code><a title="minder_utils.formatting.formatting.Formatting.physiological_data" href="#minder_utils.formatting.formatting.Formatting.physiological_data">physiological_data</a></code></li>
 <li><code><a title="minder_utils.formatting.formatting.Formatting.process_activity_data" href="#minder_utils.formatting.formatting.Formatting.process_activity_data">process_activity_data</a></code></li>
 <li><code><a title="minder_utils.formatting.formatting.Formatting.process_data" href="#minder_utils.formatting.formatting.Formatting.process_data">process_data</a></code></li>
 <li><code><a title="minder_utils.formatting.formatting.Formatting.process_encounter" href="#minder_utils.formatting.formatting.Formatting.process_encounter">process_encounter</a></code></li>

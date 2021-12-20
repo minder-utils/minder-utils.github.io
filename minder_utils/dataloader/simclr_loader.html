@@ -78,7 +78,24 @@ class CustomTensorDataset(Dataset):
         return self.tensors[0].size(0)
 
 
-def torch_loader(X, y, batch_size=10, normalise_data=True, shuffle=True, seed=0, split=True, augmentation=False):
+def create_labelled_loader(X, y, batch_size=10, normalise_data=True, shuffle=True, seed=0, split=True, augmentation=False):
+    &#39;&#39;&#39;
+    Create a dataloader for labelled data
+    Parameters
+    ----------
+    X: numpy array, data
+    y: numpy array, label
+    batch_size
+    normalise_data
+    shuffle
+    seed
+    split
+    augmentation: augment data or not
+
+    Returns torch dataloader
+    -------
+
+    &#39;&#39;&#39;
     transformers = DataTransform(augmentation_transformers()) if augmentation else None
     if split:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=seed, stratify=y)
@@ -93,14 +110,28 @@ def torch_loader(X, y, batch_size=10, normalise_data=True, shuffle=True, seed=0,
         return train_dataloader
 
 
-def torch_unlabelled_loader(X, batch_size=10, shuffle=True, augmentation=False):
+def create_unlabelled_loader(X, batch_size=10, shuffle=True, augmentation=False,
+                             normalise_data=True):
+    &#39;&#39;&#39;
+    Create a dataloader for unlabelled data, note this function will label every datapoint
+    with one.
+    Parameters
+    ----------
+    X: unlabelled data
+    batch_size
+    shuffle
+    augmentation
+    normalise_data: normalise the data or not
+
+    Returns torch dataloader
+    -------
+
+    &#39;&#39;&#39;
     transformers = DataTransform(augmentation_transformers()) if augmentation else None
-    train_dataset = CustomTensorDataset([torch.Tensor(X), torch.ones(X.shape[0])], transformers)
+    train_dataset = CustomTensorDataset([torch.Tensor(X), torch.ones(X.shape[0])], transformers,
+                                        normalise_data=normalise_data)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=True)
-    return train_dataloader
-
-
-__all__ = [&#39;torch_loader&#39;, &#39;torch_unlabelled_loader&#39;]</code></pre>
+    return train_dataloader</code></pre>
 </details>
 </section>
 <section>
@@ -110,8 +141,8 @@ __all__ = [&#39;torch_loader&#39;, &#39;torch_unlabelled_loader&#39;]</code></pr
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="minder_utils.dataloader.simclr_loader.torch_loader"><code class="name flex">
-<span>def <span class="ident">torch_loader</span></span>(<span>X, y, batch_size=10, normalise_data=True, shuffle=True, seed=0, split=True, augmentation=False)</span>
+<dt id="minder_utils.dataloader.simclr_loader.augmentation_transformers"><code class="name flex">
+<span>def <span class="ident">augmentation_transformers</span></span>(<span>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -119,7 +150,59 @@ __all__ = [&#39;torch_loader&#39;, &#39;torch_unlabelled_loader&#39;]</code></pr
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def torch_loader(X, y, batch_size=10, normalise_data=True, shuffle=True, seed=0, split=True, augmentation=False):
+<pre><code class="python">def augmentation_transformers():
+    return transforms.Compose([transforms.RandomResizedCrop([8, 14]),
+                               transforms.RandomHorizontalFlip()])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.dataloader.simclr_loader.create_labelled_loader"><code class="name flex">
+<span>def <span class="ident">create_labelled_loader</span></span>(<span>X, y, batch_size=10, normalise_data=True, shuffle=True, seed=0, split=True, augmentation=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a dataloader for labelled data
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>numpy array, data</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>numpy array, label</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>batch_size</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>normalise_data</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>shuffle</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>seed</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>split</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>augmentation</code></strong> :&ensp;<code>augment data</code> or <code>not</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns-torch-dataloader">Returns torch dataloader</h2></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_labelled_loader(X, y, batch_size=10, normalise_data=True, shuffle=True, seed=0, split=True, augmentation=False):
+    &#39;&#39;&#39;
+    Create a dataloader for labelled data
+    Parameters
+    ----------
+    X: numpy array, data
+    y: numpy array, label
+    batch_size
+    normalise_data
+    shuffle
+    seed
+    split
+    augmentation: augment data or not
+
+    Returns torch dataloader
+    -------
+
+    &#39;&#39;&#39;
     transformers = DataTransform(augmentation_transformers()) if augmentation else None
     if split:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=seed, stratify=y)
@@ -134,18 +217,51 @@ __all__ = [&#39;torch_loader&#39;, &#39;torch_unlabelled_loader&#39;]</code></pr
         return train_dataloader</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.dataloader.simclr_loader.torch_unlabelled_loader"><code class="name flex">
-<span>def <span class="ident">torch_unlabelled_loader</span></span>(<span>X, batch_size=10, shuffle=True, augmentation=False)</span>
+<dt id="minder_utils.dataloader.simclr_loader.create_unlabelled_loader"><code class="name flex">
+<span>def <span class="ident">create_unlabelled_loader</span></span>(<span>X, batch_size=10, shuffle=True, augmentation=False, normalise_data=True)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Create a dataloader for unlabelled data, note this function will label every datapoint
+with one.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>X</code></strong> :&ensp;<code>unlabelled data</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>batch_size</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>shuffle</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>augmentation</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>normalise_data</code></strong> :&ensp;<code>normalise the data</code> or <code>not</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns-torch-dataloader">Returns torch dataloader</h2></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def torch_unlabelled_loader(X, batch_size=10, shuffle=True, augmentation=False):
+<pre><code class="python">def create_unlabelled_loader(X, batch_size=10, shuffle=True, augmentation=False,
+                             normalise_data=True):
+    &#39;&#39;&#39;
+    Create a dataloader for unlabelled data, note this function will label every datapoint
+    with one.
+    Parameters
+    ----------
+    X: unlabelled data
+    batch_size
+    shuffle
+    augmentation
+    normalise_data: normalise the data or not
+
+    Returns torch dataloader
+    -------
+
+    &#39;&#39;&#39;
     transformers = DataTransform(augmentation_transformers()) if augmentation else None
-    train_dataset = CustomTensorDataset([torch.Tensor(X), torch.ones(X.shape[0])], transformers)
+    train_dataset = CustomTensorDataset([torch.Tensor(X), torch.ones(X.shape[0])], transformers,
+                                        normalise_data=normalise_data)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=True)
     return train_dataloader</code></pre>
 </details>
@@ -153,6 +269,73 @@ __all__ = [&#39;torch_loader&#39;, &#39;torch_unlabelled_loader&#39;]</code></pr
 </dl>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.dataloader.simclr_loader.CustomTensorDataset"><code class="flex name class">
+<span>class <span class="ident">CustomTensorDataset</span></span>
+<span>(</span><span>tensors, transform=None, normalise_data=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>TensorDataset with support of transforms.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CustomTensorDataset(Dataset):
+    &#34;&#34;&#34;TensorDataset with support of transforms.
+    &#34;&#34;&#34;
+
+    def __init__(self, tensors, transform=None, normalise_data=True):
+        assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)
+        self.tensors = tensors
+        self.transform = transform
+        self.normalise_data = normalise_data
+
+    def __getitem__(self, index):
+        x = self.tensors[0][index]
+        if self.normalise_data:
+            try:
+                x = normalize(x.view(24, -1), dim=0).view(x.size())
+            except RuntimeError:
+                x = normalize(x.view(-1, ), dim=0).view(x.size())
+
+        if self.transform:
+            x = self.transform(x)
+
+        y = self.tensors[1][index]
+
+        return x, y
+
+    def __len__(self):
+        return self.tensors[0].size(0)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>torch.utils.data.dataset.Dataset</li>
+<li>typing.Generic</li>
+</ul>
+</dd>
+<dt id="minder_utils.dataloader.simclr_loader.DataTransform"><code class="flex name class">
+<span>class <span class="ident">DataTransform</span></span>
+<span>(</span><span>transform)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DataTransform(object):
+    def __init__(self, transform):
+        self.transform = transform
+
+    def __call__(self, sample):
+        xi = self.transform(sample)
+        xj = self.transform(sample)
+        return xi, xj</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -173,8 +356,19 @@ __all__ = [&#39;torch_loader&#39;, &#39;torch_unlabelled_loader&#39;]</code></pr
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="minder_utils.dataloader.simclr_loader.torch_loader" href="#minder_utils.dataloader.simclr_loader.torch_loader">torch_loader</a></code></li>
-<li><code><a title="minder_utils.dataloader.simclr_loader.torch_unlabelled_loader" href="#minder_utils.dataloader.simclr_loader.torch_unlabelled_loader">torch_unlabelled_loader</a></code></li>
+<li><code><a title="minder_utils.dataloader.simclr_loader.augmentation_transformers" href="#minder_utils.dataloader.simclr_loader.augmentation_transformers">augmentation_transformers</a></code></li>
+<li><code><a title="minder_utils.dataloader.simclr_loader.create_labelled_loader" href="#minder_utils.dataloader.simclr_loader.create_labelled_loader">create_labelled_loader</a></code></li>
+<li><code><a title="minder_utils.dataloader.simclr_loader.create_unlabelled_loader" href="#minder_utils.dataloader.simclr_loader.create_unlabelled_loader">create_unlabelled_loader</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.dataloader.simclr_loader.CustomTensorDataset" href="#minder_utils.dataloader.simclr_loader.CustomTensorDataset">CustomTensorDataset</a></code></h4>
+</li>
+<li>
+<h4><code><a title="minder_utils.dataloader.simclr_loader.DataTransform" href="#minder_utils.dataloader.simclr_loader.DataTransform">DataTransform</a></code></h4>
+</li>
 </ul>
 </li>
 </ul>

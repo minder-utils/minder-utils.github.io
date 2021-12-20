@@ -27,7 +27,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from minder_utils.models.feature_extractors.autoencoders import Extractor
+<pre><code class="python">from minder_utils.models.feature_extractors.keras_autoencoders import Extractor
 from minder_utils.models.classifiers.classifiers import Classifiers
 import numpy as np
 import pandas as pd
@@ -36,55 +36,109 @@ import os
 from minder_utils.formatting.map_utils import map_raw_ids
 from minder_utils.evaluate.evaluate_models import evaluate
 from minder_utils.formatting.format_util import y_to_categorical
+from minder_utils.formatting.format_util import normalise
+
+pd.set_option(&#39;max_columns&#39;, None)
+pd.set_option(&#39;max_colwidth&#39;, None)
 
 
-def run_default(reload_weekly=False, reload_all=False):
-    &#39;&#39;&#39;
-    An example function for loading data and evaluating methods on the activity data
-    with UTIs as labels.
-    
-    Arguments
-    ---------
+class Weekly_alerts:
+    def __init__(self, autoencoder=&#39;cnn&#39;, normalisation=True):
+        self.normalisation = normalisation
+        self.loader = Weekly_dataloader(num_days_extended=6)
+        # check the collate next week
+        # self.loader.refresh()
+        self.reset()
 
-    - reload_weekly: bool: 
-        Download the previous week&#39;s data.
-    
-    - reload_all: bool: 
-        Download all data.
+        unlabelled = np.load(os.path.join(self.loader.previous_unlabelled_data, &#39;activity.npy&#39;))
+        unlabelled = unlabelled.reshape(-1, 3, 8, 14)
+        extractor = Extractor()
+        extractor.train(unlabelled, autoencoder)
 
-    &#39;&#39;&#39;
-    loader = Weekly_dataloader(num_days_extended=5)
-    loader.load_data(reload_weekly, reload_all)
-    unlabelled = np.load(os.path.join(loader.previous_data, &#39;unlabelled.npy&#39;))
-    X = np.load(os.path.join(loader.previous_data, &#39;X.npy&#39;))
-    y = np.load(os.path.join(loader.previous_data, &#39;y.npy&#39;))
-    label_p_ids = np.load(os.path.join(loader.previous_data, &#39;label_ids.npy&#39;))
+        self.extractor = extractor
+        self.autoencoder = autoencoder
 
-    extractor = Extractor()
-    extractor.train(unlabelled, &#39;cnn&#39;)
-    # Evaluate models
-    evaluate(Classifiers(&#39;knn&#39;), extractor.transform(X, &#39;cnn&#39;), y, label_p_ids, 10)
+    def reset(self, num_days_extended=0):
+        X = np.load(os.path.join(self.loader.previous_labelled_data, &#39;activity.npy&#39;))
+        y = np.load(os.path.join(self.loader.previous_labelled_data, &#39;label.npy&#39;))
+        label_p_ids = np.load(os.path.join(self.loader.previous_labelled_data, &#39;patient_id.npy&#39;))
 
-    weekly_data = np.load(os.path.join(loader.weekly_data, &#39;unlabelled.npy&#39;))
-    p_ids = np.load(os.path.join(loader.weekly_data, &#39;label.npy&#39;))
-    dates = np.load(os.path.join(loader.weekly_data, &#39;patient_id.npy&#39;), allow_pickle=True)
-    X = extractor.transform(X, &#39;cnn&#39;)
-    weekly_data = extractor.transform(weekly_data, &#39;cnn&#39;)
+        # labelled data
+        indices = list(y[0][1: num_days_extended * 2 + 1]) + [-1, 1]
+        X = X[np.isin(y, indices)].reshape(-1, 3, 8, 14)
+        label_p_ids = label_p_ids[np.isin(y, indices)]
+        y = y[np.isin(y, indices)]
+        y[y &gt; 0] = 1
+        y[y &lt; 0] = -1
 
-    y = np.argmax(y_to_categorical(y), axis=1)
-    clf = Classifiers(&#39;knn&#39;)
-    clf.fit(X, y)
-    print(clf.predict(weekly_data))
+        # test data
+        weekly_data = np.load(os.path.join(self.loader.current_data, &#39;activity.npy&#39;))
+        p_ids = np.load(os.path.join(self.loader.current_data, &#39;patient_id.npy&#39;))
+        dates = np.load(os.path.join(self.loader.current_data, &#39;dates.npy&#39;), allow_pickle=True)
+        weekly_data = weekly_data.reshape(-1, 3, 8, 14)
 
-    prediction = clf.predict(weekly_data)
-    probability = clf.predict_probs(weekly_data)
-    df = {&#39;patient id&#39;: p_ids, &#39;Date&#39;: dates, &#39;prediction&#39;: prediction,
-          &#39;confidence&#39;: probability[np.arange(probability.shape[0]), prediction]}
-    df = pd.DataFrame(df)
-    df[&#39;TIHM ids&#39;] = map_raw_ids(df[&#39;patient id&#39;], True)
-    df.to_csv(&#39;./results/weekly_test/alerts.csv&#39;)
-    
-    return
+        if self.normalisation:
+            X = normalise(X.reshape(X.shape[0], 24, -1)).reshape(X.shape)
+            weekly_data = normalise(weekly_data.reshape(weekly_data.shape[0], 24, -1)).reshape(weekly_data.shape)
+        self.data = {
+            &#39;labelled&#39;: (X, y, label_p_ids),
+            &#39;test&#39;: (weekly_data, p_ids, dates)
+        }
+
+    def evaluate(self, transform=True, boosting=True):
+        df = []
+        for clf in Classifiers().methods:
+            df.append(self._evaluate(clf, transform, boosting))
+        print(pd.concat(df))
+
+    def _evaluate(self, clf_type, transform=True, boosting=True):
+        X, y, label_p_ids = self.data[&#39;labelled&#39;]
+        if transform:
+            X = self.extractor.transform(X, self.autoencoder)
+        else:
+            X = X.reshape(X.shape[0], -1)
+        return evaluate(Classifiers(clf_type, boosting), X, y, label_p_ids, 10)
+
+    def predict(self, transform=True, boosting=True):
+        weekly_data, p_ids, dates = self.data[&#39;test&#39;]
+
+        probability = []
+        for clf in Classifiers().methods:
+            prob = self._predict(clf, transform=transform, boosting=boosting)
+            probability.append(prob)
+
+        probability = np.mean(probability, axis=0)
+        prediction = np.argmax(probability, axis=1)
+        df = {&#39;patient id&#39;: p_ids, &#39;Date&#39;: dates, &#39;prediction&#39;: prediction,
+              &#39;confidence&#39;: probability[np.arange(probability.shape[0]), prediction]}
+        df[&#39;TIHM ids&#39;] = map_raw_ids(df[&#39;patient id&#39;], True)
+        df = pd.DataFrame(df)
+        df.to_csv(&#39;../results/weekly_test/alerts.csv&#39;)
+        return df
+
+    def _predict(self, clf_type, return_df=False, transform=True, boosting=True):
+        weekly_data, p_ids, dates = self.data[&#39;test&#39;]
+        X, y, label_p_ids = self.data[&#39;labelled&#39;]
+        if transform:
+            X = self.extractor.transform(X, self.autoencoder)
+            weekly_data = self.extractor.transform(weekly_data, self.autoencoder)
+        else:
+            X = X.reshape(X.shape[0], -1)
+            weekly_data = weekly_data.reshape(weekly_data.shape[0], -1)
+        y[y &lt; 0] = 0
+        y = y_to_categorical(y) if clf_type in [&#39;nn&#39;, &#39;lstm&#39;] else np.argmax(y_to_categorical(y), axis=1)
+        clf = Classifiers(clf_type, boosting)
+        clf.fit(X, y)
+        probability = clf.predict_probs(weekly_data)
+        if return_df:
+            prediction = np.argmax(probability, axis=1)
+            df = {&#39;patient id&#39;: p_ids, &#39;Date&#39;: dates, &#39;prediction&#39;: prediction,
+                  &#39;confidence&#39;: probability[np.arange(probability.shape[0]), prediction]}
+            df[&#39;TIHM ids&#39;] = map_raw_ids(df[&#39;patient id&#39;], True)
+            df = pd.DataFrame(df)
+            df.to_csv(&#39;../results/weekly_test/alerts.csv&#39;)
+            return df
+        return probability
 
 
 def load_data_default(reload_weekly=False, reload_all=False):
@@ -112,8 +166,52 @@ def load_data_default(reload_weekly=False, reload_all=False):
     return
 
 
+def cal_confidence(df, p_id, by_days=False):
+    df = df[df[&#39;patient id&#39;] == p_id]
+    if by_days and df.prediction.sum() &lt; 3:
+        return 0
+    df.prediction = df.prediction.map({0: 1, 1: 0})
+    df.confidence = np.abs(df.confidence - df.prediction)
+    return df.confidence.mean()
+
+
+def feature_engineering():
+    from minder_utils.feature_engineering import Feature_engineer
+    from minder_utils.formatting import Formatting
+    fe = Feature_engineer(Formatting(&#39;./data/weekly_test/current/csv&#39;))
+    return fe.activity
+
+
+def get_results(model, transform, boosting):
+    df = model.predict(transform=transform, boosting=boosting)
+    for p_id in df[&#39;patient id&#39;].unique():
+        value = cal_confidence(df, p_id)
+        if value &gt; 0.5:
+            print(p_id, value, df[df[&#39;patient id&#39;] == p_id][&#39;TIHM ids&#39;].unique())
+
+
 if __name__ == &#39;__main__&#39;:
-    run_default()</code></pre>
+    # data = feature_engineering()
+    wa = Weekly_alerts()
+    for trans in [True, False]:
+        for boost in [True, False]:
+            print(&#39;------&#39;, trans, boost)
+            # wa.evaluate(trans, boost)
+            df = wa.predict(trans, boost)
+            for p_id in df[&#39;patient id&#39;].unique():
+                res = cal_confidence(df, p_id, True)
+                if res &gt; 0.5:
+                    print(p_id, res, df[df[&#39;patient id&#39;] == p_id][&#39;TIHM ids&#39;].unique())
+            print(&#39;------&#39; * 10)
+    X = np.load(os.path.join(wa.loader.previous_unlabelled_data, &#39;activity.npy&#39;))
+    p_ids = np.load(os.path.join(wa.loader.previous_unlabelled_data, &#39;patient_id.npy&#39;))
+    dates = np.load(os.path.join(wa.loader.previous_unlabelled_data, &#39;dates.npy&#39;), allow_pickle=True)
+    test_data = X[p_ids == &#39;&#39;]
+    test_dates = dates[p_ids == &#39;&#39;]
+    test_data = normalise(test_data.reshape(test_data.shape[0], 24, -1)).reshape(test_data.shape)
+    wa.data[&#39;test&#39;] = (test_data.reshape(137, 3, 8, 14), p_ids[p_ids == &#39;&#39;], test_dates)
+    df = wa.predict(True, True)
+    print(df[df.prediction == 1])</code></pre>
 </details>
 </section>
 <section>
@@ -123,6 +221,57 @@ if __name__ == &#39;__main__&#39;:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="minder_utils.weekly_run.cal_confidence"><code class="name flex">
+<span>def <span class="ident">cal_confidence</span></span>(<span>df, p_id, by_days=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cal_confidence(df, p_id, by_days=False):
+    df = df[df[&#39;patient id&#39;] == p_id]
+    if by_days and df.prediction.sum() &lt; 3:
+        return 0
+    df.prediction = df.prediction.map({0: 1, 1: 0})
+    df.confidence = np.abs(df.confidence - df.prediction)
+    return df.confidence.mean()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.weekly_run.feature_engineering"><code class="name flex">
+<span>def <span class="ident">feature_engineering</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def feature_engineering():
+    from minder_utils.feature_engineering import Feature_engineer
+    from minder_utils.formatting import Formatting
+    fe = Feature_engineer(Formatting(&#39;./data/weekly_test/current/csv&#39;))
+    return fe.activity</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.weekly_run.get_results"><code class="name flex">
+<span>def <span class="ident">get_results</span></span>(<span>model, transform, boosting)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_results(model, transform, boosting):
+    df = model.predict(transform=transform, boosting=boosting)
+    for p_id in df[&#39;patient id&#39;].unique():
+        value = cal_confidence(df, p_id)
+        if value &gt; 0.5:
+            print(p_id, value, df[df[&#39;patient id&#39;] == p_id][&#39;TIHM ids&#39;].unique())</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.weekly_run.load_data_default"><code class="name flex">
 <span>def <span class="ident">load_data_default</span></span>(<span>reload_weekly=False, reload_all=False)</span>
 </code></dt>
@@ -168,79 +317,204 @@ Download all data.</p>
     return</code></pre>
 </details>
 </dd>
-<dt id="minder_utils.weekly_run.run_default"><code class="name flex">
-<span>def <span class="ident">run_default</span></span>(<span>reload_weekly=False, reload_all=False)</span>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.weekly_run.Weekly_alerts"><code class="flex name class">
+<span>class <span class="ident">Weekly_alerts</span></span>
+<span>(</span><span>autoencoder='cnn', normalisation=True)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An example function for loading data and evaluating methods on the activity data
-with UTIs as labels.</p>
-<h2 id="arguments">Arguments</h2>
-<ul>
-<li>
-<p>reload_weekly: bool:
-Download the previous week's data.</p>
-</li>
-<li>
-<p>reload_all: bool:
-Download all data.</p>
-</li>
-</ul></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run_default(reload_weekly=False, reload_all=False):
-    &#39;&#39;&#39;
-    An example function for loading data and evaluating methods on the activity data
-    with UTIs as labels.
-    
-    Arguments
-    ---------
+<pre><code class="python">class Weekly_alerts:
+    def __init__(self, autoencoder=&#39;cnn&#39;, normalisation=True):
+        self.normalisation = normalisation
+        self.loader = Weekly_dataloader(num_days_extended=6)
+        # check the collate next week
+        # self.loader.refresh()
+        self.reset()
 
-    - reload_weekly: bool: 
-        Download the previous week&#39;s data.
-    
-    - reload_all: bool: 
-        Download all data.
+        unlabelled = np.load(os.path.join(self.loader.previous_unlabelled_data, &#39;activity.npy&#39;))
+        unlabelled = unlabelled.reshape(-1, 3, 8, 14)
+        extractor = Extractor()
+        extractor.train(unlabelled, autoencoder)
 
-    &#39;&#39;&#39;
-    loader = Weekly_dataloader(num_days_extended=5)
-    loader.load_data(reload_weekly, reload_all)
-    unlabelled = np.load(os.path.join(loader.previous_data, &#39;unlabelled.npy&#39;))
-    X = np.load(os.path.join(loader.previous_data, &#39;X.npy&#39;))
-    y = np.load(os.path.join(loader.previous_data, &#39;y.npy&#39;))
-    label_p_ids = np.load(os.path.join(loader.previous_data, &#39;label_ids.npy&#39;))
+        self.extractor = extractor
+        self.autoencoder = autoencoder
 
-    extractor = Extractor()
-    extractor.train(unlabelled, &#39;cnn&#39;)
-    # Evaluate models
-    evaluate(Classifiers(&#39;knn&#39;), extractor.transform(X, &#39;cnn&#39;), y, label_p_ids, 10)
+    def reset(self, num_days_extended=0):
+        X = np.load(os.path.join(self.loader.previous_labelled_data, &#39;activity.npy&#39;))
+        y = np.load(os.path.join(self.loader.previous_labelled_data, &#39;label.npy&#39;))
+        label_p_ids = np.load(os.path.join(self.loader.previous_labelled_data, &#39;patient_id.npy&#39;))
 
-    weekly_data = np.load(os.path.join(loader.weekly_data, &#39;unlabelled.npy&#39;))
-    p_ids = np.load(os.path.join(loader.weekly_data, &#39;label.npy&#39;))
-    dates = np.load(os.path.join(loader.weekly_data, &#39;patient_id.npy&#39;), allow_pickle=True)
-    X = extractor.transform(X, &#39;cnn&#39;)
-    weekly_data = extractor.transform(weekly_data, &#39;cnn&#39;)
+        # labelled data
+        indices = list(y[0][1: num_days_extended * 2 + 1]) + [-1, 1]
+        X = X[np.isin(y, indices)].reshape(-1, 3, 8, 14)
+        label_p_ids = label_p_ids[np.isin(y, indices)]
+        y = y[np.isin(y, indices)]
+        y[y &gt; 0] = 1
+        y[y &lt; 0] = -1
 
-    y = np.argmax(y_to_categorical(y), axis=1)
-    clf = Classifiers(&#39;knn&#39;)
-    clf.fit(X, y)
-    print(clf.predict(weekly_data))
+        # test data
+        weekly_data = np.load(os.path.join(self.loader.current_data, &#39;activity.npy&#39;))
+        p_ids = np.load(os.path.join(self.loader.current_data, &#39;patient_id.npy&#39;))
+        dates = np.load(os.path.join(self.loader.current_data, &#39;dates.npy&#39;), allow_pickle=True)
+        weekly_data = weekly_data.reshape(-1, 3, 8, 14)
 
-    prediction = clf.predict(weekly_data)
-    probability = clf.predict_probs(weekly_data)
+        if self.normalisation:
+            X = normalise(X.reshape(X.shape[0], 24, -1)).reshape(X.shape)
+            weekly_data = normalise(weekly_data.reshape(weekly_data.shape[0], 24, -1)).reshape(weekly_data.shape)
+        self.data = {
+            &#39;labelled&#39;: (X, y, label_p_ids),
+            &#39;test&#39;: (weekly_data, p_ids, dates)
+        }
+
+    def evaluate(self, transform=True, boosting=True):
+        df = []
+        for clf in Classifiers().methods:
+            df.append(self._evaluate(clf, transform, boosting))
+        print(pd.concat(df))
+
+    def _evaluate(self, clf_type, transform=True, boosting=True):
+        X, y, label_p_ids = self.data[&#39;labelled&#39;]
+        if transform:
+            X = self.extractor.transform(X, self.autoencoder)
+        else:
+            X = X.reshape(X.shape[0], -1)
+        return evaluate(Classifiers(clf_type, boosting), X, y, label_p_ids, 10)
+
+    def predict(self, transform=True, boosting=True):
+        weekly_data, p_ids, dates = self.data[&#39;test&#39;]
+
+        probability = []
+        for clf in Classifiers().methods:
+            prob = self._predict(clf, transform=transform, boosting=boosting)
+            probability.append(prob)
+
+        probability = np.mean(probability, axis=0)
+        prediction = np.argmax(probability, axis=1)
+        df = {&#39;patient id&#39;: p_ids, &#39;Date&#39;: dates, &#39;prediction&#39;: prediction,
+              &#39;confidence&#39;: probability[np.arange(probability.shape[0]), prediction]}
+        df[&#39;TIHM ids&#39;] = map_raw_ids(df[&#39;patient id&#39;], True)
+        df = pd.DataFrame(df)
+        df.to_csv(&#39;../results/weekly_test/alerts.csv&#39;)
+        return df
+
+    def _predict(self, clf_type, return_df=False, transform=True, boosting=True):
+        weekly_data, p_ids, dates = self.data[&#39;test&#39;]
+        X, y, label_p_ids = self.data[&#39;labelled&#39;]
+        if transform:
+            X = self.extractor.transform(X, self.autoencoder)
+            weekly_data = self.extractor.transform(weekly_data, self.autoencoder)
+        else:
+            X = X.reshape(X.shape[0], -1)
+            weekly_data = weekly_data.reshape(weekly_data.shape[0], -1)
+        y[y &lt; 0] = 0
+        y = y_to_categorical(y) if clf_type in [&#39;nn&#39;, &#39;lstm&#39;] else np.argmax(y_to_categorical(y), axis=1)
+        clf = Classifiers(clf_type, boosting)
+        clf.fit(X, y)
+        probability = clf.predict_probs(weekly_data)
+        if return_df:
+            prediction = np.argmax(probability, axis=1)
+            df = {&#39;patient id&#39;: p_ids, &#39;Date&#39;: dates, &#39;prediction&#39;: prediction,
+                  &#39;confidence&#39;: probability[np.arange(probability.shape[0]), prediction]}
+            df[&#39;TIHM ids&#39;] = map_raw_ids(df[&#39;patient id&#39;], True)
+            df = pd.DataFrame(df)
+            df.to_csv(&#39;../results/weekly_test/alerts.csv&#39;)
+            return df
+        return probability</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.weekly_run.Weekly_alerts.evaluate"><code class="name flex">
+<span>def <span class="ident">evaluate</span></span>(<span>self, transform=True, boosting=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def evaluate(self, transform=True, boosting=True):
+    df = []
+    for clf in Classifiers().methods:
+        df.append(self._evaluate(clf, transform, boosting))
+    print(pd.concat(df))</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.weekly_run.Weekly_alerts.predict"><code class="name flex">
+<span>def <span class="ident">predict</span></span>(<span>self, transform=True, boosting=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def predict(self, transform=True, boosting=True):
+    weekly_data, p_ids, dates = self.data[&#39;test&#39;]
+
+    probability = []
+    for clf in Classifiers().methods:
+        prob = self._predict(clf, transform=transform, boosting=boosting)
+        probability.append(prob)
+
+    probability = np.mean(probability, axis=0)
+    prediction = np.argmax(probability, axis=1)
     df = {&#39;patient id&#39;: p_ids, &#39;Date&#39;: dates, &#39;prediction&#39;: prediction,
           &#39;confidence&#39;: probability[np.arange(probability.shape[0]), prediction]}
-    df = pd.DataFrame(df)
     df[&#39;TIHM ids&#39;] = map_raw_ids(df[&#39;patient id&#39;], True)
-    df.to_csv(&#39;./results/weekly_test/alerts.csv&#39;)
-    
-    return</code></pre>
+    df = pd.DataFrame(df)
+    df.to_csv(&#39;../results/weekly_test/alerts.csv&#39;)
+    return df</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.weekly_run.Weekly_alerts.reset"><code class="name flex">
+<span>def <span class="ident">reset</span></span>(<span>self, num_days_extended=0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset(self, num_days_extended=0):
+    X = np.load(os.path.join(self.loader.previous_labelled_data, &#39;activity.npy&#39;))
+    y = np.load(os.path.join(self.loader.previous_labelled_data, &#39;label.npy&#39;))
+    label_p_ids = np.load(os.path.join(self.loader.previous_labelled_data, &#39;patient_id.npy&#39;))
+
+    # labelled data
+    indices = list(y[0][1: num_days_extended * 2 + 1]) + [-1, 1]
+    X = X[np.isin(y, indices)].reshape(-1, 3, 8, 14)
+    label_p_ids = label_p_ids[np.isin(y, indices)]
+    y = y[np.isin(y, indices)]
+    y[y &gt; 0] = 1
+    y[y &lt; 0] = -1
+
+    # test data
+    weekly_data = np.load(os.path.join(self.loader.current_data, &#39;activity.npy&#39;))
+    p_ids = np.load(os.path.join(self.loader.current_data, &#39;patient_id.npy&#39;))
+    dates = np.load(os.path.join(self.loader.current_data, &#39;dates.npy&#39;), allow_pickle=True)
+    weekly_data = weekly_data.reshape(-1, 3, 8, 14)
+
+    if self.normalisation:
+        X = normalise(X.reshape(X.shape[0], 24, -1)).reshape(X.shape)
+        weekly_data = normalise(weekly_data.reshape(weekly_data.shape[0], 24, -1)).reshape(weekly_data.shape)
+    self.data = {
+        &#39;labelled&#39;: (X, y, label_p_ids),
+        &#39;test&#39;: (weekly_data, p_ids, dates)
+    }</code></pre>
 </details>
 </dd>
 </dl>
-</section>
-<section>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -261,8 +535,22 @@ Download all data.</p>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="minder_utils.weekly_run.cal_confidence" href="#minder_utils.weekly_run.cal_confidence">cal_confidence</a></code></li>
+<li><code><a title="minder_utils.weekly_run.feature_engineering" href="#minder_utils.weekly_run.feature_engineering">feature_engineering</a></code></li>
+<li><code><a title="minder_utils.weekly_run.get_results" href="#minder_utils.weekly_run.get_results">get_results</a></code></li>
 <li><code><a title="minder_utils.weekly_run.load_data_default" href="#minder_utils.weekly_run.load_data_default">load_data_default</a></code></li>
-<li><code><a title="minder_utils.weekly_run.run_default" href="#minder_utils.weekly_run.run_default">run_default</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.weekly_run.Weekly_alerts" href="#minder_utils.weekly_run.Weekly_alerts">Weekly_alerts</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.weekly_run.Weekly_alerts.evaluate" href="#minder_utils.weekly_run.Weekly_alerts.evaluate">evaluate</a></code></li>
+<li><code><a title="minder_utils.weekly_run.Weekly_alerts.predict" href="#minder_utils.weekly_run.Weekly_alerts.predict">predict</a></code></li>
+<li><code><a title="minder_utils.weekly_run.Weekly_alerts.reset" href="#minder_utils.weekly_run.Weekly_alerts.reset">reset</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

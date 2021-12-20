@@ -27,14 +27,27 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from minder_utils.models.utils.early_stopping import EarlyStopping
-from minder_utils.models.utils.util import *</code></pre>
+<pre><code class="python">from .early_stopping import EarlyStopping
+from .util import *
+from .feature_selector import *
+from .feature_extractor import *
+
+
+__all__ = [&#39;EarlyStopping&#39;, &#39;get_device&#39;, &#39;Feature_selector&#39;, &#39;Feature_extractor&#39;]</code></pre>
 </details>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
 <dt><code class="name"><a title="minder_utils.models.utils.early_stopping" href="early_stopping.html">minder_utils.models.utils.early_stopping</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.models.utils.feature_extractor" href="feature_extractor.html">minder_utils.models.utils.feature_extractor</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="minder_utils.models.utils.feature_selector" href="feature_selector.html">minder_utils.models.utils.feature_selector</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -47,8 +60,647 @@ from minder_utils.models.utils.util import *</code></pre>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="minder_utils.models.utils.get_device"><code class="name flex">
+<span>def <span class="ident">get_device</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_device():
+    device = &#39;cuda&#39; if torch.cuda.is_available() else &#39;cpu&#39;
+    print(&#34;Running on:&#34;, device)
+    return device</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.models.utils.EarlyStopping"><code class="flex name class">
+<span>class <span class="ident">EarlyStopping</span></span>
+<span>(</span><span>patience=20, verbose=False, delta=0, path='./ckpt', save_model=False, trace_func=&lt;built-in function print&gt;, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Early stops the training if validation loss doesn't improve after a given patience.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>patience</code></strong> :&ensp;<code>int</code></dt>
+<dd>How long to wait after last time validation loss improved.
+Default: 7</dd>
+<dt><strong><code>verbose</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If True, prints a message for each validation loss improvement.
+Default: False</dd>
+<dt><strong><code>delta</code></strong> :&ensp;<code>float</code></dt>
+<dd>Minimum change in the monitored quantity to qualify as an improvement.
+Default: 0</dd>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path for the checkpoint to be saved to.
+Default: 'checkpoint.pt'</dd>
+<dt><strong><code>trace_func</code></strong> :&ensp;<code>function</code></dt>
+<dd>trace print function.
+Default: print</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EarlyStopping:
+    &#34;&#34;&#34;Early stops the training if validation loss doesn&#39;t improve after a given patience.&#34;&#34;&#34;
+
+    def __init__(self, patience=20, verbose=False, delta=0, path=&#39;./ckpt&#39;, save_model=False,
+                 trace_func=print, **kwargs):
+        &#34;&#34;&#34;
+        Args:
+            patience (int): How long to wait after last time validation loss improved.
+                            Default: 7
+            verbose (bool): If True, prints a message for each validation loss improvement.
+                            Default: False
+            delta (float): Minimum change in the monitored quantity to qualify as an improvement.
+                            Default: 0
+            path (str): Path for the checkpoint to be saved to.
+                            Default: &#39;checkpoint.pt&#39;
+            trace_func (function): trace print function.
+                            Default: print
+        &#34;&#34;&#34;
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+        self.val_loss_min = np.Inf
+        self.delta = delta
+        self.path = path
+        self.trace_func = trace_func
+        self.save_model = save_model
+
+    def __call__(self, val_loss, model, save_name):
+
+        score = -val_loss
+
+        if self.best_score is None:
+            self.best_score = score
+            if self.save_model:
+                self.save_checkpoint(val_loss, model, save_name)
+        elif score &lt; self.best_score + self.delta:
+            self.counter += 1
+            # self.trace_func(f&#39;EarlyStopping counter: {self.counter} out of {self.patience}&#39;)
+            if self.counter &gt;= self.patience:
+                self.early_stop = True
+                self.trace_func(&#39;Training is stopped due to early stopping&#39;)
+        else:
+            self.best_score = score
+            if self.save_model:
+                self.save_checkpoint(val_loss, model, save_name)
+            self.counter = 0
+
+    def save_checkpoint(self, val_loss, model, save_name):
+        &#39;&#39;&#39;Saves model when validation loss decrease.&#39;&#39;&#39;
+        if self.verbose:
+            self.trace_func(
+                f&#39;Validation loss decreased ({self.val_loss_min:.6f} --&gt; {val_loss:.6f}).  Saving model ...&#39;)
+        save_mkdir(self.path)
+        torch.save(model.state_dict(), os.path.join(self.path, save_name))
+        self.val_loss_min = val_loss</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.utils.EarlyStopping.save_checkpoint"><code class="name flex">
+<span>def <span class="ident">save_checkpoint</span></span>(<span>self, val_loss, model, save_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Saves model when validation loss decrease.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_checkpoint(self, val_loss, model, save_name):
+    &#39;&#39;&#39;Saves model when validation loss decrease.&#39;&#39;&#39;
+    if self.verbose:
+        self.trace_func(
+            f&#39;Validation loss decreased ({self.val_loss_min:.6f} --&gt; {val_loss:.6f}).  Saving model ...&#39;)
+    save_mkdir(self.path)
+    torch.save(model.state_dict(), os.path.join(self.path, save_name))
+    self.val_loss_min = val_loss</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="minder_utils.models.utils.Feature_extractor"><code class="flex name class">
+<span>class <span class="ident">Feature_extractor</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Feature_extractor(ABC, nn.Module):
+    def __init__(self):
+        super(Feature_extractor, self).__init__()
+        self.early_stop = EarlyStopping(**self.config[&#39;early_stop&#39;])
+        self.device = get_device()
+
+    @property
+    def config(self) -&gt; dict:
+        return feature_extractor_config[self.__class__.__name__.lower()]
+
+    @abstractmethod
+    def step(self, data):
+        pass
+
+    def get_info(self, config=None, indent=0):
+        if config is None:
+            config = self.config
+        for key, value in config.items():
+            if isinstance(value, dict):
+                print(&#39; &#39; * indent + str(key))
+                self.get_info(value, indent + 1)
+            else:
+                print(&#39; &#39; * indent + str(key).ljust(10, &#39; &#39;), str(value))
+
+    def create_loader(self, data, training=True):
+        if isinstance(data, torch.utils.data.DataLoader):
+            return data
+        elif not isinstance(data, (np.ndarray, list, tuple)):
+            raise TypeError(&#39;the input must be dataloader / numpy array, or a list/tuple&#39;
+                            &#39;containing the data and label&#39;)
+        if training:
+            return self._custom_loader(data)
+        else:
+            return create_unlabelled_loader(data, batch_size=1, shuffle=False, augmentation=False)
+
+    def _custom_loader(self, data):
+        return create_unlabelled_loader(data, **self.config[&#39;loader&#39;])
+
+    def fit(self, train_loader, save_name=None):
+        if save_name is None:
+            save_name = self.__class__.__name__
+        if not self.config[&#39;train&#39;][&#39;retrain&#39;]:
+            if self.load_pre_trained_weights(save_name):
+                return self
+
+        train_loader = self.create_loader(train_loader, training=True)
+        self.model = self.model.to(self.device)
+
+        optimizer = torch.optim.Adam(self.model.parameters(), **self.config[&#39;optimiser&#39;])
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
+                                                               last_epoch=-1)
+        for epoch_counter in range(self.config[&#39;train&#39;][&#39;epochs&#39;]):
+            for data in train_loader:
+                optimizer.zero_grad()
+                loss = self.step(data).to(self.device)
+                loss.backward()
+                if self.config[&#39;train&#39;][&#39;verbose&#39;]:
+                    print(&#39;Epoch {}/{}, Loss: &#39;.format(epoch_counter,
+                                                       self.config[&#39;train&#39;][&#39;epochs&#39;]), loss.item(), end=&#39;\n&#39;)
+                optimizer.step()
+                scheduler.step()
+                self.early_stop(loss.item(), self.model, save_name)
+                if self.early_stop.early_stop and self.config[&#39;early_stop&#39;][&#39;enable&#39;]:
+                    break
+            if self.early_stop.early_stop and self.config[&#39;early_stop&#39;][&#39;enable&#39;]:
+                break
+        return self
+
+    def load_pre_trained_weights(self, save_name):
+        try:
+            checkpoints_folder = os.path.join(self.config[&#39;early_stop&#39;][&#39;path&#39;], save_name)
+            state_dict = torch.load(checkpoints_folder)
+            self.model.load_state_dict(state_dict)
+            print(&#34;Loaded pre-trained model with success.&#34;)
+            return True
+        except FileNotFoundError:
+            print(&#34;Pre-trained weights not found. Training from scratch.&#34;)
+            return False
+
+    @staticmethod
+    def which_data(data):
+        return data[0]
+
+    def transform(self, test_loader):
+        &#34;&#34;&#34;
+        :param test_loader: sample validated date only
+        :return:
+        &#34;&#34;&#34;
+        test_loader = self.create_loader(test_loader, training=False)
+        # validation steps
+        with torch.no_grad():
+            self.model.eval()
+            features = []
+            for data in test_loader:
+                if not isinstance(data, torch.Tensor):
+                    data = self.which_data(data)
+                feat = self.model(data)
+                if not isinstance(feat, torch.Tensor):
+                    feat = feat[0]
+                features.append(feat.numpy())
+
+        if self.config[&#39;test&#39;][&#39;save&#39;]:
+            save_mkdir(self.config[&#39;test&#39;][&#39;save_path&#39;])
+            np.save(os.path.join(self.config[&#39;test&#39;][&#39;save_path&#39;], self.__class__.__name__.lower() + &#39;.npy&#39;),
+                    np.concatenate(features))
+            print(&#39;Test data has been transformed and saved to &#39;,
+                  os.path.join(self.config[&#39;test&#39;][&#39;save_path&#39;], self.__class__.__name__).lower() + &#39;.npy&#39;)
+
+        return np.concatenate(features)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+<li>torch.nn.modules.module.Module</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.feature_extractors.autoencoder.AutoEncoder" href="../feature_extractors/autoencoder.html#minder_utils.models.feature_extractors.autoencoder.AutoEncoder">AutoEncoder</a></li>
+<li><a title="minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order" href="../feature_extractors/partial_order/partial_order.html#minder_utils.models.feature_extractors.partial_order.partial_order.Partial_Order">Partial_Order</a></li>
+<li><a title="minder_utils.models.feature_extractors.simclr.simclr.SimCLR" href="../feature_extractors/simclr/simclr.html#minder_utils.models.feature_extractors.simclr.simclr.SimCLR">SimCLR</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="minder_utils.models.utils.Feature_extractor.dump_patches"><code class="name">var <span class="ident">dump_patches</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="minder_utils.models.utils.Feature_extractor.training"><code class="name">var <span class="ident">training</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="minder_utils.models.utils.Feature_extractor.which_data"><code class="name flex">
+<span>def <span class="ident">which_data</span></span>(<span>data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def which_data(data):
+    return data[0]</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.models.utils.Feature_extractor.config"><code class="name">var <span class="ident">config</span> : dict</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def config(self) -&gt; dict:
+    return feature_extractor_config[self.__class__.__name__.lower()]</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.utils.Feature_extractor.create_loader"><code class="name flex">
+<span>def <span class="ident">create_loader</span></span>(<span>self, data, training=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_loader(self, data, training=True):
+    if isinstance(data, torch.utils.data.DataLoader):
+        return data
+    elif not isinstance(data, (np.ndarray, list, tuple)):
+        raise TypeError(&#39;the input must be dataloader / numpy array, or a list/tuple&#39;
+                        &#39;containing the data and label&#39;)
+    if training:
+        return self._custom_loader(data)
+    else:
+        return create_unlabelled_loader(data, batch_size=1, shuffle=False, augmentation=False)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_extractor.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, train_loader, save_name=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fit(self, train_loader, save_name=None):
+    if save_name is None:
+        save_name = self.__class__.__name__
+    if not self.config[&#39;train&#39;][&#39;retrain&#39;]:
+        if self.load_pre_trained_weights(save_name):
+            return self
+
+    train_loader = self.create_loader(train_loader, training=True)
+    self.model = self.model.to(self.device)
+
+    optimizer = torch.optim.Adam(self.model.parameters(), **self.config[&#39;optimiser&#39;])
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
+                                                           last_epoch=-1)
+    for epoch_counter in range(self.config[&#39;train&#39;][&#39;epochs&#39;]):
+        for data in train_loader:
+            optimizer.zero_grad()
+            loss = self.step(data).to(self.device)
+            loss.backward()
+            if self.config[&#39;train&#39;][&#39;verbose&#39;]:
+                print(&#39;Epoch {}/{}, Loss: &#39;.format(epoch_counter,
+                                                   self.config[&#39;train&#39;][&#39;epochs&#39;]), loss.item(), end=&#39;\n&#39;)
+            optimizer.step()
+            scheduler.step()
+            self.early_stop(loss.item(), self.model, save_name)
+            if self.early_stop.early_stop and self.config[&#39;early_stop&#39;][&#39;enable&#39;]:
+                break
+        if self.early_stop.early_stop and self.config[&#39;early_stop&#39;][&#39;enable&#39;]:
+            break
+    return self</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_extractor.forward"><code class="name flex">
+<span>def <span class="ident">forward</span></span>(<span>self, *input: Any) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the :class:<code>Module</code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def _forward_unimplemented(self, *input: Any) -&gt; None:
+    r&#34;&#34;&#34;Defines the computation performed at every call.
+
+    Should be overridden by all subclasses.
+
+    .. note::
+        Although the recipe for forward pass needs to be defined within
+        this function, one should call the :class:`Module` instance afterwards
+        instead of this since the former takes care of running the
+        registered hooks while the latter silently ignores them.
+    &#34;&#34;&#34;
+    raise NotImplementedError</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_extractor.get_info"><code class="name flex">
+<span>def <span class="ident">get_info</span></span>(<span>self, config=None, indent=0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_info(self, config=None, indent=0):
+    if config is None:
+        config = self.config
+    for key, value in config.items():
+        if isinstance(value, dict):
+            print(&#39; &#39; * indent + str(key))
+            self.get_info(value, indent + 1)
+        else:
+            print(&#39; &#39; * indent + str(key).ljust(10, &#39; &#39;), str(value))</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_extractor.load_pre_trained_weights"><code class="name flex">
+<span>def <span class="ident">load_pre_trained_weights</span></span>(<span>self, save_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_pre_trained_weights(self, save_name):
+    try:
+        checkpoints_folder = os.path.join(self.config[&#39;early_stop&#39;][&#39;path&#39;], save_name)
+        state_dict = torch.load(checkpoints_folder)
+        self.model.load_state_dict(state_dict)
+        print(&#34;Loaded pre-trained model with success.&#34;)
+        return True
+    except FileNotFoundError:
+        print(&#34;Pre-trained weights not found. Training from scratch.&#34;)
+        return False</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_extractor.step"><code class="name flex">
+<span>def <span class="ident">step</span></span>(<span>self, data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def step(self, data):
+    pass</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_extractor.transform"><code class="name flex">
+<span>def <span class="ident">transform</span></span>(<span>self, test_loader)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>:param test_loader: sample validated date only
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transform(self, test_loader):
+    &#34;&#34;&#34;
+    :param test_loader: sample validated date only
+    :return:
+    &#34;&#34;&#34;
+    test_loader = self.create_loader(test_loader, training=False)
+    # validation steps
+    with torch.no_grad():
+        self.model.eval()
+        features = []
+        for data in test_loader:
+            if not isinstance(data, torch.Tensor):
+                data = self.which_data(data)
+            feat = self.model(data)
+            if not isinstance(feat, torch.Tensor):
+                feat = feat[0]
+            features.append(feat.numpy())
+
+    if self.config[&#39;test&#39;][&#39;save&#39;]:
+        save_mkdir(self.config[&#39;test&#39;][&#39;save_path&#39;])
+        np.save(os.path.join(self.config[&#39;test&#39;][&#39;save_path&#39;], self.__class__.__name__.lower() + &#39;.npy&#39;),
+                np.concatenate(features))
+        print(&#39;Test data has been transformed and saved to &#39;,
+              os.path.join(self.config[&#39;test&#39;][&#39;save_path&#39;], self.__class__.__name__).lower() + &#39;.npy&#39;)
+
+    return np.concatenate(features)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="minder_utils.models.utils.Feature_selector"><code class="flex name class">
+<span>class <span class="ident">Feature_selector</span></span>
+<span>(</span><span>model)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Feature_selector(ABC):
+    def __init__(self, model):
+        self.name = self.methods[model]
+        self.model = getattr(self, model)()
+
+    @property
+    def config(self) -&gt; dict:
+        return feature_selector_config[self.__class__.__name__.lower()]
+
+    @property
+    @abstractmethod
+    def methods(self):
+        pass
+
+    def reset_model(self, model_name):
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
+
+    def get_info(self, verbose=False):
+        if verbose:
+            print(&#39;Available methods:&#39;)
+            for idx, key in enumerate(self.methods):
+                print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
+        return self.methods
+
+    @abstractmethod
+    def fit(self, X, y):
+        pass
+
+    @abstractmethod
+    def transform(self, X):
+        pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter" href="../feature_selectors/supervised/filter.html#minder_utils.models.feature_selectors.supervised.filter.Supervised_Filter">Supervised_Filter</a></li>
+<li><a title="minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_Selector" href="../feature_selectors/supervised/intrinsic.html#minder_utils.models.feature_selectors.supervised.intrinsic.Intrinsic_Selector">Intrinsic_Selector</a></li>
+<li><a title="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector" href="../feature_selectors/supervised/wrapper.html#minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector">Wrapper_Selector</a></li>
+<li><a title="minder_utils.models.feature_selectors.unsupervised.filter.Unsupervised_Filter" href="../feature_selectors/unsupervised/filter.html#minder_utils.models.feature_selectors.unsupervised.filter.Unsupervised_Filter">Unsupervised_Filter</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.models.utils.Feature_selector.config"><code class="name">var <span class="ident">config</span> : dict</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def config(self) -&gt; dict:
+    return feature_selector_config[self.__class__.__name__.lower()]</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_selector.methods"><code class="name">var <span class="ident">methods</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@abstractmethod
+def methods(self):
+    pass</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.utils.Feature_selector.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, X, y)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def fit(self, X, y):
+    pass</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_selector.get_info"><code class="name flex">
+<span>def <span class="ident">get_info</span></span>(<span>self, verbose=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_info(self, verbose=False):
+    if verbose:
+        print(&#39;Available methods:&#39;)
+        for idx, key in enumerate(self.methods):
+            print(str(idx).ljust(10, &#39; &#39;), key.ljust(10, &#39; &#39;), self.methods[key].ljust(10, &#39; &#39;))
+    return self.methods</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_selector.reset_model"><code class="name flex">
+<span>def <span class="ident">reset_model</span></span>(<span>self, model_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_model(self, model_name):
+    self.name = self.methods[model_name]
+    self.model = getattr(self, model_name)()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.utils.Feature_selector.transform"><code class="name flex">
+<span>def <span class="ident">transform</span></span>(<span>self, X)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def transform(self, X):
+    pass</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -70,7 +722,51 @@ from minder_utils.models.utils.util import *</code></pre>
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
 <li><code><a title="minder_utils.models.utils.early_stopping" href="early_stopping.html">minder_utils.models.utils.early_stopping</a></code></li>
+<li><code><a title="minder_utils.models.utils.feature_extractor" href="feature_extractor.html">minder_utils.models.utils.feature_extractor</a></code></li>
+<li><code><a title="minder_utils.models.utils.feature_selector" href="feature_selector.html">minder_utils.models.utils.feature_selector</a></code></li>
 <li><code><a title="minder_utils.models.utils.util" href="util.html">minder_utils.models.utils.util</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="minder_utils.models.utils.get_device" href="#minder_utils.models.utils.get_device">get_device</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.models.utils.EarlyStopping" href="#minder_utils.models.utils.EarlyStopping">EarlyStopping</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.models.utils.EarlyStopping.save_checkpoint" href="#minder_utils.models.utils.EarlyStopping.save_checkpoint">save_checkpoint</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="minder_utils.models.utils.Feature_extractor" href="#minder_utils.models.utils.Feature_extractor">Feature_extractor</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.models.utils.Feature_extractor.config" href="#minder_utils.models.utils.Feature_extractor.config">config</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.create_loader" href="#minder_utils.models.utils.Feature_extractor.create_loader">create_loader</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.dump_patches" href="#minder_utils.models.utils.Feature_extractor.dump_patches">dump_patches</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.fit" href="#minder_utils.models.utils.Feature_extractor.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.forward" href="#minder_utils.models.utils.Feature_extractor.forward">forward</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.get_info" href="#minder_utils.models.utils.Feature_extractor.get_info">get_info</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.load_pre_trained_weights" href="#minder_utils.models.utils.Feature_extractor.load_pre_trained_weights">load_pre_trained_weights</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.step" href="#minder_utils.models.utils.Feature_extractor.step">step</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.training" href="#minder_utils.models.utils.Feature_extractor.training">training</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.transform" href="#minder_utils.models.utils.Feature_extractor.transform">transform</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_extractor.which_data" href="#minder_utils.models.utils.Feature_extractor.which_data">which_data</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="minder_utils.models.utils.Feature_selector" href="#minder_utils.models.utils.Feature_selector">Feature_selector</a></code></h4>
+<ul class="two-column">
+<li><code><a title="minder_utils.models.utils.Feature_selector.config" href="#minder_utils.models.utils.Feature_selector.config">config</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_selector.fit" href="#minder_utils.models.utils.Feature_selector.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_selector.get_info" href="#minder_utils.models.utils.Feature_selector.get_info">get_info</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_selector.methods" href="#minder_utils.models.utils.Feature_selector.methods">methods</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_selector.reset_model" href="#minder_utils.models.utils.Feature_selector.reset_model">reset_model</a></code></li>
+<li><code><a title="minder_utils.models.utils.Feature_selector.transform" href="#minder_utils.models.utils.Feature_selector.transform">transform</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

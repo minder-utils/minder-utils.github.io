@@ -82,12 +82,13 @@ def normalise(X, technique=&#39;l2&#39;):
             std = 1 if np.max(data) == np.min(data) else np.max(data) - np.min(data)
             X[:, i] = (data - np.min(data)) / std
     elif technique in [&#39;l1&#39;, &#39;l2&#39;, &#39;max&#39;]:
-        X = X.reshape(X.shape[0], -1)
-        X = Normalizer(technique).fit_transform(X.transpose(1, 0)).transpose(0, 1)
-        # for i in range(X.shape[2]):
-        # data = X[:, i].reshape(-1, 1)
-        # X[:, i] = Normalizer(technique).fit_transform(data).reshape(-1)
-        #   X[:, :, i] = Normalizer(technique).fit_transform(X[:, :, i])
+        # X.shape = (N, 24, F), where N is the number of samples, F is the features.
+        # X = X.reshape(X.shape[0], -1)
+        # X = Normalizer(technique).fit_transform(X.transpose(1, 0)).transpose(0, 1)
+        for i in range(X.shape[1]):
+            data = X[:, i, :]
+            X[:, i, :] = Normalizer(technique).fit_transform(X[:, i, :])
+            # X[:, i] = Normalizer(technique).fit_transform(data).reshape(-1)
     return X
 
 
@@ -98,7 +99,11 @@ def format_mean_std(values):
 def flatten(x, last_axis=False):
     if last_axis:
         return x.reshape(x.shape[0], x.shape[1], -1)
-    return x.reshape(x.shape[0], -1)</code></pre>
+    return x.reshape(x.shape[0], -1)
+
+
+def l2_norm(x, epsilon=1e-10):
+    return x / np.sqrt(max(np.sum(x ** 2), epsilon))</code></pre>
 </details>
 </section>
 <section>
@@ -165,6 +170,19 @@ def flatten(x, last_axis=False):
     return filenames</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.formatting.format_util.l2_norm"><code class="name flex">
+<span>def <span class="ident">l2_norm</span></span>(<span>x, epsilon=1e-10)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def l2_norm(x, epsilon=1e-10):
+    return x / np.sqrt(max(np.sum(x ** 2), epsilon))</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.formatting.format_util.normalise"><code class="name flex">
 <span>def <span class="ident">normalise</span></span>(<span>X, technique='l2')</span>
 </code></dt>
@@ -189,12 +207,13 @@ def flatten(x, last_axis=False):
             std = 1 if np.max(data) == np.min(data) else np.max(data) - np.min(data)
             X[:, i] = (data - np.min(data)) / std
     elif technique in [&#39;l1&#39;, &#39;l2&#39;, &#39;max&#39;]:
-        X = X.reshape(X.shape[0], -1)
-        X = Normalizer(technique).fit_transform(X.transpose(1, 0)).transpose(0, 1)
-        # for i in range(X.shape[2]):
-        # data = X[:, i].reshape(-1, 1)
-        # X[:, i] = Normalizer(technique).fit_transform(data).reshape(-1)
-        #   X[:, :, i] = Normalizer(technique).fit_transform(X[:, :, i])
+        # X.shape = (N, 24, F), where N is the number of samples, F is the features.
+        # X = X.reshape(X.shape[0], -1)
+        # X = Normalizer(technique).fit_transform(X.transpose(1, 0)).transpose(0, 1)
+        for i in range(X.shape[1]):
+            data = X[:, i, :]
+            X[:, i, :] = Normalizer(technique).fit_transform(X[:, i, :])
+            # X[:, i] = Normalizer(technique).fit_transform(data).reshape(-1)
     return X</code></pre>
 </details>
 </dd>
@@ -247,10 +266,11 @@ def flatten(x, last_axis=False):
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="minder_utils.formatting.format_util.flatten" href="#minder_utils.formatting.format_util.flatten">flatten</a></code></li>
 <li><code><a title="minder_utils.formatting.format_util.format_mean_std" href="#minder_utils.formatting.format_util.format_mean_std">format_mean_std</a></code></li>
 <li><code><a title="minder_utils.formatting.format_util.iter_dir" href="#minder_utils.formatting.format_util.iter_dir">iter_dir</a></code></li>
+<li><code><a title="minder_utils.formatting.format_util.l2_norm" href="#minder_utils.formatting.format_util.l2_norm">l2_norm</a></code></li>
 <li><code><a title="minder_utils.formatting.format_util.normalise" href="#minder_utils.formatting.format_util.normalise">normalise</a></code></li>
 <li><code><a title="minder_utils.formatting.format_util.y_to_categorical" href="#minder_utils.formatting.format_util.y_to_categorical">y_to_categorical</a></code></li>
 </ul>

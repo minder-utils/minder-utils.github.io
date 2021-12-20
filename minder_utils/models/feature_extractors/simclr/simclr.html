@@ -27,29 +27,35 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import torch
-from minder_utils.models.feature_extractors.simclr.basic import ResNetSimCLR
+<pre><code class="python">from minder_utils.models.feature_extractors.simclr.basic import ResNetSimCLR
 from minder_utils.models.feature_extractors.simclr.loss import NTXentLoss
-from minder_utils.models import model_config
-from minder_utils.models.utils.early_stopping import EarlyStopping
 import torch.nn.functional as F
-import numpy as np
-from minder_utils.models.utils.util import get_device
-
-torch.manual_seed(0)
+from minder_utils.models.utils import Feature_extractor
 
 
-class SimCLR(object):
+class SimCLR(Feature_extractor):
 
-    def __init__(self, batch_size):
-        self.device = get_device()
-        self.nt_xent_criterion = NTXentLoss(self.device, batch_size=batch_size, temperature=0.5, use_cosine_similarity=True)
-        self.early_stop = EarlyStopping()
-        self.model = None
-        self.config = model_config.simclr
+    def __init__(self):
+        super(SimCLR, self).__init__()
+        self.nt_xent_criterion = NTXentLoss(self.device, self.config[&#39;loss&#39;][&#39;temperature&#39;],
+                                            self.config[&#39;loss&#39;][&#39;use_cosine_similarity&#39;])
+        self.model = ResNetSimCLR(**self.config[&#34;model&#34;]).to(self.device)
+
+    def step(self, data):
+        (xis, xjs), _ = data
+        ris, zis = self.model(xis)  # [N,C]
+
+        # get the representations and the projections
+        rjs, zjs = self.model(xjs)  # [N,C]
+
+        # normalize projection feature vectors
+        zis = F.normalize(zis, dim=1)
+        zjs = F.normalize(zjs, dim=1)
+
+        loss = self.nt_xent_criterion(zis, zjs)
+        return loss
 
     def _step(self, model, xis, xjs, n_iter):
-
         # get the representations and the projections
         ris, zis = model(xis)  # [N,C]
 
@@ -63,62 +69,9 @@ class SimCLR(object):
         loss = self.nt_xent_criterion(zis, zjs)
         return loss
 
-    def train(self, train_loader):
-        model = ResNetSimCLR(**self.config[&#34;model&#34;]).to(self.device)
-
-        optimizer = torch.optim.Adam(model.parameters(), 3e-4)
-
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
-                                                               last_epoch=-1)
-
-        n_iter = 0
-        valid_n_iter = 0
-        best_valid_loss = np.inf
-
-        for epoch_counter in range(self.config[&#39;epochs&#39;]):
-            if self.early_stop.early_stop:
-                break
-            for (xis, xjs), _ in train_loader:
-                optimizer.zero_grad()
-
-                xis = xis.to(self.device)
-                xjs = xjs.to(self.device)
-
-                loss = self._step(model, xis, xjs, n_iter)
-
-                loss.backward()
-
-                optimizer.step()
-                n_iter += 1
-
-                self.early_stop(loss.item(), model)
-                print(loss.item())
-                if self.early_stop.early_stop:
-                    break
-
-            # warmup for the first 10 epochs
-            if epoch_counter &gt;= 10:
-                scheduler.step()
-        self.model = model
-
-    def _validate(self, model, valid_loader):
-
-        # validation steps
-        with torch.no_grad():
-            model.eval()
-
-            valid_loss = 0.0
-            counter = 0
-            for (xis, xjs), _ in valid_loader:
-                xis = xis.to(self.device)
-                xjs = xjs.to(self.device)
-
-                loss = self._step(model, xis, xjs, counter)
-                valid_loss += loss.item()
-                counter += 1
-            valid_loss /= counter
-        model.train()
-        return valid_loss</code></pre>
+    @staticmethod
+    def which_data(data):
+        return data[0]</code></pre>
 </details>
 </section>
 <section>
@@ -132,25 +85,37 @@ class SimCLR(object):
 <dl>
 <dt id="minder_utils.models.feature_extractors.simclr.simclr.SimCLR"><code class="flex name class">
 <span>class <span class="ident">SimCLR</span></span>
-<span>(</span><span>batch_size)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class SimCLR(object):
+<pre><code class="python">class SimCLR(Feature_extractor):
 
-    def __init__(self, batch_size):
-        self.device = get_device()
-        self.nt_xent_criterion = NTXentLoss(self.device, batch_size=batch_size, temperature=0.5, use_cosine_similarity=True)
-        self.early_stop = EarlyStopping()
-        self.model = None
-        self.config = model_config.simclr
+    def __init__(self):
+        super(SimCLR, self).__init__()
+        self.nt_xent_criterion = NTXentLoss(self.device, self.config[&#39;loss&#39;][&#39;temperature&#39;],
+                                            self.config[&#39;loss&#39;][&#39;use_cosine_similarity&#39;])
+        self.model = ResNetSimCLR(**self.config[&#34;model&#34;]).to(self.device)
+
+    def step(self, data):
+        (xis, xjs), _ = data
+        ris, zis = self.model(xis)  # [N,C]
+
+        # get the representations and the projections
+        rjs, zjs = self.model(xjs)  # [N,C]
+
+        # normalize projection feature vectors
+        zis = F.normalize(zis, dim=1)
+        zjs = F.normalize(zjs, dim=1)
+
+        loss = self.nt_xent_criterion(zis, zjs)
+        return loss
 
     def _step(self, model, xis, xjs, n_iter):
-
         # get the representations and the projections
         ris, zis = model(xis)  # [N,C]
 
@@ -164,67 +129,31 @@ class SimCLR(object):
         loss = self.nt_xent_criterion(zis, zjs)
         return loss
 
-    def train(self, train_loader):
-        model = ResNetSimCLR(**self.config[&#34;model&#34;]).to(self.device)
-
-        optimizer = torch.optim.Adam(model.parameters(), 3e-4)
-
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
-                                                               last_epoch=-1)
-
-        n_iter = 0
-        valid_n_iter = 0
-        best_valid_loss = np.inf
-
-        for epoch_counter in range(self.config[&#39;epochs&#39;]):
-            if self.early_stop.early_stop:
-                break
-            for (xis, xjs), _ in train_loader:
-                optimizer.zero_grad()
-
-                xis = xis.to(self.device)
-                xjs = xjs.to(self.device)
-
-                loss = self._step(model, xis, xjs, n_iter)
-
-                loss.backward()
-
-                optimizer.step()
-                n_iter += 1
-
-                self.early_stop(loss.item(), model)
-                print(loss.item())
-                if self.early_stop.early_stop:
-                    break
-
-            # warmup for the first 10 epochs
-            if epoch_counter &gt;= 10:
-                scheduler.step()
-        self.model = model
-
-    def _validate(self, model, valid_loader):
-
-        # validation steps
-        with torch.no_grad():
-            model.eval()
-
-            valid_loss = 0.0
-            counter = 0
-            for (xis, xjs), _ in valid_loader:
-                xis = xis.to(self.device)
-                xjs = xjs.to(self.device)
-
-                loss = self._step(model, xis, xjs, counter)
-                valid_loss += loss.item()
-                counter += 1
-            valid_loss /= counter
-        model.train()
-        return valid_loss</code></pre>
+    @staticmethod
+    def which_data(data):
+        return data[0]</code></pre>
 </details>
-<h3>Methods</h3>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.utils.feature_extractor.Feature_extractor" href="../../utils/feature_extractor.html#minder_utils.models.utils.feature_extractor.Feature_extractor">Feature_extractor</a></li>
+<li>abc.ABC</li>
+<li>torch.nn.modules.module.Module</li>
+</ul>
+<h3>Class variables</h3>
 <dl>
-<dt id="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.train"><code class="name flex">
-<span>def <span class="ident">train</span></span>(<span>self, train_loader)</span>
+<dt id="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.dump_patches"><code class="name">var <span class="ident">dump_patches</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.training"><code class="name">var <span class="ident">training</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.which_data"><code class="name flex">
+<span>def <span class="ident">which_data</span></span>(<span>data)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -232,46 +161,48 @@ class SimCLR(object):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def train(self, train_loader):
-    model = ResNetSimCLR(**self.config[&#34;model&#34;]).to(self.device)
-
-    optimizer = torch.optim.Adam(model.parameters(), 3e-4)
-
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
-                                                           last_epoch=-1)
-
-    n_iter = 0
-    valid_n_iter = 0
-    best_valid_loss = np.inf
-
-    for epoch_counter in range(self.config[&#39;epochs&#39;]):
-        if self.early_stop.early_stop:
-            break
-        for (xis, xjs), _ in train_loader:
-            optimizer.zero_grad()
-
-            xis = xis.to(self.device)
-            xjs = xjs.to(self.device)
-
-            loss = self._step(model, xis, xjs, n_iter)
-
-            loss.backward()
-
-            optimizer.step()
-            n_iter += 1
-
-            self.early_stop(loss.item(), model)
-            print(loss.item())
-            if self.early_stop.early_stop:
-                break
-
-        # warmup for the first 10 epochs
-        if epoch_counter &gt;= 10:
-            scheduler.step()
-    self.model = model</code></pre>
+<pre><code class="python">@staticmethod
+def which_data(data):
+    return data[0]</code></pre>
 </details>
 </dd>
 </dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.step"><code class="name flex">
+<span>def <span class="ident">step</span></span>(<span>self, data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def step(self, data):
+    (xis, xjs), _ = data
+    ris, zis = self.model(xis)  # [N,C]
+
+    # get the representations and the projections
+    rjs, zjs = self.model(xjs)  # [N,C]
+
+    # normalize projection feature vectors
+    zis = F.normalize(zis, dim=1)
+    zjs = F.normalize(zjs, dim=1)
+
+    loss = self.nt_xent_criterion(zis, zjs)
+    return loss</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="minder_utils.models.utils.feature_extractor.Feature_extractor" href="../../utils/feature_extractor.html#minder_utils.models.utils.feature_extractor.Feature_extractor">Feature_extractor</a></b></code>:
+<ul class="hlist">
+<li><code><a title="minder_utils.models.utils.feature_extractor.Feature_extractor.forward" href="../../utils/feature_extractor.html#minder_utils.models.utils.feature_extractor.Feature_extractor.forward">forward</a></code></li>
+<li><code><a title="minder_utils.models.utils.feature_extractor.Feature_extractor.transform" href="../../utils/feature_extractor.html#minder_utils.models.utils.feature_extractor.Feature_extractor.transform">transform</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 </dl>
 </section>
@@ -297,7 +228,10 @@ class SimCLR(object):
 <li>
 <h4><code><a title="minder_utils.models.feature_extractors.simclr.simclr.SimCLR" href="#minder_utils.models.feature_extractors.simclr.simclr.SimCLR">SimCLR</a></code></h4>
 <ul class="">
-<li><code><a title="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.train" href="#minder_utils.models.feature_extractors.simclr.simclr.SimCLR.train">train</a></code></li>
+<li><code><a title="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.dump_patches" href="#minder_utils.models.feature_extractors.simclr.simclr.SimCLR.dump_patches">dump_patches</a></code></li>
+<li><code><a title="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.step" href="#minder_utils.models.feature_extractors.simclr.simclr.SimCLR.step">step</a></code></li>
+<li><code><a title="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.training" href="#minder_utils.models.feature_extractors.simclr.simclr.SimCLR.training">training</a></code></li>
+<li><code><a title="minder_utils.models.feature_extractors.simclr.simclr.SimCLR.which_data" href="#minder_utils.models.feature_extractors.simclr.simclr.SimCLR.which_data">which_data</a></code></li>
 </ul>
 </li>
 </ul>

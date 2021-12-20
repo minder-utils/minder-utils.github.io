@@ -29,24 +29,743 @@
 </summary>
 <pre><code class="python">import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import seaborn as sns
+from minder_utils.util import formatting_plots
+from minder_utils.formatting import Formatting
+from minder_utils.feature_engineering import Feature_engineer
+import pandas as pd
+from minder_utils.configurations import visual_config, config
+import matplotlib
+import time
+from .util import time_to_seconds
+import datetime
+import networkx as nx
+
+from minder_utils.formatting import standardise_activity_data
+from minder_utils.formatting import l2_norm
+
+from minder_utils.formatting.label import label_by_week as week_label
+from minder_utils.formatting.label import label_dataframe
+from minder_utils.feature_engineering.calculation import build_p_matrix
+from minder_utils.feature_engineering.adding_features import get_entropy_rate as calculate_entropy_rate
+from minder_utils.feature_engineering.util import week_to_date, datetime_to_time
+
+
+
+
 
 sns.set()
 
-&#39;&#39;&#39;
-X = np.load(&#39;../../data/weekly_test/previous/npy/X.npy&#39;)
-sensors = [&#39;WC1&#39;, &#39;back door&#39;, &#39;bathroom1&#39;, &#39;bedroom1&#39;,
-           &#39;conservatory&#39;, &#39;dining room&#39;, &#39;fridge door&#39;, &#39;front door&#39;,
-           &#39;hallway&#39;, &#39;iron&#39;, &#39;kettle&#39;, &#39;kitchen&#39;, &#39;living room&#39;,
-           &#39;lounge&#39;, &#39;main door&#39;, &#39;microwave&#39;, &#39;multi&#39;, &#39;office&#39;]
-sns.heatmap(X[0].reshape(24, -1))
-plt.ylabel(&#39;Time&#39;)
-plt.xlabel(&#39;Sensor&#39;)
-plt.xticks(np.arange(18), sensors, rotation=90)
-plt.tight_layout()
-plt.savefig(&#39;figures/activity_data.png&#39;)
-plt.show()
-&#39;&#39;&#39;</code></pre>
+
+class Visualisation_Activity:
+    def __init__(self, patient_id=None, date=None, valid=None):
+        self.reset(patient_id, date, valid)
+
+    @staticmethod
+    def get_label_info():
+        activity_data = label_dataframe(Formatting().activity_data)
+        labelled_data = activity_data[activity_data.valid.isin([True, False])]
+        labelled_data.time = labelled_data.time.dt.date
+        labelled_data = labelled_data[[&#39;id&#39;, &#39;time&#39;, &#39;valid&#39;]].drop_duplicates()
+        print(labelled_data)
+        return labelled_data
+
+    def reset(self, patient_id=None, date=None, valid=None):
+        assert valid in [None, True, False], &#39;the valid must be in [None, True, False]&#39;
+
+        # select data according to patient id, date, valid
+        activity_data = label_dataframe(Formatting().activity_data)
+
+        if valid is not None:
+            activity_data = activity_data[activity_data.valid == valid]
+
+        if patient_id is None:
+            activity_data = self.filter_dates(date, activity_data)
+            activity_data = self.filter_patient(patient_id, activity_data)
+        else:
+            if patient_id != &#39;all&#39;:
+                activity_data = self.filter_patient(patient_id, activity_data)
+            activity_data = self.filter_dates(date, activity_data)
+
+        self.data = {&#39;raw_data&#39;: activity_data}
+
+        # Raw data
+        if isinstance(date, datetime.date):
+            self.data[&#39;raw_data&#39;] = activity_data[activity_data.time.dt.date == date]
+        elif isinstance(date, list):
+            self.data[&#39;raw_data&#39;] = activity_data[activity_data.time.dt.date.isin(date)]
+
+        # add columns for visualisation
+        self.data[&#39;raw_data&#39;][&#39;seconds&#39;] = self.data[&#39;raw_data&#39;].time.dt.time.astype(str).apply(time_to_seconds)
+
+        mapping = {}
+        for idx, sensor in enumerate(config[&#39;activity&#39;][&#39;sensors&#39;]):
+            mapping[sensor] = idx + 1
+        self.data[&#39;raw_data&#39;][&#39;activity&#39;] = self.data[&#39;raw_data&#39;].location.map(mapping) \
+                                            * self.data[&#39;raw_data&#39;].value
+
+        # Aggregate data
+        self.data[&#39;agg&#39;] = standardise_activity_data(self.data[&#39;raw_data&#39;][activity_data.columns])
+
+        # Normalise data
+        self.data[&#39;normalise&#39;] = self.data[&#39;agg&#39;].copy()
+        self.data[&#39;normalise&#39;][config[&#39;activity&#39;][&#39;sensors&#39;]] = self.data[&#39;normalise&#39;][
+            config[&#39;activity&#39;][&#39;sensors&#39;]].apply(l2_norm)
+
+    @formatting_plots(save_path=visual_config[&#39;activity&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def raw_data(self):
+        self.subplots(self.data[&#39;raw_data&#39;], self._visual_scatter)
+
+    @formatting_plots(save_path=visual_config[&#39;activity&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def aggregated_data(self):
+        self.subplots(self.data[&#39;agg&#39;], self._visual_heatmap)
+
+    @formatting_plots(save_path=visual_config[&#39;activity&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def normalised_data(self):
+        self.subplots(self.data[&#39;normalise&#39;], self._visual_heatmap)
+
+    def top_5_hist_plot(self, fig=None, ax=None):
+
+        data_plot = self.data[&#39;raw_data&#39;][[&#39;time&#39;, &#39;location&#39;]].copy()
+
+        unique_locations, counts = np.unique(data_plot[&#39;location&#39;].values, return_counts=True)
+        unique_locations_to_plot = unique_locations[np.argsort(counts)[::-1]][:5]
+
+        data_plot[&#39;TOD&#39;] = datetime_to_time(data_plot[&#39;time&#39;])
+        data_plot = data_plot[data_plot.location.isin(unique_locations_to_plot)]
+
+        unique_locations = data_plot.location.unique()
+        location_dict = {i: unique_locations[i] for i in range(len(unique_locations))}
+        data_plot = data_plot.dropna().reset_index()
+
+        sns.set_theme(&#39;talk&#39;)
+
+        cp = [
+            sns.color_palette(&#34;muted&#34;)[4],
+            sns.color_palette(&#34;bright&#34;)[2],
+            sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+            sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+            sns.color_palette(&#34;deep&#34;)[3]
+        ]
+
+
+        sns.set_palette(sns.color_palette(cp), len(unique_locations_to_plot))
+
+        if ax is None:
+            fig, ax = plt.subplots(1,1,figsize = (12,8))
+
+        ax = sns.histplot(data=data_plot.reset_index(), x = &#39;TOD&#39;, 
+                        hue = &#39;location&#39;, ax=ax, legend=True, 
+                        multiple=&#39;stack&#39;, bins = 100, hue_order = unique_locations_to_plot)
+
+
+        xlim = (pd.to_datetime(&#39;1900-01-01 00:00:00&#39;), pd.to_datetime(&#39;1900-01-02 00:00:00&#39;))
+        ax.set_xlim(xlim)
+
+        hours = mdates.HourLocator(interval = 6)
+        h_fmt = mdates.DateFormatter(&#39;%H:%M&#39;)
+
+        ax.xaxis.set_major_locator(hours)
+        ax.xaxis.set_major_formatter(h_fmt)
+
+        ax.set_xlabel(&#39;Time&#39;)
+        ax.set_ylabel(&#39;Frequency&#39;)
+
+        ax.set_title(&#39;Stacked Frequency of Firings for the Top 5 Sensors&#39;)
+
+        ax.tick_params(axis=&#39;x&#39;, rotation = 0)
+
+        return fig, ax
+
+
+    @staticmethod
+    def filter_patient(patient_id, activity_data):
+        if patient_id is None:
+            patient_id = np.random.choice(activity_data.id.unique())
+        if isinstance(patient_id, str):
+            activity_data = activity_data[activity_data.id == patient_id]
+        elif isinstance(patient_id, list):
+            activity_data = activity_data[activity_data.id.isin(patient_id)]
+        return activity_data
+
+    @staticmethod
+    def filter_dates(date, activity_data):
+        available_dates = activity_data.time.dt.date.unique()
+        if date is None:
+            date = np.random.choice(available_dates)
+        else:
+            if isinstance(date, list):
+                visual_dates = []
+                for day in date:
+                    v_date = pd.to_datetime(day, format=&#39;%Y-%m-%d&#39;).date()
+                    visual_dates.append(v_date)
+                    assert v_date in available_dates, &#39;The date provided is not in the dataset&#39;
+                date = visual_dates
+            elif isinstance(date, str):
+                date = pd.to_datetime(date, format=&#39;%Y-%m-%d&#39;).date()
+                assert date in available_dates, &#39;The date provided is not in the dataset&#39;
+            else:
+                raise TypeError(&#39;The date only accepts str or list as input&#39;)
+        # Raw data
+        if isinstance(date, datetime.date):
+            activity_data = activity_data[activity_data.time.dt.date == date]
+        elif isinstance(date, list):
+            activity_data = activity_data[activity_data.time.dt.date.isin(date)]
+        return activity_data
+
+    @staticmethod
+    def _visual_scatter(data, ax):
+        yticks = config[&#39;activity&#39;][&#39;sensors&#39;]
+        ax.set_yticks(range(1, len(yticks) + 1))
+        ax.set_yticklabels(yticks)
+        sns.scatterplot(x=&#39;seconds&#39;, y=&#39;activity&#39;, marker=&#34;$\circ$&#34;, ec=&#34;face&#34;, data=data, ax=ax)
+        formatter = matplotlib.ticker.FuncFormatter(lambda ms, x: time.strftime(&#39;%H&#39;, time.gmtime(ms)))
+        ax.xaxis.set_major_formatter(formatter)
+
+    @staticmethod
+    def _visual_heatmap(data, ax):
+        yticks = config[&#39;activity&#39;][&#39;sensors&#39;]
+        ax.set_yticks(range(1, len(yticks) + 1))
+        ax.set_yticklabels(yticks)
+        sns.heatmap(data[yticks].transpose().astype(float), ax=ax)
+        formatter = matplotlib.ticker.FuncFormatter(lambda ms, x: time.strftime(&#39;%H&#39;, time.gmtime(ms * 3600)))
+        ax.xaxis.set_major_formatter(formatter)
+
+    @staticmethod
+    def subplots(df, func):
+        rows = df.id.unique()
+        cols = df.time.dt.date.unique()
+        width, height = plt.gcf().get_size_inches()
+        width += len(cols)
+        height += len(rows)
+        fig, axes = plt.subplots(len(rows), len(cols), sharex=True, sharey=True, figsize=(width, height))
+        mappings = {}
+        for x_axis in range(len(rows)):
+            for y_axis in range(len(cols)):
+                data = df[(df.id == rows[x_axis]) &amp; (df.time.dt.date == cols[y_axis])]
+                try:
+                    func(data, axes[x_axis, y_axis])
+                    ax = axes[x_axis, y_axis]
+                except TypeError:
+                    func(data, axes)
+                    ax = axes
+                except IndexError:
+                    indices = np.max([x_axis, y_axis])
+                    func(data, axes[indices])
+                    ax = axes[indices]
+
+                ax.set_xlabel(None)
+                ax.set_ylabel(&#39;Participant {}&#39;.format(x_axis))
+                ax.set_title(cols[y_axis])
+                mappings[x_axis] = rows[x_axis]
+
+        fig.supxlabel(&#39;Time&#39;)
+        fig.supylabel(&#39;Location&#39;)
+
+
+if __name__ == &#39;__main__&#39;:
+    visual = Visualisation_Activity()
+
+
+
+
+class Visualisation_Entropy:
+    &#39;&#39;&#39;
+    This class allows the user to visualise the entropy of the data.
+    
+    
+    Arguments
+    ---------
+
+    - activity_data_list: list:
+        A list of the ```pandas.DataFrames``` that will be used to calculate 
+        the entropy and plots. Each dataframe should have an id, location and time
+        column.
+    
+    - id: string or list, optional:
+        A list or string that contains the ids that are to be plotted.
+        Defaults to ```&#39;all&#39;```
+
+    - data_list_names: list, optional:
+        A list that has the names corresponding to the different datasets given as
+        each element of ```activity_data_list```. If ```None```, names will be
+        automatically generated.
+        Defaults to ```None```.
+
+    
+    
+    &#39;&#39;&#39;
+
+    def __init__(self, activity_data_list, patient_id=&#39;all&#39;, data_list_names=None, week_or_day = &#39;week&#39;):
+        &#39;&#39;&#39;
+        This function is used to initialise the class.
+        &#39;&#39;&#39;
+        
+        if type(activity_data_list) == list:
+            self.activity_data_list = activity_data_list
+        else:
+            self.activity_data_list = [activity_data_list]
+
+        if not data_list_names is None:
+            if type(data_list_names) == str:
+                if len(self.activity_data_list) == 1:
+                    self.data_list_names = data_list_names
+                else:
+                    raise TypeError(&#39;Please supply data_list_names as a list with as many&#39; \
+                                    &#39;elements as activity_data_list&#39;)
+            elif type(data_list_names) == list:
+                if len(self.activity_data_list) == len(data_list_names):
+                    self.data_list_names = data_list_names
+                else:
+                    raise TypeError(&#39;Please supply data_list_names as a list with as many&#39; \
+                                    &#39;elements as activity_data_list&#39;)
+            else:
+                raise TypeError(&#39;Please supply data_list_names as a list with as many&#39; \
+                                &#39;elements as activity_data_list&#39;)
+        else:
+            self.data_list_names = [&#39;Set {}&#39;.format(i + 1) for i in range(len(self.activity_data_list))]
+
+        if type(patient_id) == str:
+            if not patient_id == &#39;all&#39;:
+                self.id = [patient_id]
+            else:
+                self.id = patient_id
+        else:
+            self.id = patient_id
+
+        if not self.id == &#39;all&#39;:
+            filtered_activity_data_list = []
+            for data in self.activity_data_list:
+                filtered_activity_data_list.append(data[data.id.isin(self.id)])
+
+            self.activity_data_list = filtered_activity_data_list
+
+        self.entropy_data_list = None
+        self.entropy_data = None
+
+        self.week_or_day = week_or_day
+
+        return
+
+    def _get_entropy_rate_data(self, by_flag=False):
+        &#39;&#39;&#39;
+        This is an internal function that is used to calculate the entropy and 
+        filter the data based on the ```id``` given in the initialisation of the class.
+        &#39;&#39;&#39;
+        entropy_data_list = []
+        for nd, data in enumerate(self.activity_data_list):
+
+            movement_data = data[[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;]]
+            movement_data = movement_data.dropna(subset=[&#39;location&#39;])
+
+            movement_data = calculate_entropy_rate(movement_data, week_or_day = self.week_or_day)
+            movement_data[&#39;data_label&#39;] = self.data_list_names[nd]
+            if self.week_or_day == &#39;week&#39;:
+                movement_data = week_label(movement_data)
+                movement_data[&#39;date&#39;] = week_to_date(movement_data[&#39;week&#39;])
+            elif self.week_or_day == &#39;day&#39;:
+                movement_data = movement_data.rename(columns = {&#39;date&#39;:&#39;time&#39;})
+                movement_data = label_dataframe(movement_data)
+                movement_data = movement_data.rename(columns = {&#39;time&#39;:&#39;date&#39;})
+
+            entropy_data_list.append(movement_data)
+
+        self.entropy_data_list = entropy_data_list
+        self.entropy_data = pd.concat(entropy_data_list)
+
+        return
+
+    def _get_p_matrix_data(self, combine_data_list=True):
+        &#39;&#39;&#39;
+        This is an internal function that is used to calculate the p_matrix and 
+        filter the data based on the ```id``` given in the initialisation of the class.
+        &#39;&#39;&#39;
+        if combine_data_list:
+            data_full = pd.concat(self.activity_data_list)
+            p_matrix, unique_locations = build_p_matrix(data_full[&#39;location&#39;].values, return_events=True)
+            return p_matrix, unique_locations
+
+        else:
+            p_matrix_list = []
+            unique_locations_list = []
+            for nd, data in enumerate(self.activity_data_list):
+                p_matrix, unique_locations = build_p_matrix(data[&#39;location&#39;].values, return_events=True)
+                p_matrix_list.append(p_matrix)
+                unique_locations_list.append(unique_locations)
+            return p_matrix_list, unique_locations_list
+
+    def plot_violin_entropy_rate(self, fig=None, ax=None, by_flag=False):
+        &#39;&#39;&#39;
+        This class allows the user to plot the entropy rate of each week in
+        a violin plot.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            This is the figure to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            This is the axes to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+
+        - by_flag: bool, optional:
+            Dictates whether the violin plots should be split on their flags.
+            Defaults to ```False```.
+        
+        
+        
+        Returns
+        --------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            The figure that the axes are plotted on.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            The axes that contain the graph.
+        
+        &#39;&#39;&#39;
+
+        self._get_entropy_rate_data(by_flag=by_flag)
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+        if by_flag:
+            ax = sns.violinplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                                data=self.entropy_data, ax=ax, inner=&#39;quartile&#39;,
+                                split=True, hue=&#39;valid&#39;,
+                                orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+        else:
+            ax = sns.violinplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                                data=self.entropy_data, ax=ax, inner=&#39;quartile&#39;,
+                                orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+        ax.set_ylabel(&#39;Dataset&#39;)
+        ax.set_xlabel(&#39;Normalised Entropy Rate&#39;)
+        ax.set_xlim(0, 1)
+        ax.set_title(&#39;Entropy Rate Of PWLD Homes Each Week&#39;)
+
+        return fig, ax
+
+    def plot_boxplot_entropy_rate(self, fig=None, ax=None, by_flag=False):
+        &#39;&#39;&#39;
+        This class allows the user to plot the entropy rate of each week in
+        a box plot.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            This is the figure to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            This is the axes to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+
+        - by_flag: bool, optional:
+            Dictates whether the violin plots should be split on their flags.
+            Defaults to ```False```.
+        
+        
+        
+        Returns
+        --------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            The figure that the axes are plotted on.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            The axes that contain the graph.
+        
+        &#39;&#39;&#39;
+
+        self._get_entropy_rate_data(by_flag=by_flag)
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+        if by_flag:
+            ax = sns.boxplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                                data=self.entropy_data, hue =&#39;valid&#39;, ax=ax,
+                                orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+
+        else:
+            ax = sns.boxplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                                data=self.entropy_data, ax=ax,
+                                orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+
+        ax.set_ylabel(&#39;Dataset&#39;)
+        ax.set_xlabel(&#39;Normalised Entropy Rate&#39;)
+        ax.set_xlim(0, 1)
+        ax.set_title(&#39;Entropy Rate Of PWLD Homes Each Week&#39;)
+
+        return fig, ax
+
+
+    def plot_line_entropy_rate(self, fig=None, ax=None):
+        self._get_entropy_rate_data()
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(15, 4))
+
+
+        sns.lineplot(data=self.entropy_data, x=&#39;date&#39;, y=&#39;value&#39;, hue = &#39;id&#39;)
+        ax.set_ylabel(&#39;Normalised Entropy Rate&#39;)
+        ax.set_xlabel(&#39;Date&#39;)
+        ax.set_ylim(0,1)
+
+        ax.set_title(&#39;Weekly Entropy Rate&#39;)
+
+        return fig, ax
+
+
+
+    def plot_p_matrix(self, combine_data_list=True, fig=None, ax=None):
+        &#39;&#39;&#39;
+        This class allows the user to plot the stochastic matrix of the data 
+        in a heatmap.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - combine_data_list: bool, optional:
+            Dictates whether each element of ```activity_data_list``` will be plotted
+            together or separately.
+            Defaults to ```True```.
+
+        - fig: matplotlib.pyplot.figure, optional:
+            This is the figure to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            This is the axes to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        
+        
+        Returns
+        --------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            The figure that the axes are plotted on.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            The axes that contain the graph.
+        
+        &#39;&#39;&#39;
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+        p_matrix, unique_locations = self._get_p_matrix_data(combine_data_list=True)
+
+        if combine_data_list:
+
+            ax = sns.heatmap(data=p_matrix, vmin=0, 
+                            vmax=np.max(p_matrix), cmap=&#39;Blues&#39;, cbar=False, 
+                            square=True)
+            ax.invert_yaxis()
+
+            ax.set_yticks(np.arange(len(unique_locations)) + 0.5)
+            ax.set_yticklabels(unique_locations, rotation=0)
+
+            ax.set_xticks(np.arange(len(unique_locations)) + 0.5)
+            ax.set_xticklabels(unique_locations, rotation=90)
+
+            ax.set_title(&#39;Stochastic Matrix Of Locations Visited&#39;)
+
+
+        else:
+            raise TypeError(&#39;combine_data_list=False is not currently supported.&#39;)
+
+        return fig, ax
+
+    def plot_p_matrix_graph(self, combine_data_list=True, fig=None, ax=None):
+        &#39;&#39;&#39;
+        Plots a directed graph using networkx that represents the stochastic matrix.
+
+
+        Arguments
+        ---------
+
+        - combine_data_list: bool, optional:
+            Dictates whether each element of ```activity_data_list``` will be plotted
+            together or separately.
+            Defaults to ```True```.
+
+        - fig: matplotlib.pyplot.figure, optional:
+            This is the figure to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            This is the axes to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+
+        Returns
+        ---------
+
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            The figure that the axes are plotted on.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            The axes that contain the graph.
+            
+
+        &#39;&#39;&#39;
+
+        if combine_data_list:
+            if ax is None:
+                fig, ax = plt.subplots(1,1,figsize=(15,10))
+
+            a_matrix, labels = self._get_p_matrix_data(combine_data_list=True)
+
+            G = nx.convert_matrix.from_numpy_array(a_matrix, create_using=nx.DiGraph)
+            G = nx.relabel.relabel_nodes(G, {i:labels[i] for i in range(len(labels))})
+
+            pos=nx.shell_layout(G)
+            nx.draw_networkx_nodes(G, pos=pos)
+
+
+            edges,weights = zip(*nx.get_edge_attributes(G,&#39;weight&#39;).items())
+
+
+            ax = nx.draw(G, pos, node_color=&#39;black&#39;, edgelist=edges, 
+                            edge_color=weights, width=3.0, edge_cmap=plt.cm.Blues,  
+                            arrowsize=30, ax = ax)
+
+            for label in nx.nodes(G):
+                plt.text(pos[label][0],pos[label][1]-0.1,s=label, 
+                        bbox=dict(boxstyle=&#34;round&#34;, facecolor=&#39;blue&#39;, alpha=0.2),
+                        horizontalalignment=&#39;center&#39;)
+
+
+        else:
+            raise TypeError(&#39;combine_data_list=False is not currently supported.&#39;)
+
+
+        return fig, ax
+
+
+class Visualisation_Bathroom():
+    &#39;&#39;&#39;
+    This class allows the user to produce visualisations 
+    of the features engineered around bathroom visits.
+
+
+    &#39;&#39;&#39;
+    def __init__(self, patient_id=&#39;all&#39;):
+
+        self.fmg = Formatting()
+        self.fe = Feature_engineer(self.fmg)
+
+        if type(patient_id) == str:
+            if patient_id == &#39;all&#39;:
+                self.id = patient_id
+            else:
+                self.id = [patient_id]
+        elif patient_id == list:
+            self.id = patient_id
+        else:
+            raise TypeError(&#34;patient_id must be a string, &#39;all&#39; or a list&#34;)
+
+        return
+    
+    def _get_data(self, time_name, ma=False, delta=False):
+        attr = &#39;bathroom&#39;
+        time_name_accept = [&#39;daytime&#39;, &#39;night&#39;]
+        if not time_name in time_name_accept:
+            raise TypeError(&#39;Please use a time_name from {}&#39;.format(time_name_accept))
+        attr += &#39;_&#39; + time_name
+        if ma:
+            attr += &#39;_&#39; + &#39;ma&#39;
+            if delta:
+                attr += &#39;_&#39; + &#39;delta&#39;
+        else:
+            if delta:
+                raise TypeError(&#39;Cannot use delta=True if ma=False&#39;)
+        
+        data = getattr(self.fe, attr)
+        data[&#39;time&#39;] = pd.to_datetime(data[&#39;time&#39;])
+        data = label_dataframe(data)
+
+        self.attr = attr
+        
+        if not self.id == &#39;all&#39;:
+            data = data[data.id.isin(self.id)]
+
+        return data
+
+    def plot_night(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
+        
+        data = self._get_data(&#39;night&#39;, ma=ma, delta=delta)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+        ax.set_title(self.attr)
+        
+        return fig, ax
+
+
+    def plot_day(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
+        
+        data = self._get_data(&#39;daytime&#39;, ma=ma, delta=delta)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+        ax.set_title(self.attr)
+        
+        return fig, ax
+    
+
+
+    def _plot_data(self, data, plot_type, by_flag=False, fig=None, ax=None):
+        
+        data = data.dropna(subset=[&#39;value&#39;])
+        data[&#39;value&#39;] = data[&#39;value&#39;].astype(float)
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+        
+        if plot_type==&#39;boxplot&#39;:
+            if by_flag:
+                ax = sns.boxplot(x=&#39;value&#39;,
+                                    data=data, y =&#39;valid&#39;, ax=ax,
+                                    orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+            else:
+                ax = sns.boxplot(x=&#39;value&#39;,
+                                    data=data, ax=ax,
+                                    orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+            ax.set_xlabel(&#39;Value&#39;)
+            
+        elif plot_type == &#39;violin&#39;:
+            if by_flag:
+                ax = sns.violinplot(x=&#39;value&#39;, y = &#39;valid&#39;,
+                                    data=data, ax=ax, inner=&#39;quartile&#39;,
+                                    orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+            else:
+                ax = sns.violinplot(x=&#39;value&#39;,
+                                    data=data, ax=ax, inner=&#39;quartile&#39;,
+                                    orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+            ax.set_xlabel(&#39;Value&#39;)
+
+        elif plot_type == &#39;line&#39;:
+            ax = sns.lineplot(x=&#39;time&#39;, y=&#39;value&#39;, data=data)
+            ax.tick_params(axis=&#39;x&#39;, rotation=90)
+            ax.set_xlabel(&#39;Date&#39;)
+            ax.set_ylabel(&#39;Value&#39;)
+
+
+        return fig, ax
+            </code></pre>
 </details>
 </section>
 <section>
@@ -56,6 +775,1515 @@ plt.show()
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity"><code class="flex name class">
+<span>class <span class="ident">Visualisation_Activity</span></span>
+<span>(</span><span>patient_id=None, date=None, valid=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Visualisation_Activity:
+    def __init__(self, patient_id=None, date=None, valid=None):
+        self.reset(patient_id, date, valid)
+
+    @staticmethod
+    def get_label_info():
+        activity_data = label_dataframe(Formatting().activity_data)
+        labelled_data = activity_data[activity_data.valid.isin([True, False])]
+        labelled_data.time = labelled_data.time.dt.date
+        labelled_data = labelled_data[[&#39;id&#39;, &#39;time&#39;, &#39;valid&#39;]].drop_duplicates()
+        print(labelled_data)
+        return labelled_data
+
+    def reset(self, patient_id=None, date=None, valid=None):
+        assert valid in [None, True, False], &#39;the valid must be in [None, True, False]&#39;
+
+        # select data according to patient id, date, valid
+        activity_data = label_dataframe(Formatting().activity_data)
+
+        if valid is not None:
+            activity_data = activity_data[activity_data.valid == valid]
+
+        if patient_id is None:
+            activity_data = self.filter_dates(date, activity_data)
+            activity_data = self.filter_patient(patient_id, activity_data)
+        else:
+            if patient_id != &#39;all&#39;:
+                activity_data = self.filter_patient(patient_id, activity_data)
+            activity_data = self.filter_dates(date, activity_data)
+
+        self.data = {&#39;raw_data&#39;: activity_data}
+
+        # Raw data
+        if isinstance(date, datetime.date):
+            self.data[&#39;raw_data&#39;] = activity_data[activity_data.time.dt.date == date]
+        elif isinstance(date, list):
+            self.data[&#39;raw_data&#39;] = activity_data[activity_data.time.dt.date.isin(date)]
+
+        # add columns for visualisation
+        self.data[&#39;raw_data&#39;][&#39;seconds&#39;] = self.data[&#39;raw_data&#39;].time.dt.time.astype(str).apply(time_to_seconds)
+
+        mapping = {}
+        for idx, sensor in enumerate(config[&#39;activity&#39;][&#39;sensors&#39;]):
+            mapping[sensor] = idx + 1
+        self.data[&#39;raw_data&#39;][&#39;activity&#39;] = self.data[&#39;raw_data&#39;].location.map(mapping) \
+                                            * self.data[&#39;raw_data&#39;].value
+
+        # Aggregate data
+        self.data[&#39;agg&#39;] = standardise_activity_data(self.data[&#39;raw_data&#39;][activity_data.columns])
+
+        # Normalise data
+        self.data[&#39;normalise&#39;] = self.data[&#39;agg&#39;].copy()
+        self.data[&#39;normalise&#39;][config[&#39;activity&#39;][&#39;sensors&#39;]] = self.data[&#39;normalise&#39;][
+            config[&#39;activity&#39;][&#39;sensors&#39;]].apply(l2_norm)
+
+    @formatting_plots(save_path=visual_config[&#39;activity&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def raw_data(self):
+        self.subplots(self.data[&#39;raw_data&#39;], self._visual_scatter)
+
+    @formatting_plots(save_path=visual_config[&#39;activity&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def aggregated_data(self):
+        self.subplots(self.data[&#39;agg&#39;], self._visual_heatmap)
+
+    @formatting_plots(save_path=visual_config[&#39;activity&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def normalised_data(self):
+        self.subplots(self.data[&#39;normalise&#39;], self._visual_heatmap)
+
+    def top_5_hist_plot(self, fig=None, ax=None):
+
+        data_plot = self.data[&#39;raw_data&#39;][[&#39;time&#39;, &#39;location&#39;]].copy()
+
+        unique_locations, counts = np.unique(data_plot[&#39;location&#39;].values, return_counts=True)
+        unique_locations_to_plot = unique_locations[np.argsort(counts)[::-1]][:5]
+
+        data_plot[&#39;TOD&#39;] = datetime_to_time(data_plot[&#39;time&#39;])
+        data_plot = data_plot[data_plot.location.isin(unique_locations_to_plot)]
+
+        unique_locations = data_plot.location.unique()
+        location_dict = {i: unique_locations[i] for i in range(len(unique_locations))}
+        data_plot = data_plot.dropna().reset_index()
+
+        sns.set_theme(&#39;talk&#39;)
+
+        cp = [
+            sns.color_palette(&#34;muted&#34;)[4],
+            sns.color_palette(&#34;bright&#34;)[2],
+            sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+            sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+            sns.color_palette(&#34;deep&#34;)[3]
+        ]
+
+
+        sns.set_palette(sns.color_palette(cp), len(unique_locations_to_plot))
+
+        if ax is None:
+            fig, ax = plt.subplots(1,1,figsize = (12,8))
+
+        ax = sns.histplot(data=data_plot.reset_index(), x = &#39;TOD&#39;, 
+                        hue = &#39;location&#39;, ax=ax, legend=True, 
+                        multiple=&#39;stack&#39;, bins = 100, hue_order = unique_locations_to_plot)
+
+
+        xlim = (pd.to_datetime(&#39;1900-01-01 00:00:00&#39;), pd.to_datetime(&#39;1900-01-02 00:00:00&#39;))
+        ax.set_xlim(xlim)
+
+        hours = mdates.HourLocator(interval = 6)
+        h_fmt = mdates.DateFormatter(&#39;%H:%M&#39;)
+
+        ax.xaxis.set_major_locator(hours)
+        ax.xaxis.set_major_formatter(h_fmt)
+
+        ax.set_xlabel(&#39;Time&#39;)
+        ax.set_ylabel(&#39;Frequency&#39;)
+
+        ax.set_title(&#39;Stacked Frequency of Firings for the Top 5 Sensors&#39;)
+
+        ax.tick_params(axis=&#39;x&#39;, rotation = 0)
+
+        return fig, ax
+
+
+    @staticmethod
+    def filter_patient(patient_id, activity_data):
+        if patient_id is None:
+            patient_id = np.random.choice(activity_data.id.unique())
+        if isinstance(patient_id, str):
+            activity_data = activity_data[activity_data.id == patient_id]
+        elif isinstance(patient_id, list):
+            activity_data = activity_data[activity_data.id.isin(patient_id)]
+        return activity_data
+
+    @staticmethod
+    def filter_dates(date, activity_data):
+        available_dates = activity_data.time.dt.date.unique()
+        if date is None:
+            date = np.random.choice(available_dates)
+        else:
+            if isinstance(date, list):
+                visual_dates = []
+                for day in date:
+                    v_date = pd.to_datetime(day, format=&#39;%Y-%m-%d&#39;).date()
+                    visual_dates.append(v_date)
+                    assert v_date in available_dates, &#39;The date provided is not in the dataset&#39;
+                date = visual_dates
+            elif isinstance(date, str):
+                date = pd.to_datetime(date, format=&#39;%Y-%m-%d&#39;).date()
+                assert date in available_dates, &#39;The date provided is not in the dataset&#39;
+            else:
+                raise TypeError(&#39;The date only accepts str or list as input&#39;)
+        # Raw data
+        if isinstance(date, datetime.date):
+            activity_data = activity_data[activity_data.time.dt.date == date]
+        elif isinstance(date, list):
+            activity_data = activity_data[activity_data.time.dt.date.isin(date)]
+        return activity_data
+
+    @staticmethod
+    def _visual_scatter(data, ax):
+        yticks = config[&#39;activity&#39;][&#39;sensors&#39;]
+        ax.set_yticks(range(1, len(yticks) + 1))
+        ax.set_yticklabels(yticks)
+        sns.scatterplot(x=&#39;seconds&#39;, y=&#39;activity&#39;, marker=&#34;$\circ$&#34;, ec=&#34;face&#34;, data=data, ax=ax)
+        formatter = matplotlib.ticker.FuncFormatter(lambda ms, x: time.strftime(&#39;%H&#39;, time.gmtime(ms)))
+        ax.xaxis.set_major_formatter(formatter)
+
+    @staticmethod
+    def _visual_heatmap(data, ax):
+        yticks = config[&#39;activity&#39;][&#39;sensors&#39;]
+        ax.set_yticks(range(1, len(yticks) + 1))
+        ax.set_yticklabels(yticks)
+        sns.heatmap(data[yticks].transpose().astype(float), ax=ax)
+        formatter = matplotlib.ticker.FuncFormatter(lambda ms, x: time.strftime(&#39;%H&#39;, time.gmtime(ms * 3600)))
+        ax.xaxis.set_major_formatter(formatter)
+
+    @staticmethod
+    def subplots(df, func):
+        rows = df.id.unique()
+        cols = df.time.dt.date.unique()
+        width, height = plt.gcf().get_size_inches()
+        width += len(cols)
+        height += len(rows)
+        fig, axes = plt.subplots(len(rows), len(cols), sharex=True, sharey=True, figsize=(width, height))
+        mappings = {}
+        for x_axis in range(len(rows)):
+            for y_axis in range(len(cols)):
+                data = df[(df.id == rows[x_axis]) &amp; (df.time.dt.date == cols[y_axis])]
+                try:
+                    func(data, axes[x_axis, y_axis])
+                    ax = axes[x_axis, y_axis]
+                except TypeError:
+                    func(data, axes)
+                    ax = axes
+                except IndexError:
+                    indices = np.max([x_axis, y_axis])
+                    func(data, axes[indices])
+                    ax = axes[indices]
+
+                ax.set_xlabel(None)
+                ax.set_ylabel(&#39;Participant {}&#39;.format(x_axis))
+                ax.set_title(cols[y_axis])
+                mappings[x_axis] = rows[x_axis]
+
+        fig.supxlabel(&#39;Time&#39;)
+        fig.supylabel(&#39;Location&#39;)</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity.filter_dates"><code class="name flex">
+<span>def <span class="ident">filter_dates</span></span>(<span>date, activity_data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def filter_dates(date, activity_data):
+    available_dates = activity_data.time.dt.date.unique()
+    if date is None:
+        date = np.random.choice(available_dates)
+    else:
+        if isinstance(date, list):
+            visual_dates = []
+            for day in date:
+                v_date = pd.to_datetime(day, format=&#39;%Y-%m-%d&#39;).date()
+                visual_dates.append(v_date)
+                assert v_date in available_dates, &#39;The date provided is not in the dataset&#39;
+            date = visual_dates
+        elif isinstance(date, str):
+            date = pd.to_datetime(date, format=&#39;%Y-%m-%d&#39;).date()
+            assert date in available_dates, &#39;The date provided is not in the dataset&#39;
+        else:
+            raise TypeError(&#39;The date only accepts str or list as input&#39;)
+    # Raw data
+    if isinstance(date, datetime.date):
+        activity_data = activity_data[activity_data.time.dt.date == date]
+    elif isinstance(date, list):
+        activity_data = activity_data[activity_data.time.dt.date.isin(date)]
+    return activity_data</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity.filter_patient"><code class="name flex">
+<span>def <span class="ident">filter_patient</span></span>(<span>patient_id, activity_data)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def filter_patient(patient_id, activity_data):
+    if patient_id is None:
+        patient_id = np.random.choice(activity_data.id.unique())
+    if isinstance(patient_id, str):
+        activity_data = activity_data[activity_data.id == patient_id]
+    elif isinstance(patient_id, list):
+        activity_data = activity_data[activity_data.id.isin(patient_id)]
+    return activity_data</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity.get_label_info"><code class="name flex">
+<span>def <span class="ident">get_label_info</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def get_label_info():
+    activity_data = label_dataframe(Formatting().activity_data)
+    labelled_data = activity_data[activity_data.valid.isin([True, False])]
+    labelled_data.time = labelled_data.time.dt.date
+    labelled_data = labelled_data[[&#39;id&#39;, &#39;time&#39;, &#39;valid&#39;]].drop_duplicates()
+    print(labelled_data)
+    return labelled_data</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity.subplots"><code class="name flex">
+<span>def <span class="ident">subplots</span></span>(<span>df, func)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def subplots(df, func):
+    rows = df.id.unique()
+    cols = df.time.dt.date.unique()
+    width, height = plt.gcf().get_size_inches()
+    width += len(cols)
+    height += len(rows)
+    fig, axes = plt.subplots(len(rows), len(cols), sharex=True, sharey=True, figsize=(width, height))
+    mappings = {}
+    for x_axis in range(len(rows)):
+        for y_axis in range(len(cols)):
+            data = df[(df.id == rows[x_axis]) &amp; (df.time.dt.date == cols[y_axis])]
+            try:
+                func(data, axes[x_axis, y_axis])
+                ax = axes[x_axis, y_axis]
+            except TypeError:
+                func(data, axes)
+                ax = axes
+            except IndexError:
+                indices = np.max([x_axis, y_axis])
+                func(data, axes[indices])
+                ax = axes[indices]
+
+            ax.set_xlabel(None)
+            ax.set_ylabel(&#39;Participant {}&#39;.format(x_axis))
+            ax.set_title(cols[y_axis])
+            mappings[x_axis] = rows[x_axis]
+
+    fig.supxlabel(&#39;Time&#39;)
+    fig.supylabel(&#39;Location&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity.aggregated_data"><code class="name flex">
+<span>def <span class="ident">aggregated_data</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(save_path=visual_config[&#39;activity&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+def aggregated_data(self):
+    self.subplots(self.data[&#39;agg&#39;], self._visual_heatmap)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity.normalised_data"><code class="name flex">
+<span>def <span class="ident">normalised_data</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(save_path=visual_config[&#39;activity&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+def normalised_data(self):
+    self.subplots(self.data[&#39;normalise&#39;], self._visual_heatmap)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity.raw_data"><code class="name flex">
+<span>def <span class="ident">raw_data</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(save_path=visual_config[&#39;activity&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+def raw_data(self):
+    self.subplots(self.data[&#39;raw_data&#39;], self._visual_scatter)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity.reset"><code class="name flex">
+<span>def <span class="ident">reset</span></span>(<span>self, patient_id=None, date=None, valid=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset(self, patient_id=None, date=None, valid=None):
+    assert valid in [None, True, False], &#39;the valid must be in [None, True, False]&#39;
+
+    # select data according to patient id, date, valid
+    activity_data = label_dataframe(Formatting().activity_data)
+
+    if valid is not None:
+        activity_data = activity_data[activity_data.valid == valid]
+
+    if patient_id is None:
+        activity_data = self.filter_dates(date, activity_data)
+        activity_data = self.filter_patient(patient_id, activity_data)
+    else:
+        if patient_id != &#39;all&#39;:
+            activity_data = self.filter_patient(patient_id, activity_data)
+        activity_data = self.filter_dates(date, activity_data)
+
+    self.data = {&#39;raw_data&#39;: activity_data}
+
+    # Raw data
+    if isinstance(date, datetime.date):
+        self.data[&#39;raw_data&#39;] = activity_data[activity_data.time.dt.date == date]
+    elif isinstance(date, list):
+        self.data[&#39;raw_data&#39;] = activity_data[activity_data.time.dt.date.isin(date)]
+
+    # add columns for visualisation
+    self.data[&#39;raw_data&#39;][&#39;seconds&#39;] = self.data[&#39;raw_data&#39;].time.dt.time.astype(str).apply(time_to_seconds)
+
+    mapping = {}
+    for idx, sensor in enumerate(config[&#39;activity&#39;][&#39;sensors&#39;]):
+        mapping[sensor] = idx + 1
+    self.data[&#39;raw_data&#39;][&#39;activity&#39;] = self.data[&#39;raw_data&#39;].location.map(mapping) \
+                                        * self.data[&#39;raw_data&#39;].value
+
+    # Aggregate data
+    self.data[&#39;agg&#39;] = standardise_activity_data(self.data[&#39;raw_data&#39;][activity_data.columns])
+
+    # Normalise data
+    self.data[&#39;normalise&#39;] = self.data[&#39;agg&#39;].copy()
+    self.data[&#39;normalise&#39;][config[&#39;activity&#39;][&#39;sensors&#39;]] = self.data[&#39;normalise&#39;][
+        config[&#39;activity&#39;][&#39;sensors&#39;]].apply(l2_norm)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Activity.top_5_hist_plot"><code class="name flex">
+<span>def <span class="ident">top_5_hist_plot</span></span>(<span>self, fig=None, ax=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def top_5_hist_plot(self, fig=None, ax=None):
+
+    data_plot = self.data[&#39;raw_data&#39;][[&#39;time&#39;, &#39;location&#39;]].copy()
+
+    unique_locations, counts = np.unique(data_plot[&#39;location&#39;].values, return_counts=True)
+    unique_locations_to_plot = unique_locations[np.argsort(counts)[::-1]][:5]
+
+    data_plot[&#39;TOD&#39;] = datetime_to_time(data_plot[&#39;time&#39;])
+    data_plot = data_plot[data_plot.location.isin(unique_locations_to_plot)]
+
+    unique_locations = data_plot.location.unique()
+    location_dict = {i: unique_locations[i] for i in range(len(unique_locations))}
+    data_plot = data_plot.dropna().reset_index()
+
+    sns.set_theme(&#39;talk&#39;)
+
+    cp = [
+        sns.color_palette(&#34;muted&#34;)[4],
+        sns.color_palette(&#34;bright&#34;)[2],
+        sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+        sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+        sns.color_palette(&#34;deep&#34;)[3]
+    ]
+
+
+    sns.set_palette(sns.color_palette(cp), len(unique_locations_to_plot))
+
+    if ax is None:
+        fig, ax = plt.subplots(1,1,figsize = (12,8))
+
+    ax = sns.histplot(data=data_plot.reset_index(), x = &#39;TOD&#39;, 
+                    hue = &#39;location&#39;, ax=ax, legend=True, 
+                    multiple=&#39;stack&#39;, bins = 100, hue_order = unique_locations_to_plot)
+
+
+    xlim = (pd.to_datetime(&#39;1900-01-01 00:00:00&#39;), pd.to_datetime(&#39;1900-01-02 00:00:00&#39;))
+    ax.set_xlim(xlim)
+
+    hours = mdates.HourLocator(interval = 6)
+    h_fmt = mdates.DateFormatter(&#39;%H:%M&#39;)
+
+    ax.xaxis.set_major_locator(hours)
+    ax.xaxis.set_major_formatter(h_fmt)
+
+    ax.set_xlabel(&#39;Time&#39;)
+    ax.set_ylabel(&#39;Frequency&#39;)
+
+    ax.set_title(&#39;Stacked Frequency of Firings for the Top 5 Sensors&#39;)
+
+    ax.tick_params(axis=&#39;x&#39;, rotation = 0)
+
+    return fig, ax</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Bathroom"><code class="flex name class">
+<span>class <span class="ident">Visualisation_Bathroom</span></span>
+<span>(</span><span>patient_id='all')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class allows the user to produce visualisations
+of the features engineered around bathroom visits.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Visualisation_Bathroom():
+    &#39;&#39;&#39;
+    This class allows the user to produce visualisations 
+    of the features engineered around bathroom visits.
+
+
+    &#39;&#39;&#39;
+    def __init__(self, patient_id=&#39;all&#39;):
+
+        self.fmg = Formatting()
+        self.fe = Feature_engineer(self.fmg)
+
+        if type(patient_id) == str:
+            if patient_id == &#39;all&#39;:
+                self.id = patient_id
+            else:
+                self.id = [patient_id]
+        elif patient_id == list:
+            self.id = patient_id
+        else:
+            raise TypeError(&#34;patient_id must be a string, &#39;all&#39; or a list&#34;)
+
+        return
+    
+    def _get_data(self, time_name, ma=False, delta=False):
+        attr = &#39;bathroom&#39;
+        time_name_accept = [&#39;daytime&#39;, &#39;night&#39;]
+        if not time_name in time_name_accept:
+            raise TypeError(&#39;Please use a time_name from {}&#39;.format(time_name_accept))
+        attr += &#39;_&#39; + time_name
+        if ma:
+            attr += &#39;_&#39; + &#39;ma&#39;
+            if delta:
+                attr += &#39;_&#39; + &#39;delta&#39;
+        else:
+            if delta:
+                raise TypeError(&#39;Cannot use delta=True if ma=False&#39;)
+        
+        data = getattr(self.fe, attr)
+        data[&#39;time&#39;] = pd.to_datetime(data[&#39;time&#39;])
+        data = label_dataframe(data)
+
+        self.attr = attr
+        
+        if not self.id == &#39;all&#39;:
+            data = data[data.id.isin(self.id)]
+
+        return data
+
+    def plot_night(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
+        
+        data = self._get_data(&#39;night&#39;, ma=ma, delta=delta)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+        ax.set_title(self.attr)
+        
+        return fig, ax
+
+
+    def plot_day(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
+        
+        data = self._get_data(&#39;daytime&#39;, ma=ma, delta=delta)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+        ax.set_title(self.attr)
+        
+        return fig, ax
+    
+
+
+    def _plot_data(self, data, plot_type, by_flag=False, fig=None, ax=None):
+        
+        data = data.dropna(subset=[&#39;value&#39;])
+        data[&#39;value&#39;] = data[&#39;value&#39;].astype(float)
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+        
+        if plot_type==&#39;boxplot&#39;:
+            if by_flag:
+                ax = sns.boxplot(x=&#39;value&#39;,
+                                    data=data, y =&#39;valid&#39;, ax=ax,
+                                    orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+            else:
+                ax = sns.boxplot(x=&#39;value&#39;,
+                                    data=data, ax=ax,
+                                    orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+            ax.set_xlabel(&#39;Value&#39;)
+            
+        elif plot_type == &#39;violin&#39;:
+            if by_flag:
+                ax = sns.violinplot(x=&#39;value&#39;, y = &#39;valid&#39;,
+                                    data=data, ax=ax, inner=&#39;quartile&#39;,
+                                    orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+            else:
+                ax = sns.violinplot(x=&#39;value&#39;,
+                                    data=data, ax=ax, inner=&#39;quartile&#39;,
+                                    orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+            ax.set_xlabel(&#39;Value&#39;)
+
+        elif plot_type == &#39;line&#39;:
+            ax = sns.lineplot(x=&#39;time&#39;, y=&#39;value&#39;, data=data)
+            ax.tick_params(axis=&#39;x&#39;, rotation=90)
+            ax.set_xlabel(&#39;Date&#39;)
+            ax.set_ylabel(&#39;Value&#39;)
+
+
+        return fig, ax</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Bathroom.plot_day"><code class="name flex">
+<span>def <span class="ident">plot_day</span></span>(<span>self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_day(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
+    
+    data = self._get_data(&#39;daytime&#39;, ma=ma, delta=delta)
+    fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+    ax.set_title(self.attr)
+    
+    return fig, ax</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Bathroom.plot_night"><code class="name flex">
+<span>def <span class="ident">plot_night</span></span>(<span>self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_night(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
+    
+    data = self._get_data(&#39;night&#39;, ma=ma, delta=delta)
+    fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+    ax.set_title(self.attr)
+    
+    return fig, ax</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Entropy"><code class="flex name class">
+<span>class <span class="ident">Visualisation_Entropy</span></span>
+<span>(</span><span>activity_data_list, patient_id='all', data_list_names=None, week_or_day='week')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class allows the user to visualise the entropy of the data.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>activity_data_list: list:
+A list of the <code>pandas.DataFrames</code> that will be used to calculate
+the entropy and plots. Each dataframe should have an id, location and time
+column.</p>
+</li>
+<li>
+<p>id: string or list, optional:
+A list or string that contains the ids that are to be plotted.
+Defaults to <code>'all'</code></p>
+</li>
+<li>
+<p>data_list_names: list, optional:
+A list that has the names corresponding to the different datasets given as
+each element of <code>activity_data_list</code>. If <code>None</code>, names will be
+automatically generated.
+Defaults to <code>None</code>.</p>
+</li>
+</ul>
+<p>This function is used to initialise the class.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Visualisation_Entropy:
+    &#39;&#39;&#39;
+    This class allows the user to visualise the entropy of the data.
+    
+    
+    Arguments
+    ---------
+
+    - activity_data_list: list:
+        A list of the ```pandas.DataFrames``` that will be used to calculate 
+        the entropy and plots. Each dataframe should have an id, location and time
+        column.
+    
+    - id: string or list, optional:
+        A list or string that contains the ids that are to be plotted.
+        Defaults to ```&#39;all&#39;```
+
+    - data_list_names: list, optional:
+        A list that has the names corresponding to the different datasets given as
+        each element of ```activity_data_list```. If ```None```, names will be
+        automatically generated.
+        Defaults to ```None```.
+
+    
+    
+    &#39;&#39;&#39;
+
+    def __init__(self, activity_data_list, patient_id=&#39;all&#39;, data_list_names=None, week_or_day = &#39;week&#39;):
+        &#39;&#39;&#39;
+        This function is used to initialise the class.
+        &#39;&#39;&#39;
+        
+        if type(activity_data_list) == list:
+            self.activity_data_list = activity_data_list
+        else:
+            self.activity_data_list = [activity_data_list]
+
+        if not data_list_names is None:
+            if type(data_list_names) == str:
+                if len(self.activity_data_list) == 1:
+                    self.data_list_names = data_list_names
+                else:
+                    raise TypeError(&#39;Please supply data_list_names as a list with as many&#39; \
+                                    &#39;elements as activity_data_list&#39;)
+            elif type(data_list_names) == list:
+                if len(self.activity_data_list) == len(data_list_names):
+                    self.data_list_names = data_list_names
+                else:
+                    raise TypeError(&#39;Please supply data_list_names as a list with as many&#39; \
+                                    &#39;elements as activity_data_list&#39;)
+            else:
+                raise TypeError(&#39;Please supply data_list_names as a list with as many&#39; \
+                                &#39;elements as activity_data_list&#39;)
+        else:
+            self.data_list_names = [&#39;Set {}&#39;.format(i + 1) for i in range(len(self.activity_data_list))]
+
+        if type(patient_id) == str:
+            if not patient_id == &#39;all&#39;:
+                self.id = [patient_id]
+            else:
+                self.id = patient_id
+        else:
+            self.id = patient_id
+
+        if not self.id == &#39;all&#39;:
+            filtered_activity_data_list = []
+            for data in self.activity_data_list:
+                filtered_activity_data_list.append(data[data.id.isin(self.id)])
+
+            self.activity_data_list = filtered_activity_data_list
+
+        self.entropy_data_list = None
+        self.entropy_data = None
+
+        self.week_or_day = week_or_day
+
+        return
+
+    def _get_entropy_rate_data(self, by_flag=False):
+        &#39;&#39;&#39;
+        This is an internal function that is used to calculate the entropy and 
+        filter the data based on the ```id``` given in the initialisation of the class.
+        &#39;&#39;&#39;
+        entropy_data_list = []
+        for nd, data in enumerate(self.activity_data_list):
+
+            movement_data = data[[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;]]
+            movement_data = movement_data.dropna(subset=[&#39;location&#39;])
+
+            movement_data = calculate_entropy_rate(movement_data, week_or_day = self.week_or_day)
+            movement_data[&#39;data_label&#39;] = self.data_list_names[nd]
+            if self.week_or_day == &#39;week&#39;:
+                movement_data = week_label(movement_data)
+                movement_data[&#39;date&#39;] = week_to_date(movement_data[&#39;week&#39;])
+            elif self.week_or_day == &#39;day&#39;:
+                movement_data = movement_data.rename(columns = {&#39;date&#39;:&#39;time&#39;})
+                movement_data = label_dataframe(movement_data)
+                movement_data = movement_data.rename(columns = {&#39;time&#39;:&#39;date&#39;})
+
+            entropy_data_list.append(movement_data)
+
+        self.entropy_data_list = entropy_data_list
+        self.entropy_data = pd.concat(entropy_data_list)
+
+        return
+
+    def _get_p_matrix_data(self, combine_data_list=True):
+        &#39;&#39;&#39;
+        This is an internal function that is used to calculate the p_matrix and 
+        filter the data based on the ```id``` given in the initialisation of the class.
+        &#39;&#39;&#39;
+        if combine_data_list:
+            data_full = pd.concat(self.activity_data_list)
+            p_matrix, unique_locations = build_p_matrix(data_full[&#39;location&#39;].values, return_events=True)
+            return p_matrix, unique_locations
+
+        else:
+            p_matrix_list = []
+            unique_locations_list = []
+            for nd, data in enumerate(self.activity_data_list):
+                p_matrix, unique_locations = build_p_matrix(data[&#39;location&#39;].values, return_events=True)
+                p_matrix_list.append(p_matrix)
+                unique_locations_list.append(unique_locations)
+            return p_matrix_list, unique_locations_list
+
+    def plot_violin_entropy_rate(self, fig=None, ax=None, by_flag=False):
+        &#39;&#39;&#39;
+        This class allows the user to plot the entropy rate of each week in
+        a violin plot.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            This is the figure to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            This is the axes to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+
+        - by_flag: bool, optional:
+            Dictates whether the violin plots should be split on their flags.
+            Defaults to ```False```.
+        
+        
+        
+        Returns
+        --------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            The figure that the axes are plotted on.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            The axes that contain the graph.
+        
+        &#39;&#39;&#39;
+
+        self._get_entropy_rate_data(by_flag=by_flag)
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+        if by_flag:
+            ax = sns.violinplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                                data=self.entropy_data, ax=ax, inner=&#39;quartile&#39;,
+                                split=True, hue=&#39;valid&#39;,
+                                orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+        else:
+            ax = sns.violinplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                                data=self.entropy_data, ax=ax, inner=&#39;quartile&#39;,
+                                orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+        ax.set_ylabel(&#39;Dataset&#39;)
+        ax.set_xlabel(&#39;Normalised Entropy Rate&#39;)
+        ax.set_xlim(0, 1)
+        ax.set_title(&#39;Entropy Rate Of PWLD Homes Each Week&#39;)
+
+        return fig, ax
+
+    def plot_boxplot_entropy_rate(self, fig=None, ax=None, by_flag=False):
+        &#39;&#39;&#39;
+        This class allows the user to plot the entropy rate of each week in
+        a box plot.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            This is the figure to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            This is the axes to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+
+        - by_flag: bool, optional:
+            Dictates whether the violin plots should be split on their flags.
+            Defaults to ```False```.
+        
+        
+        
+        Returns
+        --------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            The figure that the axes are plotted on.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            The axes that contain the graph.
+        
+        &#39;&#39;&#39;
+
+        self._get_entropy_rate_data(by_flag=by_flag)
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+        if by_flag:
+            ax = sns.boxplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                                data=self.entropy_data, hue =&#39;valid&#39;, ax=ax,
+                                orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+
+        else:
+            ax = sns.boxplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                                data=self.entropy_data, ax=ax,
+                                orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+
+        ax.set_ylabel(&#39;Dataset&#39;)
+        ax.set_xlabel(&#39;Normalised Entropy Rate&#39;)
+        ax.set_xlim(0, 1)
+        ax.set_title(&#39;Entropy Rate Of PWLD Homes Each Week&#39;)
+
+        return fig, ax
+
+
+    def plot_line_entropy_rate(self, fig=None, ax=None):
+        self._get_entropy_rate_data()
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(15, 4))
+
+
+        sns.lineplot(data=self.entropy_data, x=&#39;date&#39;, y=&#39;value&#39;, hue = &#39;id&#39;)
+        ax.set_ylabel(&#39;Normalised Entropy Rate&#39;)
+        ax.set_xlabel(&#39;Date&#39;)
+        ax.set_ylim(0,1)
+
+        ax.set_title(&#39;Weekly Entropy Rate&#39;)
+
+        return fig, ax
+
+
+
+    def plot_p_matrix(self, combine_data_list=True, fig=None, ax=None):
+        &#39;&#39;&#39;
+        This class allows the user to plot the stochastic matrix of the data 
+        in a heatmap.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - combine_data_list: bool, optional:
+            Dictates whether each element of ```activity_data_list``` will be plotted
+            together or separately.
+            Defaults to ```True```.
+
+        - fig: matplotlib.pyplot.figure, optional:
+            This is the figure to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            This is the axes to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        
+        
+        Returns
+        --------
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            The figure that the axes are plotted on.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            The axes that contain the graph.
+        
+        &#39;&#39;&#39;
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+        p_matrix, unique_locations = self._get_p_matrix_data(combine_data_list=True)
+
+        if combine_data_list:
+
+            ax = sns.heatmap(data=p_matrix, vmin=0, 
+                            vmax=np.max(p_matrix), cmap=&#39;Blues&#39;, cbar=False, 
+                            square=True)
+            ax.invert_yaxis()
+
+            ax.set_yticks(np.arange(len(unique_locations)) + 0.5)
+            ax.set_yticklabels(unique_locations, rotation=0)
+
+            ax.set_xticks(np.arange(len(unique_locations)) + 0.5)
+            ax.set_xticklabels(unique_locations, rotation=90)
+
+            ax.set_title(&#39;Stochastic Matrix Of Locations Visited&#39;)
+
+
+        else:
+            raise TypeError(&#39;combine_data_list=False is not currently supported.&#39;)
+
+        return fig, ax
+
+    def plot_p_matrix_graph(self, combine_data_list=True, fig=None, ax=None):
+        &#39;&#39;&#39;
+        Plots a directed graph using networkx that represents the stochastic matrix.
+
+
+        Arguments
+        ---------
+
+        - combine_data_list: bool, optional:
+            Dictates whether each element of ```activity_data_list``` will be plotted
+            together or separately.
+            Defaults to ```True```.
+
+        - fig: matplotlib.pyplot.figure, optional:
+            This is the figure to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            This is the axes to draw the plot on. If ```None```, then one will be created. 
+            Defaults to ```None```.
+
+        Returns
+        ---------
+
+        
+        - fig: matplotlib.pyplot.figure, optional:
+            The figure that the axes are plotted on.
+        
+        - ax: matplotlib.pyplot.axes, optional:
+            The axes that contain the graph.
+            
+
+        &#39;&#39;&#39;
+
+        if combine_data_list:
+            if ax is None:
+                fig, ax = plt.subplots(1,1,figsize=(15,10))
+
+            a_matrix, labels = self._get_p_matrix_data(combine_data_list=True)
+
+            G = nx.convert_matrix.from_numpy_array(a_matrix, create_using=nx.DiGraph)
+            G = nx.relabel.relabel_nodes(G, {i:labels[i] for i in range(len(labels))})
+
+            pos=nx.shell_layout(G)
+            nx.draw_networkx_nodes(G, pos=pos)
+
+
+            edges,weights = zip(*nx.get_edge_attributes(G,&#39;weight&#39;).items())
+
+
+            ax = nx.draw(G, pos, node_color=&#39;black&#39;, edgelist=edges, 
+                            edge_color=weights, width=3.0, edge_cmap=plt.cm.Blues,  
+                            arrowsize=30, ax = ax)
+
+            for label in nx.nodes(G):
+                plt.text(pos[label][0],pos[label][1]-0.1,s=label, 
+                        bbox=dict(boxstyle=&#34;round&#34;, facecolor=&#39;blue&#39;, alpha=0.2),
+                        horizontalalignment=&#39;center&#39;)
+
+
+        else:
+            raise TypeError(&#39;combine_data_list=False is not currently supported.&#39;)
+
+
+        return fig, ax</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_boxplot_entropy_rate"><code class="name flex">
+<span>def <span class="ident">plot_boxplot_entropy_rate</span></span>(<span>self, fig=None, ax=None, by_flag=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class allows the user to plot the entropy rate of each week in
+a box plot.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>fig: matplotlib.pyplot.figure, optional:
+This is the figure to draw the plot on. If <code>None</code>, then one will be created.
+Defaults to <code>None</code>.</p>
+</li>
+<li>
+<p>ax: matplotlib.pyplot.axes, optional:
+This is the axes to draw the plot on. If <code>None</code>, then one will be created.
+Defaults to <code>None</code>.</p>
+</li>
+<li>
+<p>by_flag: bool, optional:
+Dictates whether the violin plots should be split on their flags.
+Defaults to <code>False</code>.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>
+<p>fig: matplotlib.pyplot.figure, optional:
+The figure that the axes are plotted on.</p>
+</li>
+<li>
+<p>ax: matplotlib.pyplot.axes, optional:
+The axes that contain the graph.</p>
+</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_boxplot_entropy_rate(self, fig=None, ax=None, by_flag=False):
+    &#39;&#39;&#39;
+    This class allows the user to plot the entropy rate of each week in
+    a box plot.
+    
+    
+    
+    Arguments
+    ---------
+    
+    - fig: matplotlib.pyplot.figure, optional:
+        This is the figure to draw the plot on. If ```None```, then one will be created. 
+        Defaults to ```None```.
+    
+    - ax: matplotlib.pyplot.axes, optional:
+        This is the axes to draw the plot on. If ```None```, then one will be created. 
+        Defaults to ```None```.
+
+    - by_flag: bool, optional:
+        Dictates whether the violin plots should be split on their flags.
+        Defaults to ```False```.
+    
+    
+    
+    Returns
+    --------
+    
+    - fig: matplotlib.pyplot.figure, optional:
+        The figure that the axes are plotted on.
+    
+    - ax: matplotlib.pyplot.axes, optional:
+        The axes that contain the graph.
+    
+    &#39;&#39;&#39;
+
+    self._get_entropy_rate_data(by_flag=by_flag)
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+    if by_flag:
+        ax = sns.boxplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                            data=self.entropy_data, hue =&#39;valid&#39;, ax=ax,
+                            orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+
+    else:
+        ax = sns.boxplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                            data=self.entropy_data, ax=ax,
+                            orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+
+    ax.set_ylabel(&#39;Dataset&#39;)
+    ax.set_xlabel(&#39;Normalised Entropy Rate&#39;)
+    ax.set_xlim(0, 1)
+    ax.set_title(&#39;Entropy Rate Of PWLD Homes Each Week&#39;)
+
+    return fig, ax</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_line_entropy_rate"><code class="name flex">
+<span>def <span class="ident">plot_line_entropy_rate</span></span>(<span>self, fig=None, ax=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_line_entropy_rate(self, fig=None, ax=None):
+    self._get_entropy_rate_data()
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(15, 4))
+
+
+    sns.lineplot(data=self.entropy_data, x=&#39;date&#39;, y=&#39;value&#39;, hue = &#39;id&#39;)
+    ax.set_ylabel(&#39;Normalised Entropy Rate&#39;)
+    ax.set_xlabel(&#39;Date&#39;)
+    ax.set_ylim(0,1)
+
+    ax.set_title(&#39;Weekly Entropy Rate&#39;)
+
+    return fig, ax</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix"><code class="name flex">
+<span>def <span class="ident">plot_p_matrix</span></span>(<span>self, combine_data_list=True, fig=None, ax=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class allows the user to plot the stochastic matrix of the data
+in a heatmap.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>combine_data_list: bool, optional:
+Dictates whether each element of <code>activity_data_list</code> will be plotted
+together or separately.
+Defaults to <code>True</code>.</p>
+</li>
+<li>
+<p>fig: matplotlib.pyplot.figure, optional:
+This is the figure to draw the plot on. If <code>None</code>, then one will be created.
+Defaults to <code>None</code>.</p>
+</li>
+<li>
+<p>ax: matplotlib.pyplot.axes, optional:
+This is the axes to draw the plot on. If <code>None</code>, then one will be created.
+Defaults to <code>None</code>.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>
+<p>fig: matplotlib.pyplot.figure, optional:
+The figure that the axes are plotted on.</p>
+</li>
+<li>
+<p>ax: matplotlib.pyplot.axes, optional:
+The axes that contain the graph.</p>
+</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_p_matrix(self, combine_data_list=True, fig=None, ax=None):
+    &#39;&#39;&#39;
+    This class allows the user to plot the stochastic matrix of the data 
+    in a heatmap.
+    
+    
+    
+    Arguments
+    ---------
+    
+    - combine_data_list: bool, optional:
+        Dictates whether each element of ```activity_data_list``` will be plotted
+        together or separately.
+        Defaults to ```True```.
+
+    - fig: matplotlib.pyplot.figure, optional:
+        This is the figure to draw the plot on. If ```None```, then one will be created. 
+        Defaults to ```None```.
+    
+    - ax: matplotlib.pyplot.axes, optional:
+        This is the axes to draw the plot on. If ```None```, then one will be created. 
+        Defaults to ```None```.
+    
+    
+    
+    Returns
+    --------
+    
+    - fig: matplotlib.pyplot.figure, optional:
+        The figure that the axes are plotted on.
+    
+    - ax: matplotlib.pyplot.axes, optional:
+        The axes that contain the graph.
+    
+    &#39;&#39;&#39;
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+    p_matrix, unique_locations = self._get_p_matrix_data(combine_data_list=True)
+
+    if combine_data_list:
+
+        ax = sns.heatmap(data=p_matrix, vmin=0, 
+                        vmax=np.max(p_matrix), cmap=&#39;Blues&#39;, cbar=False, 
+                        square=True)
+        ax.invert_yaxis()
+
+        ax.set_yticks(np.arange(len(unique_locations)) + 0.5)
+        ax.set_yticklabels(unique_locations, rotation=0)
+
+        ax.set_xticks(np.arange(len(unique_locations)) + 0.5)
+        ax.set_xticklabels(unique_locations, rotation=90)
+
+        ax.set_title(&#39;Stochastic Matrix Of Locations Visited&#39;)
+
+
+    else:
+        raise TypeError(&#39;combine_data_list=False is not currently supported.&#39;)
+
+    return fig, ax</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix_graph"><code class="name flex">
+<span>def <span class="ident">plot_p_matrix_graph</span></span>(<span>self, combine_data_list=True, fig=None, ax=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plots a directed graph using networkx that represents the stochastic matrix.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>combine_data_list: bool, optional:
+Dictates whether each element of <code>activity_data_list</code> will be plotted
+together or separately.
+Defaults to <code>True</code>.</p>
+</li>
+<li>
+<p>fig: matplotlib.pyplot.figure, optional:
+This is the figure to draw the plot on. If <code>None</code>, then one will be created.
+Defaults to <code>None</code>.</p>
+</li>
+<li>
+<p>ax: matplotlib.pyplot.axes, optional:
+This is the axes to draw the plot on. If <code>None</code>, then one will be created.
+Defaults to <code>None</code>.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>
+<p>fig: matplotlib.pyplot.figure, optional:
+The figure that the axes are plotted on.</p>
+</li>
+<li>
+<p>ax: matplotlib.pyplot.axes, optional:
+The axes that contain the graph.</p>
+</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_p_matrix_graph(self, combine_data_list=True, fig=None, ax=None):
+    &#39;&#39;&#39;
+    Plots a directed graph using networkx that represents the stochastic matrix.
+
+
+    Arguments
+    ---------
+
+    - combine_data_list: bool, optional:
+        Dictates whether each element of ```activity_data_list``` will be plotted
+        together or separately.
+        Defaults to ```True```.
+
+    - fig: matplotlib.pyplot.figure, optional:
+        This is the figure to draw the plot on. If ```None```, then one will be created. 
+        Defaults to ```None```.
+    
+    - ax: matplotlib.pyplot.axes, optional:
+        This is the axes to draw the plot on. If ```None```, then one will be created. 
+        Defaults to ```None```.
+
+    Returns
+    ---------
+
+    
+    - fig: matplotlib.pyplot.figure, optional:
+        The figure that the axes are plotted on.
+    
+    - ax: matplotlib.pyplot.axes, optional:
+        The axes that contain the graph.
+        
+
+    &#39;&#39;&#39;
+
+    if combine_data_list:
+        if ax is None:
+            fig, ax = plt.subplots(1,1,figsize=(15,10))
+
+        a_matrix, labels = self._get_p_matrix_data(combine_data_list=True)
+
+        G = nx.convert_matrix.from_numpy_array(a_matrix, create_using=nx.DiGraph)
+        G = nx.relabel.relabel_nodes(G, {i:labels[i] for i in range(len(labels))})
+
+        pos=nx.shell_layout(G)
+        nx.draw_networkx_nodes(G, pos=pos)
+
+
+        edges,weights = zip(*nx.get_edge_attributes(G,&#39;weight&#39;).items())
+
+
+        ax = nx.draw(G, pos, node_color=&#39;black&#39;, edgelist=edges, 
+                        edge_color=weights, width=3.0, edge_cmap=plt.cm.Blues,  
+                        arrowsize=30, ax = ax)
+
+        for label in nx.nodes(G):
+            plt.text(pos[label][0],pos[label][1]-0.1,s=label, 
+                    bbox=dict(boxstyle=&#34;round&#34;, facecolor=&#39;blue&#39;, alpha=0.2),
+                    horizontalalignment=&#39;center&#39;)
+
+
+    else:
+        raise TypeError(&#39;combine_data_list=False is not currently supported.&#39;)
+
+
+    return fig, ax</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_violin_entropy_rate"><code class="name flex">
+<span>def <span class="ident">plot_violin_entropy_rate</span></span>(<span>self, fig=None, ax=None, by_flag=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class allows the user to plot the entropy rate of each week in
+a violin plot.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>fig: matplotlib.pyplot.figure, optional:
+This is the figure to draw the plot on. If <code>None</code>, then one will be created.
+Defaults to <code>None</code>.</p>
+</li>
+<li>
+<p>ax: matplotlib.pyplot.axes, optional:
+This is the axes to draw the plot on. If <code>None</code>, then one will be created.
+Defaults to <code>None</code>.</p>
+</li>
+<li>
+<p>by_flag: bool, optional:
+Dictates whether the violin plots should be split on their flags.
+Defaults to <code>False</code>.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>
+<p>fig: matplotlib.pyplot.figure, optional:
+The figure that the axes are plotted on.</p>
+</li>
+<li>
+<p>ax: matplotlib.pyplot.axes, optional:
+The axes that contain the graph.</p>
+</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_violin_entropy_rate(self, fig=None, ax=None, by_flag=False):
+    &#39;&#39;&#39;
+    This class allows the user to plot the entropy rate of each week in
+    a violin plot.
+    
+    
+    
+    Arguments
+    ---------
+    
+    - fig: matplotlib.pyplot.figure, optional:
+        This is the figure to draw the plot on. If ```None```, then one will be created. 
+        Defaults to ```None```.
+    
+    - ax: matplotlib.pyplot.axes, optional:
+        This is the axes to draw the plot on. If ```None```, then one will be created. 
+        Defaults to ```None```.
+
+    - by_flag: bool, optional:
+        Dictates whether the violin plots should be split on their flags.
+        Defaults to ```False```.
+    
+    
+    
+    Returns
+    --------
+    
+    - fig: matplotlib.pyplot.figure, optional:
+        The figure that the axes are plotted on.
+    
+    - ax: matplotlib.pyplot.axes, optional:
+        The axes that contain the graph.
+    
+    &#39;&#39;&#39;
+
+    self._get_entropy_rate_data(by_flag=by_flag)
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+    if by_flag:
+        ax = sns.violinplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                            data=self.entropy_data, ax=ax, inner=&#39;quartile&#39;,
+                            split=True, hue=&#39;valid&#39;,
+                            orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+    else:
+        ax = sns.violinplot(x=&#39;value&#39;, y=&#39;data_label&#39;,
+                            data=self.entropy_data, ax=ax, inner=&#39;quartile&#39;,
+                            orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+    ax.set_ylabel(&#39;Dataset&#39;)
+    ax.set_xlabel(&#39;Normalised Entropy Rate&#39;)
+    ax.set_xlim(0, 1)
+    ax.set_title(&#39;Entropy Rate Of PWLD Homes Each Week&#39;)
+
+    return fig, ax</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -72,6 +2300,41 @@ plt.show()
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="minder_utils.visualisation" href="index.html">minder_utils.visualisation</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity" href="#minder_utils.visualisation.activity_data.Visualisation_Activity">Visualisation_Activity</a></code></h4>
+<ul class="two-column">
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity.aggregated_data" href="#minder_utils.visualisation.activity_data.Visualisation_Activity.aggregated_data">aggregated_data</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity.filter_dates" href="#minder_utils.visualisation.activity_data.Visualisation_Activity.filter_dates">filter_dates</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity.filter_patient" href="#minder_utils.visualisation.activity_data.Visualisation_Activity.filter_patient">filter_patient</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity.get_label_info" href="#minder_utils.visualisation.activity_data.Visualisation_Activity.get_label_info">get_label_info</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity.normalised_data" href="#minder_utils.visualisation.activity_data.Visualisation_Activity.normalised_data">normalised_data</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity.raw_data" href="#minder_utils.visualisation.activity_data.Visualisation_Activity.raw_data">raw_data</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity.reset" href="#minder_utils.visualisation.activity_data.Visualisation_Activity.reset">reset</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity.subplots" href="#minder_utils.visualisation.activity_data.Visualisation_Activity.subplots">subplots</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Activity.top_5_hist_plot" href="#minder_utils.visualisation.activity_data.Visualisation_Activity.top_5_hist_plot">top_5_hist_plot</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="minder_utils.visualisation.activity_data.Visualisation_Bathroom" href="#minder_utils.visualisation.activity_data.Visualisation_Bathroom">Visualisation_Bathroom</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Bathroom.plot_day" href="#minder_utils.visualisation.activity_data.Visualisation_Bathroom.plot_day">plot_day</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Bathroom.plot_night" href="#minder_utils.visualisation.activity_data.Visualisation_Bathroom.plot_night">plot_night</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="minder_utils.visualisation.activity_data.Visualisation_Entropy" href="#minder_utils.visualisation.activity_data.Visualisation_Entropy">Visualisation_Entropy</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_boxplot_entropy_rate" href="#minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_boxplot_entropy_rate">plot_boxplot_entropy_rate</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_line_entropy_rate" href="#minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_line_entropy_rate">plot_line_entropy_rate</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix" href="#minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix">plot_p_matrix</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix_graph" href="#minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix_graph">plot_p_matrix_graph</a></code></li>
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_violin_entropy_rate" href="#minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_violin_entropy_rate">plot_violin_entropy_rate</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

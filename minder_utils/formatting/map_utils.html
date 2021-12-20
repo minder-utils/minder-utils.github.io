@@ -31,31 +31,76 @@
 import json
 from minder_utils.configurations import data_path
 import importlib.resources as pkg_resources
+import os
 
 
 def map_raw_ids(p_id, df=False):
-    &#34;&#34;&#34;
-    :param p_id:
-    :param df:
-    :return:
-    &#34;&#34;&#34;
+    &#39;&#39;&#39;
+    Map the raw ids to numeric ids.
+    Args:
+        p_id:
+        df:
+
+    Returns:
+
+    &#39;&#39;&#39;
     path_dir = data_path
     with open(path_dir, &#39;r&#39;) as file_read:
         path = file_read.read()
 
-    json_file_path = path + &#34;/mappings.json&#34;
+    json_file_path = os.path.join(path, &#34;mappings.json&#34;)
     with open(json_file_path, &#39;r&#39;) as j:
         contents = json.loads(j.read())
     contents = {v: k for k, v in contents.items()}
-    patient_ids = pd.read_csv(path + &#39;/Patients.csv&#39;)
+    patient_ids = pd.read_csv(os.path.join(path, &#39;Patients.csv&#39;))
     patient_ids = patient_ids[[&#39;subjectId&#39;, &#39;sabpId&#39;]].set_index(&#39;subjectId&#39;)[&#39;sabpId&#39;].to_dict()
     if df:
         return list(map(patient_ids.get, list(map(contents.get, p_id))))
     return int(patient_ids[contents[p_id]])
 
 
+def map_random_ids(p_id, df=False):
+    &#39;&#39;&#39;
+    Map random generated ids to raw ids
+    Args:
+        p_id:
+        df:
+
+    Returns:
+
+    &#39;&#39;&#39;
+    path_dir = data_path
+    with open(path_dir, &#39;r&#39;) as file_read:
+        path = file_read.read()
+
+    cvssp_research_file_path = os.path.join(path, &#34;mappings.json&#34;)
+    with open(cvssp_research_file_path, &#39;r&#39;) as j:
+        cvssp_research = json.loads(j.read())
+
+    random_research_file_path = os.path.join(path, &#34;random_id_to_research_id.json&#34;)
+    with open(random_research_file_path, &#39;r&#39;) as j:
+        random_research = json.loads(j.read())
+
+    def map_ids(p_id):
+        if p_id in cvssp_research:
+            p_id_22 = cvssp_research[p_id]
+        else:
+            p_id_22 = p_id
+        if p_id_22 in random_research:
+            p_id_out = random_research[p_id_22]
+        else:
+            p_id_out = p_id_22
+        
+        return p_id_out
+
+    if df:
+        return p_id.apply(map_ids)
+    return map_ids[p_id]
+
+
 def map_numeric_ids(p_id, df=False):
     &#34;&#34;&#34;
+    map the numeric ids to raw ids
     :param p_id:
     :param df:
     :return:
@@ -64,11 +109,11 @@ def map_numeric_ids(p_id, df=False):
     with open(path_dir, &#39;r&#39;) as file_read:
         path = file_read.read()
 
-    json_file_path = path + &#34;/mappings.json&#34;
+    json_file_path = os.path.join(path, &#34;mappings.json&#34;)
     with open(json_file_path, &#39;r&#39;) as j:
         contents = json.loads(j.read())
     # contents = {v: k for k, v in contents.items()}
-    patient_ids = pd.read_csv(path + &#39;/Patients.csv&#39;)
+    patient_ids = pd.read_csv(os.path.join(path, &#39;Patients.csv&#39;))
     patient_ids = patient_ids[[&#39;subjectId&#39;, &#39;sabpId&#39;]].set_index(&#39;sabpId&#39;)[&#39;subjectId&#39;].to_dict()
     if df:
         return list(map(contents.get, list(map(patient_ids.get, p_id))))
@@ -96,7 +141,8 @@ def map_url_to_flag(urls):
 <span>def <span class="ident">map_numeric_ids</span></span>(<span>p_id, df=False)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>:param p_id:
+<div class="desc"><p>map the numeric ids to raw ids
+:param p_id:
 :param df:
 :return:</p></div>
 <details class="source">
@@ -105,6 +151,7 @@ def map_url_to_flag(urls):
 </summary>
 <pre><code class="python">def map_numeric_ids(p_id, df=False):
     &#34;&#34;&#34;
+    map the numeric ids to raw ids
     :param p_id:
     :param df:
     :return:
@@ -113,43 +160,101 @@ def map_url_to_flag(urls):
     with open(path_dir, &#39;r&#39;) as file_read:
         path = file_read.read()
 
-    json_file_path = path + &#34;/mappings.json&#34;
+    json_file_path = os.path.join(path, &#34;mappings.json&#34;)
     with open(json_file_path, &#39;r&#39;) as j:
         contents = json.loads(j.read())
     # contents = {v: k for k, v in contents.items()}
-    patient_ids = pd.read_csv(path + &#39;/Patients.csv&#39;)
+    patient_ids = pd.read_csv(os.path.join(path, &#39;Patients.csv&#39;))
     patient_ids = patient_ids[[&#39;subjectId&#39;, &#39;sabpId&#39;]].set_index(&#39;sabpId&#39;)[&#39;subjectId&#39;].to_dict()
     if df:
         return list(map(contents.get, list(map(patient_ids.get, p_id))))
     return contents[patient_ids[p_id]]</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.formatting.map_utils.map_random_ids"><code class="name flex">
+<span>def <span class="ident">map_random_ids</span></span>(<span>p_id, df=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Map random generated ids to raw ids</p>
+<h2 id="args">Args</h2>
+<p>p_id:
+df:
+Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def map_random_ids(p_id, df=False):
+    &#39;&#39;&#39;
+    Map random generated ids to raw ids
+    Args:
+        p_id:
+        df:
+
+    Returns:
+
+    &#39;&#39;&#39;
+    path_dir = data_path
+    with open(path_dir, &#39;r&#39;) as file_read:
+        path = file_read.read()
+
+    cvssp_research_file_path = os.path.join(path, &#34;mappings.json&#34;)
+    with open(cvssp_research_file_path, &#39;r&#39;) as j:
+        cvssp_research = json.loads(j.read())
+
+    random_research_file_path = os.path.join(path, &#34;random_id_to_research_id.json&#34;)
+    with open(random_research_file_path, &#39;r&#39;) as j:
+        random_research = json.loads(j.read())
+
+    def map_ids(p_id):
+        if p_id in cvssp_research:
+            p_id_22 = cvssp_research[p_id]
+        else:
+            p_id_22 = p_id
+        if p_id_22 in random_research:
+            p_id_out = random_research[p_id_22]
+        else:
+            p_id_out = p_id_22
+        
+        return p_id_out
+
+    if df:
+        return p_id.apply(map_ids)
+    return map_ids[p_id]</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.formatting.map_utils.map_raw_ids"><code class="name flex">
 <span>def <span class="ident">map_raw_ids</span></span>(<span>p_id, df=False)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>:param p_id:
-:param df:
-:return:</p></div>
+<div class="desc"><p>Map the raw ids to numeric ids.</p>
+<h2 id="args">Args</h2>
+<p>p_id:
+df:
+Returns:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def map_raw_ids(p_id, df=False):
-    &#34;&#34;&#34;
-    :param p_id:
-    :param df:
-    :return:
-    &#34;&#34;&#34;
+    &#39;&#39;&#39;
+    Map the raw ids to numeric ids.
+    Args:
+        p_id:
+        df:
+
+    Returns:
+
+    &#39;&#39;&#39;
     path_dir = data_path
     with open(path_dir, &#39;r&#39;) as file_read:
         path = file_read.read()
 
-    json_file_path = path + &#34;/mappings.json&#34;
+    json_file_path = os.path.join(path, &#34;mappings.json&#34;)
     with open(json_file_path, &#39;r&#39;) as j:
         contents = json.loads(j.read())
     contents = {v: k for k, v in contents.items()}
-    patient_ids = pd.read_csv(path + &#39;/Patients.csv&#39;)
+    patient_ids = pd.read_csv(os.path.join(path, &#39;Patients.csv&#39;))
     patient_ids = patient_ids[[&#39;subjectId&#39;, &#39;sabpId&#39;]].set_index(&#39;subjectId&#39;)[&#39;sabpId&#39;].to_dict()
     if df:
         return list(map(patient_ids.get, list(map(contents.get, p_id))))
@@ -199,6 +304,7 @@ def map_url_to_flag(urls):
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="minder_utils.formatting.map_utils.map_numeric_ids" href="#minder_utils.formatting.map_utils.map_numeric_ids">map_numeric_ids</a></code></li>
+<li><code><a title="minder_utils.formatting.map_utils.map_random_ids" href="#minder_utils.formatting.map_utils.map_random_ids">map_random_ids</a></code></li>
 <li><code><a title="minder_utils.formatting.map_utils.map_raw_ids" href="#minder_utils.formatting.map_utils.map_raw_ids">map_raw_ids</a></code></li>
 <li><code><a title="minder_utils.formatting.map_utils.map_url_to_flag" href="#minder_utils.formatting.map_utils.map_url_to_flag">map_url_to_flag</a></code></li>
 </ul>

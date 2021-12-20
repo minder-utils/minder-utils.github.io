@@ -23,6 +23,85 @@
 <h1 class="title">Module <code>minder_utils.models.feature_selectors.supervised.wrapper</code></h1>
 </header>
 <section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from sklearn.feature_selection import RFE, RFECV
+from minder_utils.models.utils import Feature_selector
+import numpy as np
+
+
+class Wrapper_Selector(Feature_selector):
+    &#39;&#39;&#39;
+    This class provide a set of supervised feature selection methods.
+    Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.
+
+    Currently, it contains:
+        - REF: Recursive feature elimination
+
+    ```Example```
+    ```
+    from minder_utils.models.feature_selectors.supervised.wrapper import Supervised_wrapper
+    from sklearn.svm import SVC
+
+    selector = Supervised_wrapper(SVC(kernel=&#39;linear&#39;), model_name=&#39;rfe&#39;)
+    # show the available methods:
+    selector.get_info(verbose=True)
+
+    # train the selector
+    selector.fit(X, y)
+
+    # do the selection
+    X = selector.transform(X)
+    ```
+    &#39;&#39;&#39;
+
+    def __init__(self, estimator, model_name=&#39;rfe&#39;, num_features=10):
+        &#39;&#39;&#39;
+
+        Parameters
+        ----------
+        estimator: sklearn estimator
+        model_name: &#39;rfe&#39; or &#39;refcv&#39;
+        num_features: int / float, number / percentage of features to be selected
+        &#39;&#39;&#39;
+        self.estimator = estimator
+        self.num_features = num_features
+        super().__init__(model_name)
+
+    def reset_model(self, model_name, num_features=None):
+        self.num_features = self.num_features if num_features is None else num_features
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
+
+    @property
+    def methods(self):
+        return {
+            &#39;rfe&#39;: &#39;Recursive feature elimination&#39;,
+            &#39;rfecv&#39;: &#39;Recursive feature elimination with cross-validation &#39;,
+        }
+
+    def rfe(self):
+        return RFE(self.estimator, n_features_to_select=self.num_features)
+
+    def rfecv(self):
+        return RFECV(self.estimator, min_features_to_select=self.num_features, cv=5)
+
+    def fit(self, X, y):
+        if y.ndim &gt; 1:
+            y = np.argmax(y, axis=1)
+        return self.model.fit(X, y)
+
+    def transform(self, X):
+        return self.model.transform(X)
+
+    def mask_of_features(self):
+        return self.model.support_
+
+    def __name__(self):
+        return &#39;Supervised Filter&#39;, self.name</code></pre>
+</details>
 </section>
 <section>
 </section>
@@ -31,6 +110,224 @@
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector"><code class="flex name class">
+<span>class <span class="ident">Wrapper_Selector</span></span>
+<span>(</span><span>estimator, model_name='rfe', num_features=10)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class provide a set of supervised feature selection methods.
+Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.</p>
+<p>Currently, it contains:
+- REF: Recursive feature elimination</p>
+<p><code>Example</code></p>
+<pre><code>from minder_utils.models.feature_selectors.supervised.wrapper import Supervised_wrapper
+from sklearn.svm import SVC
+
+selector = Supervised_wrapper(SVC(kernel='linear'), model_name='rfe')
+# show the available methods:
+selector.get_info(verbose=True)
+
+# train the selector
+selector.fit(X, y)
+
+# do the selection
+X = selector.transform(X)
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>estimator</code></strong> :&ensp;<code>sklearn estimator</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>model_name</code></strong> :&ensp;<code>'rfe'</code> or <code>'refcv'</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>num_features</code></strong> :&ensp;<code>int / float, number / percentage</code> of <code>features to be selected</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Wrapper_Selector(Feature_selector):
+    &#39;&#39;&#39;
+    This class provide a set of supervised feature selection methods.
+    Particularly, it contains a set of filter methods, which will perform SEPARATELY with the classifier.
+
+    Currently, it contains:
+        - REF: Recursive feature elimination
+
+    ```Example```
+    ```
+    from minder_utils.models.feature_selectors.supervised.wrapper import Supervised_wrapper
+    from sklearn.svm import SVC
+
+    selector = Supervised_wrapper(SVC(kernel=&#39;linear&#39;), model_name=&#39;rfe&#39;)
+    # show the available methods:
+    selector.get_info(verbose=True)
+
+    # train the selector
+    selector.fit(X, y)
+
+    # do the selection
+    X = selector.transform(X)
+    ```
+    &#39;&#39;&#39;
+
+    def __init__(self, estimator, model_name=&#39;rfe&#39;, num_features=10):
+        &#39;&#39;&#39;
+
+        Parameters
+        ----------
+        estimator: sklearn estimator
+        model_name: &#39;rfe&#39; or &#39;refcv&#39;
+        num_features: int / float, number / percentage of features to be selected
+        &#39;&#39;&#39;
+        self.estimator = estimator
+        self.num_features = num_features
+        super().__init__(model_name)
+
+    def reset_model(self, model_name, num_features=None):
+        self.num_features = self.num_features if num_features is None else num_features
+        self.name = self.methods[model_name]
+        self.model = getattr(self, model_name)()
+
+    @property
+    def methods(self):
+        return {
+            &#39;rfe&#39;: &#39;Recursive feature elimination&#39;,
+            &#39;rfecv&#39;: &#39;Recursive feature elimination with cross-validation &#39;,
+        }
+
+    def rfe(self):
+        return RFE(self.estimator, n_features_to_select=self.num_features)
+
+    def rfecv(self):
+        return RFECV(self.estimator, min_features_to_select=self.num_features, cv=5)
+
+    def fit(self, X, y):
+        if y.ndim &gt; 1:
+            y = np.argmax(y, axis=1)
+        return self.model.fit(X, y)
+
+    def transform(self, X):
+        return self.model.transform(X)
+
+    def mask_of_features(self):
+        return self.model.support_
+
+    def __name__(self):
+        return &#39;Supervised Filter&#39;, self.name</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="minder_utils.models.utils.feature_selector.Feature_selector" href="../../utils/feature_selector.html#minder_utils.models.utils.feature_selector.Feature_selector">Feature_selector</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.methods"><code class="name">var <span class="ident">methods</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def methods(self):
+    return {
+        &#39;rfe&#39;: &#39;Recursive feature elimination&#39;,
+        &#39;rfecv&#39;: &#39;Recursive feature elimination with cross-validation &#39;,
+    }</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, X, y)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fit(self, X, y):
+    if y.ndim &gt; 1:
+        y = np.argmax(y, axis=1)
+    return self.model.fit(X, y)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.mask_of_features"><code class="name flex">
+<span>def <span class="ident">mask_of_features</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mask_of_features(self):
+    return self.model.support_</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.reset_model"><code class="name flex">
+<span>def <span class="ident">reset_model</span></span>(<span>self, model_name, num_features=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_model(self, model_name, num_features=None):
+    self.num_features = self.num_features if num_features is None else num_features
+    self.name = self.methods[model_name]
+    self.model = getattr(self, model_name)()</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.rfe"><code class="name flex">
+<span>def <span class="ident">rfe</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rfe(self):
+    return RFE(self.estimator, n_features_to_select=self.num_features)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.rfecv"><code class="name flex">
+<span>def <span class="ident">rfecv</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rfecv(self):
+    return RFECV(self.estimator, min_features_to_select=self.num_features, cv=5)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.transform"><code class="name flex">
+<span>def <span class="ident">transform</span></span>(<span>self, X)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transform(self, X):
+    return self.model.transform(X)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -47,6 +344,22 @@
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="minder_utils.models.feature_selectors.supervised" href="index.html">minder_utils.models.feature_selectors.supervised</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector" href="#minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector">Wrapper_Selector</a></code></h4>
+<ul class="two-column">
+<li><code><a title="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.fit" href="#minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.fit">fit</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.mask_of_features" href="#minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.mask_of_features">mask_of_features</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.methods" href="#minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.methods">methods</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.reset_model" href="#minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.reset_model">reset_model</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.rfe" href="#minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.rfe">rfe</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.rfecv" href="#minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.rfecv">rfecv</a></code></li>
+<li><code><a title="minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.transform" href="#minder_utils.models.feature_selectors.supervised.wrapper.Wrapper_Selector.transform">transform</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

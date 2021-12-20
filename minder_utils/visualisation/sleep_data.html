@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>minder_utils.visualisation.sleep_data API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<style>.homelink{display:block;font-size:2em;font-weight:bold;color:#555;padding-bottom:.5em;border-bottom:1px solid silver}.homelink:hover{color:inherit}.homelink img{max-width:20%;max-height:5em;margin:auto;margin-bottom:.3em}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>minder_utils.visualisation.sleep_data</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import pandas as pd
+import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+from minder_utils.util import formatting_plots
+from minder_utils.configurations import visual_config
+
+sns.set()
+
+
+class Visual_Sleep:
+    def __init__(self, path, style=&#39;age&#39;, filename=&#39;imperial_dementia_20211026&#39;):
+        &#39;&#39;&#39;
+        Visualise the sleep data
+        Parameters
+        ----------
+        path: str, path to the sleep data
+        style: str, plot style
+            - age: lineplot, hue = age
+            - joint:  lineplot, hue = age, style = Sleep Time
+            - face: facegrid
+            - re: relation plot
+
+        &#39;&#39;&#39;
+        self.config = visual_config[&#39;sleep&#39;]
+        self.style = style
+        if &#39;imperial&#39; in filename:
+            self.data = pd.read_csv(os.path.join(path, filename + &#39;.csv&#39;), delimiter=&#39;;&#39;)
+        else:
+            self.data = pd.read_csv(os.path.join(path, filename + &#39;.csv&#39;))
+
+        # Divide the data by time
+        self.data.start_date = pd.to_datetime(self.data.start_date)
+        self.data[&#39;Sleep Time&#39;] = &#39;Late&#39;
+        index = pd.DatetimeIndex(self.data.start_date)
+        self.data[&#39;Sleep Time&#39;].iloc[index.indexer_between_time(&#39;10:00&#39;, &#39;21:00&#39;)] = &#39;Early&#39;
+        if &#39;imperial&#39; in filename:
+            self.data[&#39;age&#39;] = 2021 - pd.to_datetime(self.data[&#39;birthdate&#39;]).dt.year
+            self.data = self.data[self.data[&#39;age&#39;] &gt;= 60]
+        # Group by ages
+        self.data.age[self.data.age &lt;= 50] = 0
+        self.data.age[(self.data.age &gt; 50) &amp; (self.data.age &lt;= 60)] = 1
+        self.data.age[(self.data.age &gt; 60) &amp; (self.data.age &lt;= 70)] = 2
+        self.data.age[(self.data.age &gt; 70) &amp; (self.data.age &lt;= 80)] = 3
+        self.data.age[self.data.age &gt; 80] = 4
+        mapping = {
+            0: &#39;&lt;=50&#39;, 1: &#39;50-60&#39;, 2: &#39;60-70&#39;, 3: &#39;70-80&#39;, 4: &#39;&gt;80&#39;
+        }
+        self.data.age = self.data.age.map(mapping)
+
+        new_cols = []
+        for col in self.data.columns:
+            append = True
+            for ele in self.config[&#39;stages&#39;]:
+                if col in ele:
+                    new_cols.append(ele)
+                    append = False
+            if append:
+                new_cols.append(col)
+        self.data.columns = new_cols
+
+        df = self.data[self.config[&#39;stages&#39;]]
+        for col in self.config[&#39;stages&#39;]:
+            if col not in [&#39;Sleep Time&#39;, &#39;age&#39;, &#39;user_id&#39;]:
+                df = self.filter_df(df, col)
+                df[col] /= 3600
+        df[&#39;Sleep&#39;] = df[&#39;light_duration (s)&#39;] + df[&#39;deep_duration (s)&#39;] + df[&#39;rem_duration (s)&#39;]
+        df = df[[&#39;user_id&#39;, &#39;awake_duration (s)&#39;, &#39;Sleep Time&#39;, &#39;age&#39;, &#39;Sleep&#39;]]
+        df = df.melt(id_vars=[&#39;user_id&#39;, &#39;Sleep Time&#39;, &#39;age&#39;], var_name=&#39;State&#39;, value_name=&#39;Duration (H)&#39;)
+        mapping = {
+            &#39;awake_duration (s)&#39;: &#39;Awake in bed&#39;,
+            &#39;Sleep&#39;: &#39;Sleep&#39;
+        }
+        df[&#39;State&#39;] = df[&#39;State&#39;].map(mapping)
+        self.df = df
+
+    @formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False)
+    def lineplot(self):
+        self.plt_func(sns.lineplot)
+
+    @formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False)
+    def violinplot(self):
+        self.plt_func(sns.violinplot)
+
+    @formatting_plots(title=&#39;Duration of different states&#39;, save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def boxplot_separate(self):
+        self.plt_func(sns.boxplot)
+
+    @formatting_plots(title=&#39;Duration of different states&#39;, save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def boxplot_joint(self):
+        style = self.style
+        self.style = &#39;no_hue&#39;
+        self.plt_func(sns.boxplot)
+        self.style = style
+
+    @staticmethod
+    def filter_df(df, col, width=1.5):
+        # Computing IQR
+        new_df = []
+        for age in df.age.unique():
+            Q1 = df[df.age == age][col].quantile(0.25)
+            Q3 = df[df.age == age][col].quantile(0.75)
+            IQR = Q3 - Q1
+            indices = (df[df.age == age][col] &gt;= Q1 - width * IQR) &amp; (df[df.age == age][col] &lt;= Q3 + width * IQR)
+            new_df.append(df[df.age == age].loc[indices])
+        # Filtering Values between Q1-1.5IQR and Q3+1.5IQR
+        return pd.concat(new_df)
+
+    def plt_func(self, func, x_name=&#39;State&#39;, y_name=&#39;Duration (H)&#39;, hue_name=&#39;age&#39;):
+        if self.style == &#39;age&#39;:
+            length = len(self.df[hue_name].unique())
+            func(x=x_name, y=y_name, hue=hue_name, data=self.df, hue_order=self.config[&#39;hue_order&#39;][-length:])
+        elif self.style == &#39;joint&#39;:
+            try:
+                func(x=x_name, y=y_name, hue=hue_name, style=&#39;Sleep Time&#39;, data=self.df,
+                     hue_order=self.config[&#39;hue_order&#39;])
+            except TypeError:
+                func(x=x_name, y=y_name, hue=hue_name, data=self.df,
+                     hue_order=self.config[&#39;hue_order&#39;])
+        elif self.style == &#39;face&#39;:
+            g = sns.FacetGrid(self.df, col=hue_name, row=&#39;Sleep Time&#39;, col_order=self.config[&#39;hue_order&#39;])
+            g.map(func, x_name, y_name)
+            for axes in g.axes.flat:
+                _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)
+        elif self.style == &#39;re&#39;:
+            sns.relplot(
+                data=self.df,
+                x=x_name, y=y_name,
+                hue=&#34;Sleep Time&#34;, col=hue_name,
+                kind=&#34;line&#34;,
+            )
+        else:
+            func(x=x_name, y=y_name, data=self.df, hue_order=self.config[&#39;hue_order&#39;])
+
+    @formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False)
+    def visual_phy(self):
+        df = self.data[self.config[&#39;phy_stages&#39;]]
+        for col in self.config[&#39;phy_stages&#39;]:
+            if col not in [&#39;age&#39;]:
+                df[col] = df[col].apply(lambda x: float(&#39;.&#39;.join(str(x).split(&#39;,&#39;))))
+                df[col] = self.filter_df(df, col)
+                df[col] /= df[col].max()
+        df = df.melt(id_vars=&#39;age&#39;, var_name=&#39;Other Data&#39;, value_name=&#39;Value&#39;)
+        sns.boxplot(x=&#39;Other Data&#39;, y=&#39;Value&#39;, hue=&#39;age&#39;, hue_order=self.config[&#39;hue_order&#39;], data=df)
+
+    @formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False,
+                      title=&#39;Time of participants went to bed&#39;)
+    def visualise_counts(self):
+        df = self.data[[&#39;age&#39;, &#39;Sleep Time&#39;, &#39;start_date&#39;]]
+        df.start_date = pd.to_datetime(df.start_date)
+        df[&#39;Time&#39;] = df.start_date.dt.hour
+        df[&#39;Percentage&#39;] = 1
+        df = df.groupby(by=[&#39;Sleep Time&#39;, &#39;age&#39;, &#39;Time&#39;])[&#39;Percentage&#39;].sum().reset_index()
+        for a in df.age.unique():
+            df[&#39;Percentage&#39;][df.age == a] /= sum(df[df.age == a][&#39;Percentage&#39;])
+
+        sns.lineplot(x=&#39;Time&#39;, y=&#39;Percentage&#39;, hue=&#39;age&#39;, linestyle=&#39;--&#39;, hue_order=self.config[&#39;hue_order&#39;], data=df)
+        plt.ylim(0, 0.35)
+
+        ticks = []
+        for i in range(24):
+            ticks.append(&#39;{}.00&#39;.format(str(i).zfill(2)))
+        plt.xticks(range(24), ticks)
+        plt.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, 1.15),
+               fancybox=True, shadow=True, ncol=5)
+
+
+if __name__ == &#39;__main__&#39;:
+    vs = Visual_Sleep(&#39;/Users/mozzie/Desktop/DATA.nosync/sleep_mat&#39;, &#39;age&#39;)
+    vs.visualise_counts()
+    vs.boxplot_joint()
+    # vs.boxplot_separate()
+
+    vs_with = Visual_Sleep(&#39;/Users/mozzie/Desktop/DATA.nosync/sleep_mat&#39;, &#39;age&#39;, filename=&#39;withings_sleep_dataset&#39;)
+
+    # Joint, Controlled age group
+    minder = vs.df
+    minder[&#39;Dataset&#39;] = &#39;Dementia&#39;
+
+    withings = vs_with.df
+
+    withings_ages = dict(withings.age.value_counts())
+    minder_ages = dict(minder.age.value_counts())
+    min_times = 100000
+    for age in minder_ages:
+        times = withings_ages[age] / minder_ages[age]
+        if times &lt; min_times:
+            min_times = times
+    withings_df = []
+    mappings = {}
+    for age in minder_ages:
+        num = minder_ages[age] * min_times
+        mappings[age] = age + &#39; (&#39; + str(round(minder_ages[age] / len(minder) * 100))[:2] + &#39;%&#39; + &#39;)&#39;
+        withings_df.append(withings[withings.age == age].sample(n=int(num)))
+    withings = pd.concat(withings_df)
+    withings[&#39;Dataset&#39;] = &#39;Aged Matched Control Group&#39;
+    withings.age = withings.age.map(mappings)
+    minder.age = minder.age.map(mappings)
+
+    df = pd.concat([minder, withings])
+    sns.boxplot(x=&#39;State&#39;, y=&#39;Duration (H)&#39;, hue=&#39;Dataset&#39;, data=df)
+    plt.savefig(&#39;joint.png&#39;)
+
+    plt.clf()
+    g = sns.FacetGrid(df, col=&#39;age&#39;, col_order=[&#39;60-70 (59%)&#39;, &#39;70-80 (27%)&#39;, &#39;&gt;80 (14%)&#39;])
+    g.map(sns.boxplot, &#39;State&#39;, &#39;Duration (H)&#39;, &#39;Dataset&#39;)
+    g.set(xlabel=None)
+    plt.legend(loc=&#39;center left&#39;, bbox_to_anchor=(-1.4, -0.2),
+               fancybox=True, shadow=True, ncol=5)
+    plt.savefig(&#39;joint_face.png&#39;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.visualisation.sleep_data.Visual_Sleep"><code class="flex name class">
+<span>class <span class="ident">Visual_Sleep</span></span>
+<span>(</span><span>path, style='age', filename='imperial_dementia_20211026')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Visualise the sleep data
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str, path to the sleep data</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>style</code></strong> :&ensp;<code>str, plot style</code></dt>
+<dd>
+<ul>
+<li>age: lineplot, hue = age</li>
+<li>joint:
+lineplot, hue = age, style = Sleep Time</li>
+<li>face: facegrid</li>
+<li>re: relation plot</li>
+</ul>
+</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Visual_Sleep:
+    def __init__(self, path, style=&#39;age&#39;, filename=&#39;imperial_dementia_20211026&#39;):
+        &#39;&#39;&#39;
+        Visualise the sleep data
+        Parameters
+        ----------
+        path: str, path to the sleep data
+        style: str, plot style
+            - age: lineplot, hue = age
+            - joint:  lineplot, hue = age, style = Sleep Time
+            - face: facegrid
+            - re: relation plot
+
+        &#39;&#39;&#39;
+        self.config = visual_config[&#39;sleep&#39;]
+        self.style = style
+        if &#39;imperial&#39; in filename:
+            self.data = pd.read_csv(os.path.join(path, filename + &#39;.csv&#39;), delimiter=&#39;;&#39;)
+        else:
+            self.data = pd.read_csv(os.path.join(path, filename + &#39;.csv&#39;))
+
+        # Divide the data by time
+        self.data.start_date = pd.to_datetime(self.data.start_date)
+        self.data[&#39;Sleep Time&#39;] = &#39;Late&#39;
+        index = pd.DatetimeIndex(self.data.start_date)
+        self.data[&#39;Sleep Time&#39;].iloc[index.indexer_between_time(&#39;10:00&#39;, &#39;21:00&#39;)] = &#39;Early&#39;
+        if &#39;imperial&#39; in filename:
+            self.data[&#39;age&#39;] = 2021 - pd.to_datetime(self.data[&#39;birthdate&#39;]).dt.year
+            self.data = self.data[self.data[&#39;age&#39;] &gt;= 60]
+        # Group by ages
+        self.data.age[self.data.age &lt;= 50] = 0
+        self.data.age[(self.data.age &gt; 50) &amp; (self.data.age &lt;= 60)] = 1
+        self.data.age[(self.data.age &gt; 60) &amp; (self.data.age &lt;= 70)] = 2
+        self.data.age[(self.data.age &gt; 70) &amp; (self.data.age &lt;= 80)] = 3
+        self.data.age[self.data.age &gt; 80] = 4
+        mapping = {
+            0: &#39;&lt;=50&#39;, 1: &#39;50-60&#39;, 2: &#39;60-70&#39;, 3: &#39;70-80&#39;, 4: &#39;&gt;80&#39;
+        }
+        self.data.age = self.data.age.map(mapping)
+
+        new_cols = []
+        for col in self.data.columns:
+            append = True
+            for ele in self.config[&#39;stages&#39;]:
+                if col in ele:
+                    new_cols.append(ele)
+                    append = False
+            if append:
+                new_cols.append(col)
+        self.data.columns = new_cols
+
+        df = self.data[self.config[&#39;stages&#39;]]
+        for col in self.config[&#39;stages&#39;]:
+            if col not in [&#39;Sleep Time&#39;, &#39;age&#39;, &#39;user_id&#39;]:
+                df = self.filter_df(df, col)
+                df[col] /= 3600
+        df[&#39;Sleep&#39;] = df[&#39;light_duration (s)&#39;] + df[&#39;deep_duration (s)&#39;] + df[&#39;rem_duration (s)&#39;]
+        df = df[[&#39;user_id&#39;, &#39;awake_duration (s)&#39;, &#39;Sleep Time&#39;, &#39;age&#39;, &#39;Sleep&#39;]]
+        df = df.melt(id_vars=[&#39;user_id&#39;, &#39;Sleep Time&#39;, &#39;age&#39;], var_name=&#39;State&#39;, value_name=&#39;Duration (H)&#39;)
+        mapping = {
+            &#39;awake_duration (s)&#39;: &#39;Awake in bed&#39;,
+            &#39;Sleep&#39;: &#39;Sleep&#39;
+        }
+        df[&#39;State&#39;] = df[&#39;State&#39;].map(mapping)
+        self.df = df
+
+    @formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False)
+    def lineplot(self):
+        self.plt_func(sns.lineplot)
+
+    @formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False)
+    def violinplot(self):
+        self.plt_func(sns.violinplot)
+
+    @formatting_plots(title=&#39;Duration of different states&#39;, save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def boxplot_separate(self):
+        self.plt_func(sns.boxplot)
+
+    @formatting_plots(title=&#39;Duration of different states&#39;, save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+    def boxplot_joint(self):
+        style = self.style
+        self.style = &#39;no_hue&#39;
+        self.plt_func(sns.boxplot)
+        self.style = style
+
+    @staticmethod
+    def filter_df(df, col, width=1.5):
+        # Computing IQR
+        new_df = []
+        for age in df.age.unique():
+            Q1 = df[df.age == age][col].quantile(0.25)
+            Q3 = df[df.age == age][col].quantile(0.75)
+            IQR = Q3 - Q1
+            indices = (df[df.age == age][col] &gt;= Q1 - width * IQR) &amp; (df[df.age == age][col] &lt;= Q3 + width * IQR)
+            new_df.append(df[df.age == age].loc[indices])
+        # Filtering Values between Q1-1.5IQR and Q3+1.5IQR
+        return pd.concat(new_df)
+
+    def plt_func(self, func, x_name=&#39;State&#39;, y_name=&#39;Duration (H)&#39;, hue_name=&#39;age&#39;):
+        if self.style == &#39;age&#39;:
+            length = len(self.df[hue_name].unique())
+            func(x=x_name, y=y_name, hue=hue_name, data=self.df, hue_order=self.config[&#39;hue_order&#39;][-length:])
+        elif self.style == &#39;joint&#39;:
+            try:
+                func(x=x_name, y=y_name, hue=hue_name, style=&#39;Sleep Time&#39;, data=self.df,
+                     hue_order=self.config[&#39;hue_order&#39;])
+            except TypeError:
+                func(x=x_name, y=y_name, hue=hue_name, data=self.df,
+                     hue_order=self.config[&#39;hue_order&#39;])
+        elif self.style == &#39;face&#39;:
+            g = sns.FacetGrid(self.df, col=hue_name, row=&#39;Sleep Time&#39;, col_order=self.config[&#39;hue_order&#39;])
+            g.map(func, x_name, y_name)
+            for axes in g.axes.flat:
+                _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)
+        elif self.style == &#39;re&#39;:
+            sns.relplot(
+                data=self.df,
+                x=x_name, y=y_name,
+                hue=&#34;Sleep Time&#34;, col=hue_name,
+                kind=&#34;line&#34;,
+            )
+        else:
+            func(x=x_name, y=y_name, data=self.df, hue_order=self.config[&#39;hue_order&#39;])
+
+    @formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False)
+    def visual_phy(self):
+        df = self.data[self.config[&#39;phy_stages&#39;]]
+        for col in self.config[&#39;phy_stages&#39;]:
+            if col not in [&#39;age&#39;]:
+                df[col] = df[col].apply(lambda x: float(&#39;.&#39;.join(str(x).split(&#39;,&#39;))))
+                df[col] = self.filter_df(df, col)
+                df[col] /= df[col].max()
+        df = df.melt(id_vars=&#39;age&#39;, var_name=&#39;Other Data&#39;, value_name=&#39;Value&#39;)
+        sns.boxplot(x=&#39;Other Data&#39;, y=&#39;Value&#39;, hue=&#39;age&#39;, hue_order=self.config[&#39;hue_order&#39;], data=df)
+
+    @formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False,
+                      title=&#39;Time of participants went to bed&#39;)
+    def visualise_counts(self):
+        df = self.data[[&#39;age&#39;, &#39;Sleep Time&#39;, &#39;start_date&#39;]]
+        df.start_date = pd.to_datetime(df.start_date)
+        df[&#39;Time&#39;] = df.start_date.dt.hour
+        df[&#39;Percentage&#39;] = 1
+        df = df.groupby(by=[&#39;Sleep Time&#39;, &#39;age&#39;, &#39;Time&#39;])[&#39;Percentage&#39;].sum().reset_index()
+        for a in df.age.unique():
+            df[&#39;Percentage&#39;][df.age == a] /= sum(df[df.age == a][&#39;Percentage&#39;])
+
+        sns.lineplot(x=&#39;Time&#39;, y=&#39;Percentage&#39;, hue=&#39;age&#39;, linestyle=&#39;--&#39;, hue_order=self.config[&#39;hue_order&#39;], data=df)
+        plt.ylim(0, 0.35)
+
+        ticks = []
+        for i in range(24):
+            ticks.append(&#39;{}.00&#39;.format(str(i).zfill(2)))
+        plt.xticks(range(24), ticks)
+        plt.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, 1.15),
+               fancybox=True, shadow=True, ncol=5)</code></pre>
+</details>
+<h3>Static methods</h3>
+<dl>
+<dt id="minder_utils.visualisation.sleep_data.Visual_Sleep.filter_df"><code class="name flex">
+<span>def <span class="ident">filter_df</span></span>(<span>df, col, width=1.5)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def filter_df(df, col, width=1.5):
+    # Computing IQR
+    new_df = []
+    for age in df.age.unique():
+        Q1 = df[df.age == age][col].quantile(0.25)
+        Q3 = df[df.age == age][col].quantile(0.75)
+        IQR = Q3 - Q1
+        indices = (df[df.age == age][col] &gt;= Q1 - width * IQR) &amp; (df[df.age == age][col] &lt;= Q3 + width * IQR)
+        new_df.append(df[df.age == age].loc[indices])
+    # Filtering Values between Q1-1.5IQR and Q3+1.5IQR
+    return pd.concat(new_df)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.visualisation.sleep_data.Visual_Sleep.boxplot_joint"><code class="name flex">
+<span>def <span class="ident">boxplot_joint</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(title=&#39;Duration of different states&#39;, save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+def boxplot_joint(self):
+    style = self.style
+    self.style = &#39;no_hue&#39;
+    self.plt_func(sns.boxplot)
+    self.style = style</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.sleep_data.Visual_Sleep.boxplot_separate"><code class="name flex">
+<span>def <span class="ident">boxplot_separate</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(title=&#39;Duration of different states&#39;, save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=0, legend=False)
+def boxplot_separate(self):
+    self.plt_func(sns.boxplot)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.sleep_data.Visual_Sleep.lineplot"><code class="name flex">
+<span>def <span class="ident">lineplot</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False)
+def lineplot(self):
+    self.plt_func(sns.lineplot)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.sleep_data.Visual_Sleep.plt_func"><code class="name flex">
+<span>def <span class="ident">plt_func</span></span>(<span>self, func, x_name='State', y_name='Duration (H)', hue_name='age')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plt_func(self, func, x_name=&#39;State&#39;, y_name=&#39;Duration (H)&#39;, hue_name=&#39;age&#39;):
+    if self.style == &#39;age&#39;:
+        length = len(self.df[hue_name].unique())
+        func(x=x_name, y=y_name, hue=hue_name, data=self.df, hue_order=self.config[&#39;hue_order&#39;][-length:])
+    elif self.style == &#39;joint&#39;:
+        try:
+            func(x=x_name, y=y_name, hue=hue_name, style=&#39;Sleep Time&#39;, data=self.df,
+                 hue_order=self.config[&#39;hue_order&#39;])
+        except TypeError:
+            func(x=x_name, y=y_name, hue=hue_name, data=self.df,
+                 hue_order=self.config[&#39;hue_order&#39;])
+    elif self.style == &#39;face&#39;:
+        g = sns.FacetGrid(self.df, col=hue_name, row=&#39;Sleep Time&#39;, col_order=self.config[&#39;hue_order&#39;])
+        g.map(func, x_name, y_name)
+        for axes in g.axes.flat:
+            _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)
+    elif self.style == &#39;re&#39;:
+        sns.relplot(
+            data=self.df,
+            x=x_name, y=y_name,
+            hue=&#34;Sleep Time&#34;, col=hue_name,
+            kind=&#34;line&#34;,
+        )
+    else:
+        func(x=x_name, y=y_name, data=self.df, hue_order=self.config[&#39;hue_order&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.sleep_data.Visual_Sleep.violinplot"><code class="name flex">
+<span>def <span class="ident">violinplot</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False)
+def violinplot(self):
+    self.plt_func(sns.violinplot)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.sleep_data.Visual_Sleep.visual_phy"><code class="name flex">
+<span>def <span class="ident">visual_phy</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False)
+def visual_phy(self):
+    df = self.data[self.config[&#39;phy_stages&#39;]]
+    for col in self.config[&#39;phy_stages&#39;]:
+        if col not in [&#39;age&#39;]:
+            df[col] = df[col].apply(lambda x: float(&#39;.&#39;.join(str(x).split(&#39;,&#39;))))
+            df[col] = self.filter_df(df, col)
+            df[col] /= df[col].max()
+    df = df.melt(id_vars=&#39;age&#39;, var_name=&#39;Other Data&#39;, value_name=&#39;Value&#39;)
+    sns.boxplot(x=&#39;Other Data&#39;, y=&#39;Value&#39;, hue=&#39;age&#39;, hue_order=self.config[&#39;hue_order&#39;], data=df)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.visualisation.sleep_data.Visual_Sleep.visualise_counts"><code class="name flex">
+<span>def <span class="ident">visualise_counts</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@formatting_plots(save_path=visual_config[&#39;sleep&#39;][&#39;save_path&#39;], rotation=90, legend=False,
+                  title=&#39;Time of participants went to bed&#39;)
+def visualise_counts(self):
+    df = self.data[[&#39;age&#39;, &#39;Sleep Time&#39;, &#39;start_date&#39;]]
+    df.start_date = pd.to_datetime(df.start_date)
+    df[&#39;Time&#39;] = df.start_date.dt.hour
+    df[&#39;Percentage&#39;] = 1
+    df = df.groupby(by=[&#39;Sleep Time&#39;, &#39;age&#39;, &#39;Time&#39;])[&#39;Percentage&#39;].sum().reset_index()
+    for a in df.age.unique():
+        df[&#39;Percentage&#39;][df.age == a] /= sum(df[df.age == a][&#39;Percentage&#39;])
+
+    sns.lineplot(x=&#39;Time&#39;, y=&#39;Percentage&#39;, hue=&#39;age&#39;, linestyle=&#39;--&#39;, hue_order=self.config[&#39;hue_order&#39;], data=df)
+    plt.ylim(0, 0.35)
+
+    ticks = []
+    for i in range(24):
+        ticks.append(&#39;{}.00&#39;.format(str(i).zfill(2)))
+    plt.xticks(range(24), ticks)
+    plt.legend(loc=&#39;upper center&#39;, bbox_to_anchor=(0.5, 1.15),
+           fancybox=True, shadow=True, ncol=5)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<header>
+<a class="homelink" rel="home" title="Minder Utils" href="https://minder-utils.github.io">
+<img src="https://github.com/ImperialCollegeLondon/minder_utils/blob/main/UKDRI_logo.jpeg?raw=true" alt=""> Minder Utils
+</a>
+</header>
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="minder_utils.visualisation" href="index.html">minder_utils.visualisation</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.visualisation.sleep_data.Visual_Sleep" href="#minder_utils.visualisation.sleep_data.Visual_Sleep">Visual_Sleep</a></code></h4>
+<ul class="two-column">
+<li><code><a title="minder_utils.visualisation.sleep_data.Visual_Sleep.boxplot_joint" href="#minder_utils.visualisation.sleep_data.Visual_Sleep.boxplot_joint">boxplot_joint</a></code></li>
+<li><code><a title="minder_utils.visualisation.sleep_data.Visual_Sleep.boxplot_separate" href="#minder_utils.visualisation.sleep_data.Visual_Sleep.boxplot_separate">boxplot_separate</a></code></li>
+<li><code><a title="minder_utils.visualisation.sleep_data.Visual_Sleep.filter_df" href="#minder_utils.visualisation.sleep_data.Visual_Sleep.filter_df">filter_df</a></code></li>
+<li><code><a title="minder_utils.visualisation.sleep_data.Visual_Sleep.lineplot" href="#minder_utils.visualisation.sleep_data.Visual_Sleep.lineplot">lineplot</a></code></li>
+<li><code><a title="minder_utils.visualisation.sleep_data.Visual_Sleep.plt_func" href="#minder_utils.visualisation.sleep_data.Visual_Sleep.plt_func">plt_func</a></code></li>
+<li><code><a title="minder_utils.visualisation.sleep_data.Visual_Sleep.violinplot" href="#minder_utils.visualisation.sleep_data.Visual_Sleep.violinplot">violinplot</a></code></li>
+<li><code><a title="minder_utils.visualisation.sleep_data.Visual_Sleep.visual_phy" href="#minder_utils.visualisation.sleep_data.Visual_Sleep.visual_phy">visual_phy</a></code></li>
+<li><code><a title="minder_utils.visualisation.sleep_data.Visual_Sleep.visualise_counts" href="#minder_utils.visualisation.sleep_data.Visual_Sleep.visualise_counts">visualise_counts</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

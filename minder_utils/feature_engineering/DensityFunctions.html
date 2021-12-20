@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>minder_utils.feature_engineering.DensityFunctions API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<style>.homelink{display:block;font-size:2em;font-weight:bold;color:#555;padding-bottom:.5em;border-bottom:1px solid silver}.homelink:hover{color:inherit}.homelink img{max-width:20%;max-height:5em;margin:auto;margin-bottom:.3em}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>minder_utils.feature_engineering.DensityFunctions</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import numpy as np
+import sys
+from minder_utils.util.util import PBar
+
+
+class BaseDensityCalc:
+    &#39;&#39;&#39;
+    This class allows for the calculations of densities based on previous data.
+    For example, it can calculate the probability of a sample having a value,
+    given a baseline dataset.
+    
+    Arguments
+    ---------
+    
+    - save_baseline_array: bool:
+        This dictates whether the whole of the baseline array will be saved
+        for use in calculating the densities in the future.
+        
+    - sample: bool:
+        This dictates whether a sample of the values should be used to fit the
+        model instead of the entire dataset. This is recommended for large datasets.
+    
+    - sample_size: integer:
+        This is the size of the sample to be taken from the array passed in the fit function.
+        This will only have an effect if ```sample=True```.
+    
+    - seed: integer:
+        This seed is used within the random operations of this function. Setting the ```seed```
+        will make the random operations deterministic.
+    
+    - verbose: bool:
+        This dictates whether the class will print information related to its progress.
+    
+    &#39;&#39;&#39;
+
+    def __init__(self, save_baseline_array=True, sample=False, sample_size=10000, seed=None, verbose=True):
+
+        self.is_fitted = False
+        self.save_baseline_array = save_baseline_array
+        self.methods_possible = [&#39;reverse_percentiles&#39;]
+        self.batch_size = -1
+        self.sample = sample
+        self.sample_size = sample_size
+        self.rng = np.random.default_rng(seed)
+        self.verbose = verbose
+
+        return
+
+    def fit(self, values):
+        &#39;&#39;&#39;
+        Arguments
+        ---------
+        
+        - values: array:
+            This array contains the delta values that will be used in the calculations.
+            Please ensure that this is an array of shape (N,L) where N is the number 
+            of samples and L is the number of features.
+        
+        
+        &#39;&#39;&#39;
+
+        if values.shape[0] &lt; self.sample_size:
+            self.sample = False
+            if self.verbose:
+                print(&#39;Sample will not be used, since the sample size given is larger than the dataset.&#39;)
+
+        if self.save_baseline_array:
+
+            if len(values.shape) == 1:
+                raise TypeError(
+                    &#39;Please ensure that values is of shape (N,L) where N is the number of samples and L is the number of features.&#39;)
+
+            if self.sample:
+                sample_index = self.rng.integers(values.shape[0], size=self.sample_size)
+                self._baseline_values = values[sample_index]
+            else:
+                self._baseline_values = values
+
+
+        else:
+            raise TypeError(&#39;save_baseline_array = False is not currently supported.&#39;)
+
+        self.is_fitted = True
+
+        if values.shape[0] * values.shape[1] &gt; 10000:
+            if self.sample:
+                self.batch_size = 10000
+            else:
+                self.batch_size = 200
+
+        return self
+
+    def _calculate_reverse_percentiles(self, values, kind=&#39;rank&#39;):
+        &#39;&#39;&#39;
+        This function calculates the reverse percentiles from an array of values,
+        given the baseline_values provided in the ```.fit()``` function.
+        
+
+        This function is an edit of the source code of 
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.percentileofscore.html#scipy.stats.percentileofscore
+        
+        My edits allow for the calculation percentiles on arrays.
+        
+        Arguments
+        ---------
+        
+        - values: array:
+            This is an array containing the values for which to calculate the reverse percentile 
+            values for. This array should be of shape (M,L), where L matches the number of features 
+            of the array that the class was fitted on (using ```.fit()```) and M is the number of 
+            values to calculate the reverse percentile for.
+            
+        Returns
+        --------
+        
+        - pct: array:
+            This is an array containing the reverse percentile values for the values in the input.
+        
+        &#39;&#39;&#39;
+
+        base = np.asarray(self._baseline_values)
+        n = base.shape[0]
+
+        if n == 0:
+            return 100.0
+
+        if kind == &#39;rank&#39;:
+            # the None index forces broadcasting in the dimensions that I need.
+            left = np.count_nonzero(base &lt; values[:, None, :], axis=1)
+            right = np.count_nonzero(base &lt;= values[:, None, :], axis=1)
+            pct = (right + left + (right &gt; left)) * 0.5 / n
+
+        elif kind == &#39;strict&#39;:
+            pct = np.count_nonzero(base &lt; values[:, None, :], axis=1) / n
+
+        elif kind == &#39;weak&#39;:
+            pct = np.count_nonzero(base &lt;= values[:, None, :], axis=1) / n
+
+        elif kind == &#39;mean&#39;:
+            pct = (np.count_nonzero(base &lt; values[:, None, :], axis=1)
+                   + np.count_nonzero(base &lt;= values[:, None, :], axis=1)) / n * 0.5
+
+        else:
+            raise ValueError(&#34;kind can only be &#39;rank&#39;, &#39;strict&#39;, &#39;weak&#39; or &#39;mean&#39;&#34;)
+
+        return pct
+
+    def _batcher(self, values, batch_size):
+        &#39;&#39;&#39;
+        This function creates list containing the values, each with size of ```batch_size```
+        or less.
+        &#39;&#39;&#39;
+
+        split_index = np.arange(0, values.shape[0], batch_size)[1:]
+
+        out = np.split(values, split_index)
+        self.n_batches = split_index.shape[0] + 1
+
+        return out
+
+    def threshold_counter(self, values, threshold, axis=0):
+        &#39;&#39;&#39;
+        This counts the number of times there were breaches in the values against a threshold.
+        
+        Arguments
+        ---------
+        
+        - values: array:
+            This is the array to calculate the breaches on.
+        
+        - threshold: float:
+            This is the threshold to use when calculating the breaches.
+        
+        - axis: int:
+            This is the direction in which the breaches are counted. If 0, the breaches
+            are counted over the samples. If 1, over the features.
+        
+        Returns
+        ---------
+        
+        - out: array:
+            This is of shape (1,L) if ```axis = 0``` and (N,1) if ```axis=1```. This means
+            that if the number of features is 1 and ```axis=0```, the returned shape will be 
+            (1,1).
+        
+        &#39;&#39;&#39;
+        breaches = values &gt; threshold
+
+        out = np.sum(breaches, axis=axis, keepdims=True)
+
+        return out
+
+    def transform(self, values, method=&#39;reverse_percentiles&#39;):
+        &#39;&#39;&#39;
+        This function calculates the output of the values given a ```method```.
+        
+        Arguments
+        ---------
+        
+        - values: array:
+            This is the arrray for which the transformation is done.
+        
+        - method: string:
+            This is the method that is used to calculate the transformation.
+            - ```&#39;reverse_percentiles&#39;```: this setting calculates the reverse percentile.
+        
+        Returns
+        ---------
+        
+        - out: array:
+            This is an array containing the transformed values.
+        
+        
+        &#39;&#39;&#39;
+
+        self.methods_possible
+
+        if type(method) == str:
+            if not method in self.methods_possible:
+                raise TypeError(&#39;Please choose from the possible methods: {}&#39;.format(self.methods_possible))
+        else:
+            raise TypeError(
+                &#39;Input must be a string. Please choose from the possible methods:&#39;.format(self.methods_possible))
+
+        if self.batch_size != -1:
+            batches = self._batcher(values, self.batch_size)
+
+        else:
+            batches = [values]
+
+        out = np.zeros(values.shape[1]).reshape(1, -1)
+
+        bar = PBar(show_length=20, n_iterations=len(batches))
+        print_progress = 0
+        for nb, batch in enumerate(batches):
+            if method == &#39;reverse_percentiles&#39;:
+                rp_batch = self._calculate_reverse_percentiles(batch)
+                out = np.vstack([out, rp_batch])
+
+            progress = bar.progress / bar.n_iterations
+            bar.update(1)
+            if self.verbose:
+                sys.stdout.write(&#39;\r&#39;)
+                sys.stdout.write(&#39;Transforming {} - batch number {} / {}&#39;.format(bar.give(), nb + 1, len(batches)))
+                sys.stdout.flush()
+
+        if self.verbose:
+            sys.stdout.write(&#39;\n&#39;)
+
+        out = out[1:]
+
+        return out
+
+    def predict(self, values, method=&#39;threshold_counter&#39;, method_args={&#39;threshold&#39;: 0.7, &#39;axis&#39;: 0},
+                transform_method=&#39;reverse_percentiles&#39;):
+        &#39;&#39;&#39;
+        This function makes predictions on the ```values```.
+        
+        Arguments
+        ---------
+        
+        - values: array:
+            This is the array of values that we wish to calculate the predictions on.
+        
+        - method: string:
+            This is a string that corresponds to the method that will be used to calculate 
+            the predictions. The following methods are available:
+            - ```&#39;threshold_counter```: This counts the number of times that the method is above
+            a given threshold.
+        
+        - method_args: dictionary:
+            Here, you may pass the arguments which are described under the documentation for each of
+            the functions available in the arugment ```method```.
+            
+        - transform_method: string:
+            This is the method used to transform the data before predictions are made. The 
+            available options here are described under the documentation for the ```.transform()```
+            function.
+            
+        Returns
+        ---------
+            
+        - out: array
+            These are the predictions.
+        
+        &#39;&#39;&#39;
+
+        values_tr = self.transform(values)
+
+        if self.batch_size != -1:
+            batches = self._batcher(values_tr, self.batch_size)
+
+        else:
+            batches = [values_tr]
+
+        bar = PBar(show_length=20, n_iterations=len(batches))
+        print_progress = 0
+        out = np.zeros(values.shape[1]).reshape(1, -1)
+        for nb, batch in enumerate(batches):
+
+            if method == &#39;threshold_counter&#39;:
+
+                include = [&#39;threshold&#39;, &#39;axis&#39;]
+                to_include = [argument for argument in include if argument not in method_args]
+                if len(to_include) != 0:
+                    raise TypeError(&#39;Please include the arguments {} in method_args&#39;.format(to_include))
+
+                predict_batch = self.threshold_counter(batch, **method_args)
+                out = np.vstack([out, predict_batch])
+                out = np.sum(out, axis=method_args[&#39;axis&#39;], keepdims=True)
+
+            bar.update(1)
+            progress = bar.progress / bar.n_iterations
+            if self.verbose:
+                sys.stdout.write(&#39;\r&#39;)
+                sys.stdout.write(&#39;Predicting   {} - batch number {} / {}&#39;.format(bar.give(), nb + 1, len(batches)))
+                sys.stdout.flush()
+
+        if self.verbose:
+            sys.stdout.write(&#39;\n&#39;)
+
+        return out</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc"><code class="flex name class">
+<span>class <span class="ident">BaseDensityCalc</span></span>
+<span>(</span><span>save_baseline_array=True, sample=False, sample_size=10000, seed=None, verbose=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class allows for the calculations of densities based on previous data.
+For example, it can calculate the probability of a sample having a value,
+given a baseline dataset.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>save_baseline_array: bool:
+This dictates whether the whole of the baseline array will be saved
+for use in calculating the densities in the future.</p>
+</li>
+<li>
+<p>sample: bool:
+This dictates whether a sample of the values should be used to fit the
+model instead of the entire dataset. This is recommended for large datasets.</p>
+</li>
+<li>
+<p>sample_size: integer:
+This is the size of the sample to be taken from the array passed in the fit function.
+This will only have an effect if <code>sample=True</code>.</p>
+</li>
+<li>
+<p>seed: integer:
+This seed is used within the random operations of this function. Setting the <code>seed</code>
+will make the random operations deterministic.</p>
+</li>
+<li>
+<p>verbose: bool:
+This dictates whether the class will print information related to its progress.</p>
+</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BaseDensityCalc:
+    &#39;&#39;&#39;
+    This class allows for the calculations of densities based on previous data.
+    For example, it can calculate the probability of a sample having a value,
+    given a baseline dataset.
+    
+    Arguments
+    ---------
+    
+    - save_baseline_array: bool:
+        This dictates whether the whole of the baseline array will be saved
+        for use in calculating the densities in the future.
+        
+    - sample: bool:
+        This dictates whether a sample of the values should be used to fit the
+        model instead of the entire dataset. This is recommended for large datasets.
+    
+    - sample_size: integer:
+        This is the size of the sample to be taken from the array passed in the fit function.
+        This will only have an effect if ```sample=True```.
+    
+    - seed: integer:
+        This seed is used within the random operations of this function. Setting the ```seed```
+        will make the random operations deterministic.
+    
+    - verbose: bool:
+        This dictates whether the class will print information related to its progress.
+    
+    &#39;&#39;&#39;
+
+    def __init__(self, save_baseline_array=True, sample=False, sample_size=10000, seed=None, verbose=True):
+
+        self.is_fitted = False
+        self.save_baseline_array = save_baseline_array
+        self.methods_possible = [&#39;reverse_percentiles&#39;]
+        self.batch_size = -1
+        self.sample = sample
+        self.sample_size = sample_size
+        self.rng = np.random.default_rng(seed)
+        self.verbose = verbose
+
+        return
+
+    def fit(self, values):
+        &#39;&#39;&#39;
+        Arguments
+        ---------
+        
+        - values: array:
+            This array contains the delta values that will be used in the calculations.
+            Please ensure that this is an array of shape (N,L) where N is the number 
+            of samples and L is the number of features.
+        
+        
+        &#39;&#39;&#39;
+
+        if values.shape[0] &lt; self.sample_size:
+            self.sample = False
+            if self.verbose:
+                print(&#39;Sample will not be used, since the sample size given is larger than the dataset.&#39;)
+
+        if self.save_baseline_array:
+
+            if len(values.shape) == 1:
+                raise TypeError(
+                    &#39;Please ensure that values is of shape (N,L) where N is the number of samples and L is the number of features.&#39;)
+
+            if self.sample:
+                sample_index = self.rng.integers(values.shape[0], size=self.sample_size)
+                self._baseline_values = values[sample_index]
+            else:
+                self._baseline_values = values
+
+
+        else:
+            raise TypeError(&#39;save_baseline_array = False is not currently supported.&#39;)
+
+        self.is_fitted = True
+
+        if values.shape[0] * values.shape[1] &gt; 10000:
+            if self.sample:
+                self.batch_size = 10000
+            else:
+                self.batch_size = 200
+
+        return self
+
+    def _calculate_reverse_percentiles(self, values, kind=&#39;rank&#39;):
+        &#39;&#39;&#39;
+        This function calculates the reverse percentiles from an array of values,
+        given the baseline_values provided in the ```.fit()``` function.
+        
+
+        This function is an edit of the source code of 
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.percentileofscore.html#scipy.stats.percentileofscore
+        
+        My edits allow for the calculation percentiles on arrays.
+        
+        Arguments
+        ---------
+        
+        - values: array:
+            This is an array containing the values for which to calculate the reverse percentile 
+            values for. This array should be of shape (M,L), where L matches the number of features 
+            of the array that the class was fitted on (using ```.fit()```) and M is the number of 
+            values to calculate the reverse percentile for.
+            
+        Returns
+        --------
+        
+        - pct: array:
+            This is an array containing the reverse percentile values for the values in the input.
+        
+        &#39;&#39;&#39;
+
+        base = np.asarray(self._baseline_values)
+        n = base.shape[0]
+
+        if n == 0:
+            return 100.0
+
+        if kind == &#39;rank&#39;:
+            # the None index forces broadcasting in the dimensions that I need.
+            left = np.count_nonzero(base &lt; values[:, None, :], axis=1)
+            right = np.count_nonzero(base &lt;= values[:, None, :], axis=1)
+            pct = (right + left + (right &gt; left)) * 0.5 / n
+
+        elif kind == &#39;strict&#39;:
+            pct = np.count_nonzero(base &lt; values[:, None, :], axis=1) / n
+
+        elif kind == &#39;weak&#39;:
+            pct = np.count_nonzero(base &lt;= values[:, None, :], axis=1) / n
+
+        elif kind == &#39;mean&#39;:
+            pct = (np.count_nonzero(base &lt; values[:, None, :], axis=1)
+                   + np.count_nonzero(base &lt;= values[:, None, :], axis=1)) / n * 0.5
+
+        else:
+            raise ValueError(&#34;kind can only be &#39;rank&#39;, &#39;strict&#39;, &#39;weak&#39; or &#39;mean&#39;&#34;)
+
+        return pct
+
+    def _batcher(self, values, batch_size):
+        &#39;&#39;&#39;
+        This function creates list containing the values, each with size of ```batch_size```
+        or less.
+        &#39;&#39;&#39;
+
+        split_index = np.arange(0, values.shape[0], batch_size)[1:]
+
+        out = np.split(values, split_index)
+        self.n_batches = split_index.shape[0] + 1
+
+        return out
+
+    def threshold_counter(self, values, threshold, axis=0):
+        &#39;&#39;&#39;
+        This counts the number of times there were breaches in the values against a threshold.
+        
+        Arguments
+        ---------
+        
+        - values: array:
+            This is the array to calculate the breaches on.
+        
+        - threshold: float:
+            This is the threshold to use when calculating the breaches.
+        
+        - axis: int:
+            This is the direction in which the breaches are counted. If 0, the breaches
+            are counted over the samples. If 1, over the features.
+        
+        Returns
+        ---------
+        
+        - out: array:
+            This is of shape (1,L) if ```axis = 0``` and (N,1) if ```axis=1```. This means
+            that if the number of features is 1 and ```axis=0```, the returned shape will be 
+            (1,1).
+        
+        &#39;&#39;&#39;
+        breaches = values &gt; threshold
+
+        out = np.sum(breaches, axis=axis, keepdims=True)
+
+        return out
+
+    def transform(self, values, method=&#39;reverse_percentiles&#39;):
+        &#39;&#39;&#39;
+        This function calculates the output of the values given a ```method```.
+        
+        Arguments
+        ---------
+        
+        - values: array:
+            This is the arrray for which the transformation is done.
+        
+        - method: string:
+            This is the method that is used to calculate the transformation.
+            - ```&#39;reverse_percentiles&#39;```: this setting calculates the reverse percentile.
+        
+        Returns
+        ---------
+        
+        - out: array:
+            This is an array containing the transformed values.
+        
+        
+        &#39;&#39;&#39;
+
+        self.methods_possible
+
+        if type(method) == str:
+            if not method in self.methods_possible:
+                raise TypeError(&#39;Please choose from the possible methods: {}&#39;.format(self.methods_possible))
+        else:
+            raise TypeError(
+                &#39;Input must be a string. Please choose from the possible methods:&#39;.format(self.methods_possible))
+
+        if self.batch_size != -1:
+            batches = self._batcher(values, self.batch_size)
+
+        else:
+            batches = [values]
+
+        out = np.zeros(values.shape[1]).reshape(1, -1)
+
+        bar = PBar(show_length=20, n_iterations=len(batches))
+        print_progress = 0
+        for nb, batch in enumerate(batches):
+            if method == &#39;reverse_percentiles&#39;:
+                rp_batch = self._calculate_reverse_percentiles(batch)
+                out = np.vstack([out, rp_batch])
+
+            progress = bar.progress / bar.n_iterations
+            bar.update(1)
+            if self.verbose:
+                sys.stdout.write(&#39;\r&#39;)
+                sys.stdout.write(&#39;Transforming {} - batch number {} / {}&#39;.format(bar.give(), nb + 1, len(batches)))
+                sys.stdout.flush()
+
+        if self.verbose:
+            sys.stdout.write(&#39;\n&#39;)
+
+        out = out[1:]
+
+        return out
+
+    def predict(self, values, method=&#39;threshold_counter&#39;, method_args={&#39;threshold&#39;: 0.7, &#39;axis&#39;: 0},
+                transform_method=&#39;reverse_percentiles&#39;):
+        &#39;&#39;&#39;
+        This function makes predictions on the ```values```.
+        
+        Arguments
+        ---------
+        
+        - values: array:
+            This is the array of values that we wish to calculate the predictions on.
+        
+        - method: string:
+            This is a string that corresponds to the method that will be used to calculate 
+            the predictions. The following methods are available:
+            - ```&#39;threshold_counter```: This counts the number of times that the method is above
+            a given threshold.
+        
+        - method_args: dictionary:
+            Here, you may pass the arguments which are described under the documentation for each of
+            the functions available in the arugment ```method```.
+            
+        - transform_method: string:
+            This is the method used to transform the data before predictions are made. The 
+            available options here are described under the documentation for the ```.transform()```
+            function.
+            
+        Returns
+        ---------
+            
+        - out: array
+            These are the predictions.
+        
+        &#39;&#39;&#39;
+
+        values_tr = self.transform(values)
+
+        if self.batch_size != -1:
+            batches = self._batcher(values_tr, self.batch_size)
+
+        else:
+            batches = [values_tr]
+
+        bar = PBar(show_length=20, n_iterations=len(batches))
+        print_progress = 0
+        out = np.zeros(values.shape[1]).reshape(1, -1)
+        for nb, batch in enumerate(batches):
+
+            if method == &#39;threshold_counter&#39;:
+
+                include = [&#39;threshold&#39;, &#39;axis&#39;]
+                to_include = [argument for argument in include if argument not in method_args]
+                if len(to_include) != 0:
+                    raise TypeError(&#39;Please include the arguments {} in method_args&#39;.format(to_include))
+
+                predict_batch = self.threshold_counter(batch, **method_args)
+                out = np.vstack([out, predict_batch])
+                out = np.sum(out, axis=method_args[&#39;axis&#39;], keepdims=True)
+
+            bar.update(1)
+            progress = bar.progress / bar.n_iterations
+            if self.verbose:
+                sys.stdout.write(&#39;\r&#39;)
+                sys.stdout.write(&#39;Predicting   {} - batch number {} / {}&#39;.format(bar.give(), nb + 1, len(batches)))
+                sys.stdout.flush()
+
+        if self.verbose:
+            sys.stdout.write(&#39;\n&#39;)
+
+        return out</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="minder_utils.feature_engineering.TimeFunctions.TimeDeltaDensity" href="TimeFunctions.html#minder_utils.feature_engineering.TimeFunctions.TimeDeltaDensity">TimeDeltaDensity</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self, values)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="arguments">Arguments</h2>
+<ul>
+<li>values: array:
+This array contains the delta values that will be used in the calculations.
+Please ensure that this is an array of shape (N,L) where N is the number
+of samples and L is the number of features.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fit(self, values):
+    &#39;&#39;&#39;
+    Arguments
+    ---------
+    
+    - values: array:
+        This array contains the delta values that will be used in the calculations.
+        Please ensure that this is an array of shape (N,L) where N is the number 
+        of samples and L is the number of features.
+    
+    
+    &#39;&#39;&#39;
+
+    if values.shape[0] &lt; self.sample_size:
+        self.sample = False
+        if self.verbose:
+            print(&#39;Sample will not be used, since the sample size given is larger than the dataset.&#39;)
+
+    if self.save_baseline_array:
+
+        if len(values.shape) == 1:
+            raise TypeError(
+                &#39;Please ensure that values is of shape (N,L) where N is the number of samples and L is the number of features.&#39;)
+
+        if self.sample:
+            sample_index = self.rng.integers(values.shape[0], size=self.sample_size)
+            self._baseline_values = values[sample_index]
+        else:
+            self._baseline_values = values
+
+
+    else:
+        raise TypeError(&#39;save_baseline_array = False is not currently supported.&#39;)
+
+    self.is_fitted = True
+
+    if values.shape[0] * values.shape[1] &gt; 10000:
+        if self.sample:
+            self.batch_size = 10000
+        else:
+            self.batch_size = 200
+
+    return self</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.predict"><code class="name flex">
+<span>def <span class="ident">predict</span></span>(<span>self, values, method='threshold_counter', method_args={'threshold': 0.7, 'axis': 0}, transform_method='reverse_percentiles')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function makes predictions on the <code>values</code>.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>values: array:
+This is the array of values that we wish to calculate the predictions on.</p>
+</li>
+<li>
+<p>method: string:
+This is a string that corresponds to the method that will be used to calculate
+the predictions. The following methods are available:</p>
+<ul>
+<li><code>'threshold_counter</code>: This counts the number of times that the method is above
+a given threshold.</li>
+</ul>
+</li>
+<li>
+<p>method_args: dictionary:
+Here, you may pass the arguments which are described under the documentation for each of
+the functions available in the arugment <code>method</code>.</p>
+</li>
+<li>
+<p>transform_method: string:
+This is the method used to transform the data before predictions are made. The
+available options here are described under the documentation for the <code>.transform()</code>
+function.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: array
+These are the predictions.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def predict(self, values, method=&#39;threshold_counter&#39;, method_args={&#39;threshold&#39;: 0.7, &#39;axis&#39;: 0},
+            transform_method=&#39;reverse_percentiles&#39;):
+    &#39;&#39;&#39;
+    This function makes predictions on the ```values```.
+    
+    Arguments
+    ---------
+    
+    - values: array:
+        This is the array of values that we wish to calculate the predictions on.
+    
+    - method: string:
+        This is a string that corresponds to the method that will be used to calculate 
+        the predictions. The following methods are available:
+        - ```&#39;threshold_counter```: This counts the number of times that the method is above
+        a given threshold.
+    
+    - method_args: dictionary:
+        Here, you may pass the arguments which are described under the documentation for each of
+        the functions available in the arugment ```method```.
+        
+    - transform_method: string:
+        This is the method used to transform the data before predictions are made. The 
+        available options here are described under the documentation for the ```.transform()```
+        function.
+        
+    Returns
+    ---------
+        
+    - out: array
+        These are the predictions.
+    
+    &#39;&#39;&#39;
+
+    values_tr = self.transform(values)
+
+    if self.batch_size != -1:
+        batches = self._batcher(values_tr, self.batch_size)
+
+    else:
+        batches = [values_tr]
+
+    bar = PBar(show_length=20, n_iterations=len(batches))
+    print_progress = 0
+    out = np.zeros(values.shape[1]).reshape(1, -1)
+    for nb, batch in enumerate(batches):
+
+        if method == &#39;threshold_counter&#39;:
+
+            include = [&#39;threshold&#39;, &#39;axis&#39;]
+            to_include = [argument for argument in include if argument not in method_args]
+            if len(to_include) != 0:
+                raise TypeError(&#39;Please include the arguments {} in method_args&#39;.format(to_include))
+
+            predict_batch = self.threshold_counter(batch, **method_args)
+            out = np.vstack([out, predict_batch])
+            out = np.sum(out, axis=method_args[&#39;axis&#39;], keepdims=True)
+
+        bar.update(1)
+        progress = bar.progress / bar.n_iterations
+        if self.verbose:
+            sys.stdout.write(&#39;\r&#39;)
+            sys.stdout.write(&#39;Predicting   {} - batch number {} / {}&#39;.format(bar.give(), nb + 1, len(batches)))
+            sys.stdout.flush()
+
+    if self.verbose:
+        sys.stdout.write(&#39;\n&#39;)
+
+    return out</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.threshold_counter"><code class="name flex">
+<span>def <span class="ident">threshold_counter</span></span>(<span>self, values, threshold, axis=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This counts the number of times there were breaches in the values against a threshold.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>values: array:
+This is the array to calculate the breaches on.</p>
+</li>
+<li>
+<p>threshold: float:
+This is the threshold to use when calculating the breaches.</p>
+</li>
+<li>
+<p>axis: int:
+This is the direction in which the breaches are counted. If 0, the breaches
+are counted over the samples. If 1, over the features.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: array:
+This is of shape (1,L) if <code>axis = 0</code> and (N,1) if <code>axis=1</code>. This means
+that if the number of features is 1 and <code>axis=0</code>, the returned shape will be
+(1,1).</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def threshold_counter(self, values, threshold, axis=0):
+    &#39;&#39;&#39;
+    This counts the number of times there were breaches in the values against a threshold.
+    
+    Arguments
+    ---------
+    
+    - values: array:
+        This is the array to calculate the breaches on.
+    
+    - threshold: float:
+        This is the threshold to use when calculating the breaches.
+    
+    - axis: int:
+        This is the direction in which the breaches are counted. If 0, the breaches
+        are counted over the samples. If 1, over the features.
+    
+    Returns
+    ---------
+    
+    - out: array:
+        This is of shape (1,L) if ```axis = 0``` and (N,1) if ```axis=1```. This means
+        that if the number of features is 1 and ```axis=0```, the returned shape will be 
+        (1,1).
+    
+    &#39;&#39;&#39;
+    breaches = values &gt; threshold
+
+    out = np.sum(breaches, axis=axis, keepdims=True)
+
+    return out</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.transform"><code class="name flex">
+<span>def <span class="ident">transform</span></span>(<span>self, values, method='reverse_percentiles')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function calculates the output of the values given a <code>method</code>.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p>values: array:
+This is the arrray for which the transformation is done.</p>
+</li>
+<li>
+<p>method: string:
+This is the method that is used to calculate the transformation.</p>
+<ul>
+<li><code>'reverse_percentiles'</code>: this setting calculates the reverse percentile.</li>
+</ul>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li>out: array:
+This is an array containing the transformed values.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transform(self, values, method=&#39;reverse_percentiles&#39;):
+    &#39;&#39;&#39;
+    This function calculates the output of the values given a ```method```.
+    
+    Arguments
+    ---------
+    
+    - values: array:
+        This is the arrray for which the transformation is done.
+    
+    - method: string:
+        This is the method that is used to calculate the transformation.
+        - ```&#39;reverse_percentiles&#39;```: this setting calculates the reverse percentile.
+    
+    Returns
+    ---------
+    
+    - out: array:
+        This is an array containing the transformed values.
+    
+    
+    &#39;&#39;&#39;
+
+    self.methods_possible
+
+    if type(method) == str:
+        if not method in self.methods_possible:
+            raise TypeError(&#39;Please choose from the possible methods: {}&#39;.format(self.methods_possible))
+    else:
+        raise TypeError(
+            &#39;Input must be a string. Please choose from the possible methods:&#39;.format(self.methods_possible))
+
+    if self.batch_size != -1:
+        batches = self._batcher(values, self.batch_size)
+
+    else:
+        batches = [values]
+
+    out = np.zeros(values.shape[1]).reshape(1, -1)
+
+    bar = PBar(show_length=20, n_iterations=len(batches))
+    print_progress = 0
+    for nb, batch in enumerate(batches):
+        if method == &#39;reverse_percentiles&#39;:
+            rp_batch = self._calculate_reverse_percentiles(batch)
+            out = np.vstack([out, rp_batch])
+
+        progress = bar.progress / bar.n_iterations
+        bar.update(1)
+        if self.verbose:
+            sys.stdout.write(&#39;\r&#39;)
+            sys.stdout.write(&#39;Transforming {} - batch number {} / {}&#39;.format(bar.give(), nb + 1, len(batches)))
+            sys.stdout.flush()
+
+    if self.verbose:
+        sys.stdout.write(&#39;\n&#39;)
+
+    out = out[1:]
+
+    return out</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<header>
+<a class="homelink" rel="home" title="Minder Utils" href="https://minder-utils.github.io">
+<img src="https://github.com/ImperialCollegeLondon/minder_utils/blob/main/UKDRI_logo.jpeg?raw=true" alt=""> Minder Utils
+</a>
+</header>
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="minder_utils.feature_engineering" href="index.html">minder_utils.feature_engineering</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc" href="#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc">BaseDensityCalc</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.fit" href="#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.fit">fit</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.predict" href="#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.predict">predict</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.threshold_counter" href="#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.threshold_counter">threshold_counter</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.transform" href="#minder_utils.feature_engineering.DensityFunctions.BaseDensityCalc.transform">transform</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

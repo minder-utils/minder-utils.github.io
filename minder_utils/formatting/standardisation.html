@@ -32,19 +32,13 @@ import numpy as np
 import os
 import importlib.resources as pkg_resources
 from importlib.machinery import SourceFileLoader
-from minder_utils.configurations import data_path
+from minder_utils.configurations import data_path, config
 
 
-# import python function from path:
-path_dir = data_path
-with open(path_dir, &#39;r&#39;) as file_read:
-    path = file_read.read()
-dri_data_util_validate = SourceFileLoader(&#39;dri_data_util_validate&#39;, path + &#39;/validated_date.py&#39;).load_module()
-from dri_data_util_validate import validated_date
 
 
 def standardise_activity_data(df):
-    df = df.dropna().drop_duplicates()
+    df = df.drop_duplicates()
     df.time = pd.to_datetime(df.time)
     df.time = pd.to_datetime(df.time.dt.strftime(&#34;%Y-%m-%d %H:%M:%S&#34;))
 
@@ -64,6 +58,9 @@ def standardise_activity_data(df):
     table_df = df.pivot_table(index=[&#39;id&#39;, &#39;time&#39;], columns=&#39;location&#39;,
                               values=&#39;value&#39;).reset_index()
     table_df = table_df.replace(np.nan, 0)
+    for sensor in config[&#39;activity&#39;][&#39;sensors&#39;]:
+        if sensor not in table_df.columns:
+            table_df[sensor] = 0
     
     # with open(path_dir, &#39;r&#39;) as file_read:
     #     uti_folder_path = file_read.read()
@@ -141,7 +138,7 @@ def normalized(a, axis=-1, order=2):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def standardise_activity_data(df):
-    df = df.dropna().drop_duplicates()
+    df = df.drop_duplicates()
     df.time = pd.to_datetime(df.time)
     df.time = pd.to_datetime(df.time.dt.strftime(&#34;%Y-%m-%d %H:%M:%S&#34;))
 
@@ -161,6 +158,9 @@ def normalized(a, axis=-1, order=2):
     table_df = df.pivot_table(index=[&#39;id&#39;, &#39;time&#39;], columns=&#39;location&#39;,
                               values=&#39;value&#39;).reset_index()
     table_df = table_df.replace(np.nan, 0)
+    for sensor in config[&#39;activity&#39;][&#39;sensors&#39;]:
+        if sensor not in table_df.columns:
+            table_df[sensor] = 0
     
     # with open(path_dir, &#39;r&#39;) as file_read:
     #     uti_folder_path = file_read.read()
