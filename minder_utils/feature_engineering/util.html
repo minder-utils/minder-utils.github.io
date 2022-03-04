@@ -34,7 +34,7 @@ from dateutil.relativedelta import relativedelta
 
 
 def compute_week_number(df):
-    df = pd.to_datetime(df)
+    df = pd.to_datetime(df, utc=True, infer_datetime_format=True)
     return df.dt.isocalendar().week + (df.dt.isocalendar().year - 2000) * 100
 
 
@@ -164,7 +164,7 @@ def frequencies_tp(input_df, tp=3, return_locations=True):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def compute_week_number(df):
-    df = pd.to_datetime(df)
+    df = pd.to_datetime(df, utc=True, infer_datetime_format=True)
     return df.dt.isocalendar().week + (df.dt.isocalendar().year - 2000) * 100</code></pre>
 </details>
 </dd>

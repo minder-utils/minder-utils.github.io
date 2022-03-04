@@ -708,9 +708,26 @@ class Visualisation_Bathroom():
         return data
 
     def plot_night(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
-        
+
+        cp = [
+                sns.color_palette(&#34;muted&#34;)[4],
+                sns.color_palette(&#34;tab10&#34;)[2],
+                sns.color_palette(&#34;tab10&#34;)[0],
+                sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+                sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+                sns.color_palette(&#34;deep&#34;)[3],
+            ]
+
+        palette_index = 0
+        if ma:
+            palette_index += 1
+            if delta: palette_index += 1
+
+
+        palette = cp[palette_index]
+
         data = self._get_data(&#39;night&#39;, ma=ma, delta=delta)
-        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax, palette=palette)
         ax.set_title(self.attr)
         
         return fig, ax
@@ -718,15 +735,32 @@ class Visualisation_Bathroom():
 
     def plot_day(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
         
+        cp = [
+                sns.color_palette(&#34;muted&#34;)[4],
+                sns.color_palette(&#34;tab10&#34;)[2],
+                sns.color_palette(&#34;tab10&#34;)[0],
+                sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+                sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+                sns.color_palette(&#34;deep&#34;)[3],
+            ]
+
+        palette_index = 0
+        if ma:
+            palette_index += 1
+            if delta: palette_index += 1
+
+
+        palette = cp[palette_index]
+
         data = self._get_data(&#39;daytime&#39;, ma=ma, delta=delta)
-        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax, palette=palette)
         ax.set_title(self.attr)
         
         return fig, ax
     
 
 
-    def _plot_data(self, data, plot_type, by_flag=False, fig=None, ax=None):
+    def _plot_data(self, data, plot_type, by_flag=False, fig=None, ax=None, palette=None):
         
         data = data.dropna(subset=[&#39;value&#39;])
         data[&#39;value&#39;] = data[&#39;value&#39;].astype(float)
@@ -758,7 +792,124 @@ class Visualisation_Bathroom():
             ax.set_xlabel(&#39;Value&#39;)
 
         elif plot_type == &#39;line&#39;:
-            ax = sns.lineplot(x=&#39;time&#39;, y=&#39;value&#39;, data=data)
+            print(palette)
+            ax = sns.lineplot(x=&#39;time&#39;, y=&#39;value&#39;, data=data, color=palette)
+            ax.tick_params(axis=&#39;x&#39;, rotation=90)
+            ax.set_xlabel(&#39;Date&#39;)
+            ax.set_ylabel(&#39;Value&#39;)
+
+
+        return fig, ax
+            
+
+
+class Visualisation_Location():
+    &#39;&#39;&#39;
+    This class allows the user to produce visualisations 
+    of the features engineered around bathroom visits.
+
+
+    &#39;&#39;&#39;
+    def __init__(self, location, patient_id=&#39;all&#39;):
+
+        self.fmg = Formatting()
+        self.fe = Feature_engineer(self.fmg)
+        self.location = location
+
+        if type(patient_id) == str:
+            if patient_id == &#39;all&#39;:
+                self.id = patient_id
+            else:
+                self.id = [patient_id]
+        elif patient_id == list:
+            self.id = patient_id
+        else:
+            raise TypeError(&#34;patient_id must be a string, &#39;all&#39; or a list&#34;)
+
+        return
+    
+    def _get_data(self, ma=False, delta=False):
+        attr = self.location
+        attr += &#39;_activity&#39;
+        if ma:
+            attr += &#39;_&#39; + &#39;ma&#39;
+            if delta:
+                attr += &#39;_&#39; + &#39;delta&#39;
+        else:
+            if delta:
+                raise TypeError(&#39;Cannot use delta=True if ma=False&#39;)
+        
+        data = getattr(self.fe, attr)
+        data[&#39;time&#39;] = pd.to_datetime(data[&#39;time&#39;])
+        data = label_dataframe(data)
+
+        self.attr = attr
+        
+        if not self.id == &#39;all&#39;:
+            data = data[data.id.isin(self.id)]
+
+        return data
+
+    def plot_data(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
+        
+        cp = [
+                sns.color_palette(&#34;muted&#34;)[4],
+                sns.color_palette(&#34;tab10&#34;)[2],
+                sns.color_palette(&#34;tab10&#34;)[0],
+                sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+                sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+                sns.color_palette(&#34;deep&#34;)[3],
+            ]
+
+        palette_index = 0
+        if ma:
+            palette_index += 1
+            if delta: palette_index += 1
+
+
+        palette = cp[palette_index]
+        
+        data = self._get_data(ma=ma, delta=delta)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax, palette=palette)
+        ax.set_title(self.attr)
+        
+        return fig, ax
+    
+
+
+    def _plot_data(self, data, plot_type, by_flag=False, fig=None, ax=None, palette=None):
+        
+        data = data.dropna(subset=[&#39;value&#39;])
+        data[&#39;value&#39;] = data[&#39;value&#39;].astype(float)
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+        
+        if plot_type==&#39;boxplot&#39;:
+            if by_flag:
+                ax = sns.boxplot(x=&#39;value&#39;,
+                                    data=data, y =&#39;valid&#39;, ax=ax,
+                                    orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+            else:
+                ax = sns.boxplot(x=&#39;value&#39;,
+                                    data=data, ax=ax,
+                                    orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+            ax.set_xlabel(&#39;Value&#39;)
+            
+        elif plot_type == &#39;violin&#39;:
+            if by_flag:
+                ax = sns.violinplot(x=&#39;value&#39;, y = &#39;valid&#39;,
+                                    data=data, ax=ax, inner=&#39;quartile&#39;,
+                                    orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+            else:
+                ax = sns.violinplot(x=&#39;value&#39;,
+                                    data=data, ax=ax, inner=&#39;quartile&#39;,
+                                    orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+            ax.set_xlabel(&#39;Value&#39;)
+
+        elif plot_type == &#39;line&#39;:
+            ax = sns.lineplot(x=&#39;time&#39;, y=&#39;value&#39;, data=data, color=palette)
             ax.tick_params(axis=&#39;x&#39;, rotation=90)
             ax.set_xlabel(&#39;Date&#39;)
             ax.set_ylabel(&#39;Value&#39;)
@@ -1332,9 +1483,26 @@ of the features engineered around bathroom visits.</p></div>
         return data
 
     def plot_night(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
-        
+
+        cp = [
+                sns.color_palette(&#34;muted&#34;)[4],
+                sns.color_palette(&#34;tab10&#34;)[2],
+                sns.color_palette(&#34;tab10&#34;)[0],
+                sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+                sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+                sns.color_palette(&#34;deep&#34;)[3],
+            ]
+
+        palette_index = 0
+        if ma:
+            palette_index += 1
+            if delta: palette_index += 1
+
+
+        palette = cp[palette_index]
+
         data = self._get_data(&#39;night&#39;, ma=ma, delta=delta)
-        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax, palette=palette)
         ax.set_title(self.attr)
         
         return fig, ax
@@ -1342,15 +1510,32 @@ of the features engineered around bathroom visits.</p></div>
 
     def plot_day(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
         
+        cp = [
+                sns.color_palette(&#34;muted&#34;)[4],
+                sns.color_palette(&#34;tab10&#34;)[2],
+                sns.color_palette(&#34;tab10&#34;)[0],
+                sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+                sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+                sns.color_palette(&#34;deep&#34;)[3],
+            ]
+
+        palette_index = 0
+        if ma:
+            palette_index += 1
+            if delta: palette_index += 1
+
+
+        palette = cp[palette_index]
+
         data = self._get_data(&#39;daytime&#39;, ma=ma, delta=delta)
-        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax, palette=palette)
         ax.set_title(self.attr)
         
         return fig, ax
     
 
 
-    def _plot_data(self, data, plot_type, by_flag=False, fig=None, ax=None):
+    def _plot_data(self, data, plot_type, by_flag=False, fig=None, ax=None, palette=None):
         
         data = data.dropna(subset=[&#39;value&#39;])
         data[&#39;value&#39;] = data[&#39;value&#39;].astype(float)
@@ -1382,7 +1567,8 @@ of the features engineered around bathroom visits.</p></div>
             ax.set_xlabel(&#39;Value&#39;)
 
         elif plot_type == &#39;line&#39;:
-            ax = sns.lineplot(x=&#39;time&#39;, y=&#39;value&#39;, data=data)
+            print(palette)
+            ax = sns.lineplot(x=&#39;time&#39;, y=&#39;value&#39;, data=data, color=palette)
             ax.tick_params(axis=&#39;x&#39;, rotation=90)
             ax.set_xlabel(&#39;Date&#39;)
             ax.set_ylabel(&#39;Value&#39;)
@@ -1403,8 +1589,25 @@ of the features engineered around bathroom visits.</p></div>
 </summary>
 <pre><code class="python">def plot_day(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
     
+    cp = [
+            sns.color_palette(&#34;muted&#34;)[4],
+            sns.color_palette(&#34;tab10&#34;)[2],
+            sns.color_palette(&#34;tab10&#34;)[0],
+            sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+            sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+            sns.color_palette(&#34;deep&#34;)[3],
+        ]
+
+    palette_index = 0
+    if ma:
+        palette_index += 1
+        if delta: palette_index += 1
+
+
+    palette = cp[palette_index]
+
     data = self._get_data(&#39;daytime&#39;, ma=ma, delta=delta)
-    fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+    fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax, palette=palette)
     ax.set_title(self.attr)
     
     return fig, ax</code></pre>
@@ -1420,9 +1623,26 @@ of the features engineered around bathroom visits.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def plot_night(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
-    
+
+    cp = [
+            sns.color_palette(&#34;muted&#34;)[4],
+            sns.color_palette(&#34;tab10&#34;)[2],
+            sns.color_palette(&#34;tab10&#34;)[0],
+            sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+            sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+            sns.color_palette(&#34;deep&#34;)[3],
+        ]
+
+    palette_index = 0
+    if ma:
+        palette_index += 1
+        if delta: palette_index += 1
+
+
+    palette = cp[palette_index]
+
     data = self._get_data(&#39;night&#39;, ma=ma, delta=delta)
-    fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax)
+    fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax, palette=palette)
     ax.set_title(self.attr)
     
     return fig, ax</code></pre>
@@ -2283,6 +2503,170 @@ The axes that contain the graph.</p>
 </dd>
 </dl>
 </dd>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Location"><code class="flex name class">
+<span>class <span class="ident">Visualisation_Location</span></span>
+<span>(</span><span>location, patient_id='all')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class allows the user to produce visualisations
+of the features engineered around bathroom visits.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Visualisation_Location():
+    &#39;&#39;&#39;
+    This class allows the user to produce visualisations 
+    of the features engineered around bathroom visits.
+
+
+    &#39;&#39;&#39;
+    def __init__(self, location, patient_id=&#39;all&#39;):
+
+        self.fmg = Formatting()
+        self.fe = Feature_engineer(self.fmg)
+        self.location = location
+
+        if type(patient_id) == str:
+            if patient_id == &#39;all&#39;:
+                self.id = patient_id
+            else:
+                self.id = [patient_id]
+        elif patient_id == list:
+            self.id = patient_id
+        else:
+            raise TypeError(&#34;patient_id must be a string, &#39;all&#39; or a list&#34;)
+
+        return
+    
+    def _get_data(self, ma=False, delta=False):
+        attr = self.location
+        attr += &#39;_activity&#39;
+        if ma:
+            attr += &#39;_&#39; + &#39;ma&#39;
+            if delta:
+                attr += &#39;_&#39; + &#39;delta&#39;
+        else:
+            if delta:
+                raise TypeError(&#39;Cannot use delta=True if ma=False&#39;)
+        
+        data = getattr(self.fe, attr)
+        data[&#39;time&#39;] = pd.to_datetime(data[&#39;time&#39;])
+        data = label_dataframe(data)
+
+        self.attr = attr
+        
+        if not self.id == &#39;all&#39;:
+            data = data[data.id.isin(self.id)]
+
+        return data
+
+    def plot_data(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
+        
+        cp = [
+                sns.color_palette(&#34;muted&#34;)[4],
+                sns.color_palette(&#34;tab10&#34;)[2],
+                sns.color_palette(&#34;tab10&#34;)[0],
+                sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+                sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+                sns.color_palette(&#34;deep&#34;)[3],
+            ]
+
+        palette_index = 0
+        if ma:
+            palette_index += 1
+            if delta: palette_index += 1
+
+
+        palette = cp[palette_index]
+        
+        data = self._get_data(ma=ma, delta=delta)
+        fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax, palette=palette)
+        ax.set_title(self.attr)
+        
+        return fig, ax
+    
+
+
+    def _plot_data(self, data, plot_type, by_flag=False, fig=None, ax=None, palette=None):
+        
+        data = data.dropna(subset=[&#39;value&#39;])
+        data[&#39;value&#39;] = data[&#39;value&#39;].astype(float)
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+        
+        if plot_type==&#39;boxplot&#39;:
+            if by_flag:
+                ax = sns.boxplot(x=&#39;value&#39;,
+                                    data=data, y =&#39;valid&#39;, ax=ax,
+                                    orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+            else:
+                ax = sns.boxplot(x=&#39;value&#39;,
+                                    data=data, ax=ax,
+                                    orient=&#39;h&#39;, color=&#39;xkcd:light teal&#39;)
+            ax.set_xlabel(&#39;Value&#39;)
+            
+        elif plot_type == &#39;violin&#39;:
+            if by_flag:
+                ax = sns.violinplot(x=&#39;value&#39;, y = &#39;valid&#39;,
+                                    data=data, ax=ax, inner=&#39;quartile&#39;,
+                                    orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+
+            else:
+                ax = sns.violinplot(x=&#39;value&#39;,
+                                    data=data, ax=ax, inner=&#39;quartile&#39;,
+                                    orient=&#39;h&#39;, cut=0, color=&#39;xkcd:light teal&#39;)
+            ax.set_xlabel(&#39;Value&#39;)
+
+        elif plot_type == &#39;line&#39;:
+            ax = sns.lineplot(x=&#39;time&#39;, y=&#39;value&#39;, data=data, color=palette)
+            ax.tick_params(axis=&#39;x&#39;, rotation=90)
+            ax.set_xlabel(&#39;Date&#39;)
+            ax.set_ylabel(&#39;Value&#39;)
+
+
+        return fig, ax</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.visualisation.activity_data.Visualisation_Location.plot_data"><code class="name flex">
+<span>def <span class="ident">plot_data</span></span>(<span>self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_data(self, plot_type, ma=False, delta=False, by_flag=False, fig=None, ax=None):
+    
+    cp = [
+            sns.color_palette(&#34;muted&#34;)[4],
+            sns.color_palette(&#34;tab10&#34;)[2],
+            sns.color_palette(&#34;tab10&#34;)[0],
+            sns.color_palette(&#39;Paired&#39;, 9)[-2],  
+            sns.color_palette(&#39;bright&#39;, desat=0.75)[-1],
+            sns.color_palette(&#34;deep&#34;)[3],
+        ]
+
+    palette_index = 0
+    if ma:
+        palette_index += 1
+        if delta: palette_index += 1
+
+
+    palette = cp[palette_index]
+    
+    data = self._get_data(ma=ma, delta=delta)
+    fig, ax = self._plot_data(data=data, plot_type=plot_type, by_flag=by_flag, fig=fig, ax=ax, palette=palette)
+    ax.set_title(self.attr)
+    
+    return fig, ax</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 </dl>
 </section>
 </article>
@@ -2333,6 +2717,12 @@ The axes that contain the graph.</p>
 <li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix" href="#minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix">plot_p_matrix</a></code></li>
 <li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix_graph" href="#minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_p_matrix_graph">plot_p_matrix_graph</a></code></li>
 <li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_violin_entropy_rate" href="#minder_utils.visualisation.activity_data.Visualisation_Entropy.plot_violin_entropy_rate">plot_violin_entropy_rate</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="minder_utils.visualisation.activity_data.Visualisation_Location" href="#minder_utils.visualisation.activity_data.Visualisation_Location">Visualisation_Location</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.visualisation.activity_data.Visualisation_Location.plot_data" href="#minder_utils.visualisation.activity_data.Visualisation_Location.plot_data">plot_data</a></code></li>
 </ul>
 </li>
 </ul>

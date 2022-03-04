@@ -37,6 +37,7 @@ import os
 from minder_utils.util.util import progress_spinner, reformat_path, save_mkdir
 from minder_utils.configurations import token_path
 import numpy as np
+from datetime import date, datetime
 
 
 class Downloader:
@@ -75,11 +76,17 @@ class Downloader:
         - _: dict: 
             This returns a dictionary of the available datasets.
         &#39;&#39;&#39;
+        print(&#39;Sending Request...&#39;)
+        r = requests.get(self.url + &#39;info/datasets&#39;, headers=self.params)
+        if r.status_code in [401, 403]:
+            raise TypeError(&#39;Authentication failed!&#39;\
+                &#39; Please check your token - it might be out of date. &#39;\
+                &#39;You might also not have authorization to complete your request.&#39;)
         try:
-            print(&#39;Sending Request...&#39;)
-            return requests.get(self.url + &#39;info/datasets&#39;, headers=self.params).json()
+            return r.json()
         except json.decoder.JSONDecodeError:
-            print(&#39;Get response &#39;, requests.get(self.url + &#39;info/datasets&#39;, headers=self.params))
+            print(&#39;Get response &#39;, r)
+            
 
     def _export_request(self, categories=&#39;all&#39;, since=None, until=None):
         &#39;&#39;&#39;
@@ -122,7 +129,11 @@ class Downloader:
         print(&#39;From &#39;, since, &#39;to&#39;, until)
         schedule_job = requests.post(self.url + &#39;export&#39;, data=json.dumps(export_keys), headers=self.params)
         job_id = schedule_job.headers[&#39;Content-Location&#39;]
-        response = requests.get(job_id, headers=self.params).json()
+        response = requests.get(job_id, headers=self.params)
+        if response.status_code == 401:
+            raise TypeError(&#39;Authentication failed!&#39;\
+                &#39; Please check your token - it might be out of date.&#39;)
+        response = response.json()
         waiting = True
         while waiting:
 
@@ -204,20 +215,29 @@ class Downloader:
                     continue
 
                 request_url = request_url_dict[category]
-                response = requests.get(request_url, headers=self.params).json()
-                job_id_dict[category] = response[&#39;id&#39;]
-
-                if response[&#39;status&#39;] == 202:
+                response = requests.get(request_url, headers=self.params)
+                if response.status_code in [401, 403]:
+                    raise TypeError(&#39;Authentication failed!&#39;\
+                                &#39; Please check your token - it might be out of date. &#39;\
+                                &#39;You might also not have authorization to complete your request.&#39;)
+                
+                elif response.status_code == 202:
                     waiting_for[category] = True
 
-                elif response[&#39;status&#39;] == 500:
+                elif response.status_code == 500:
                     sys.stdout.write(&#39;\r&#39;)
                     sys.stdout.write(&#34;Request failed for category {}&#34;.format(category))
+                    sys.stdout.write(&#39;\n&#39;)
                     sys.stdout.flush()
                     waiting_for[category] = False
-
+                
                 else:
                     waiting_for[category] = False
+
+                if not category in job_id_dict:
+                    response = response.json()
+                    job_id_dict[category] = response[&#39;id&#39;]
+
 
             # if we are no longer waiting for a job to complete, move onto the downloads
             if True in list(waiting_for.values()):
@@ -329,7 +349,7 @@ class Downloader:
                 
                 pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;),
                                                               mode=mode,
-                                                              header=header)
+                                                              header=header, index=False)
                 categories_downloaded.append(record[&#39;type&#39;])
                 print(&#39;Success&#39;)
 
@@ -358,6 +378,8 @@ class Downloader:
         
 
         &#39;&#39;&#39;
+        if until is None:
+            until = datetime.now()
         save_path = reformat_path(save_path)
         if categories is None:
             raise TypeError(&#39;Please supply at least one category...&#39;)
@@ -378,20 +400,25 @@ class Downloader:
                 since = None
             else:
                 data = pd.read_csv(file_path + &#39;.csv&#39;)
-                # add the following to avoid a duplicate of the last and first row
-                last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
-                since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1, 0])
-                if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
-                    # change since to earliest date and overwrite all data for this category
-                    since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
-                    # if the earliest date is after until, then we error
+                if &#39;start_date&#39; in data.columns:
+                    # add the following to avoid a duplicate of the last and first row
+                    last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
+                    since = pd.to_datetime(data[&#39;start_date&#39;].loc[data[&#39;start_date&#39;].last_valid_index()])
                     if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
-                        raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39; \
-                                        &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                        # change since to earliest date and overwrite all data for this category
+                        since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
+                        # if the earliest date is after until, then we error
+                        if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
+                            raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39; \
+                                            &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                        else:
+                            mode_dict[category] = &#39;w&#39;
                     else:
-                        mode_dict[category] = &#39;w&#39;
+                        mode_dict[category] = &#39;a&#39;
+                
                 else:
-                    mode_dict[category] = &#39;a&#39;
+                    since=None
+                    mode_dict[category] = &#39;w&#39;
 
             export_dict[category] = (since, until)
 
@@ -614,11 +641,17 @@ as a csv in the directory <code>'./data/'</code></p></div>
         - _: dict: 
             This returns a dictionary of the available datasets.
         &#39;&#39;&#39;
+        print(&#39;Sending Request...&#39;)
+        r = requests.get(self.url + &#39;info/datasets&#39;, headers=self.params)
+        if r.status_code in [401, 403]:
+            raise TypeError(&#39;Authentication failed!&#39;\
+                &#39; Please check your token - it might be out of date. &#39;\
+                &#39;You might also not have authorization to complete your request.&#39;)
         try:
-            print(&#39;Sending Request...&#39;)
-            return requests.get(self.url + &#39;info/datasets&#39;, headers=self.params).json()
+            return r.json()
         except json.decoder.JSONDecodeError:
-            print(&#39;Get response &#39;, requests.get(self.url + &#39;info/datasets&#39;, headers=self.params))
+            print(&#39;Get response &#39;, r)
+            
 
     def _export_request(self, categories=&#39;all&#39;, since=None, until=None):
         &#39;&#39;&#39;
@@ -661,7 +694,11 @@ as a csv in the directory <code>'./data/'</code></p></div>
         print(&#39;From &#39;, since, &#39;to&#39;, until)
         schedule_job = requests.post(self.url + &#39;export&#39;, data=json.dumps(export_keys), headers=self.params)
         job_id = schedule_job.headers[&#39;Content-Location&#39;]
-        response = requests.get(job_id, headers=self.params).json()
+        response = requests.get(job_id, headers=self.params)
+        if response.status_code == 401:
+            raise TypeError(&#39;Authentication failed!&#39;\
+                &#39; Please check your token - it might be out of date.&#39;)
+        response = response.json()
         waiting = True
         while waiting:
 
@@ -743,20 +780,29 @@ as a csv in the directory <code>'./data/'</code></p></div>
                     continue
 
                 request_url = request_url_dict[category]
-                response = requests.get(request_url, headers=self.params).json()
-                job_id_dict[category] = response[&#39;id&#39;]
-
-                if response[&#39;status&#39;] == 202:
+                response = requests.get(request_url, headers=self.params)
+                if response.status_code in [401, 403]:
+                    raise TypeError(&#39;Authentication failed!&#39;\
+                                &#39; Please check your token - it might be out of date. &#39;\
+                                &#39;You might also not have authorization to complete your request.&#39;)
+                
+                elif response.status_code == 202:
                     waiting_for[category] = True
 
-                elif response[&#39;status&#39;] == 500:
+                elif response.status_code == 500:
                     sys.stdout.write(&#39;\r&#39;)
                     sys.stdout.write(&#34;Request failed for category {}&#34;.format(category))
+                    sys.stdout.write(&#39;\n&#39;)
                     sys.stdout.flush()
                     waiting_for[category] = False
-
+                
                 else:
                     waiting_for[category] = False
+
+                if not category in job_id_dict:
+                    response = response.json()
+                    job_id_dict[category] = response[&#39;id&#39;]
+
 
             # if we are no longer waiting for a job to complete, move onto the downloads
             if True in list(waiting_for.values()):
@@ -868,7 +914,7 @@ as a csv in the directory <code>'./data/'</code></p></div>
                 
                 pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;),
                                                               mode=mode,
-                                                              header=header)
+                                                              header=header, index=False)
                 categories_downloaded.append(record[&#39;type&#39;])
                 print(&#39;Success&#39;)
 
@@ -897,6 +943,8 @@ as a csv in the directory <code>'./data/'</code></p></div>
         
 
         &#39;&#39;&#39;
+        if until is None:
+            until = datetime.now()
         save_path = reformat_path(save_path)
         if categories is None:
             raise TypeError(&#39;Please supply at least one category...&#39;)
@@ -917,20 +965,25 @@ as a csv in the directory <code>'./data/'</code></p></div>
                 since = None
             else:
                 data = pd.read_csv(file_path + &#39;.csv&#39;)
-                # add the following to avoid a duplicate of the last and first row
-                last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
-                since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1, 0])
-                if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
-                    # change since to earliest date and overwrite all data for this category
-                    since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
-                    # if the earliest date is after until, then we error
+                if &#39;start_date&#39; in data.columns:
+                    # add the following to avoid a duplicate of the last and first row
+                    last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
+                    since = pd.to_datetime(data[&#39;start_date&#39;].loc[data[&#39;start_date&#39;].last_valid_index()])
                     if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
-                        raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39; \
-                                        &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                        # change since to earliest date and overwrite all data for this category
+                        since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
+                        # if the earliest date is after until, then we error
+                        if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
+                            raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39; \
+                                            &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                        else:
+                            mode_dict[category] = &#39;w&#39;
                     else:
-                        mode_dict[category] = &#39;w&#39;
+                        mode_dict[category] = &#39;a&#39;
+                
                 else:
-                    mode_dict[category] = &#39;a&#39;
+                    since=None
+                    mode_dict[category] = &#39;w&#39;
 
             export_dict[category] = (since, until)
 
@@ -1324,7 +1377,7 @@ Defaults to <code>None</code>.</p>
             
             pd.read_csv(io.StringIO(content.text)).to_csv(os.path.join(save_path, record[&#39;type&#39;] + &#39;.csv&#39;),
                                                           mode=mode,
-                                                          header=header)
+                                                          header=header, index=False)
             categories_downloaded.append(record[&#39;type&#39;])
             print(&#39;Success&#39;)</code></pre>
 </details>
@@ -1440,11 +1493,16 @@ This returns a dictionary of the available datasets.</li>
     - _: dict: 
         This returns a dictionary of the available datasets.
     &#39;&#39;&#39;
+    print(&#39;Sending Request...&#39;)
+    r = requests.get(self.url + &#39;info/datasets&#39;, headers=self.params)
+    if r.status_code in [401, 403]:
+        raise TypeError(&#39;Authentication failed!&#39;\
+            &#39; Please check your token - it might be out of date. &#39;\
+            &#39;You might also not have authorization to complete your request.&#39;)
     try:
-        print(&#39;Sending Request...&#39;)
-        return requests.get(self.url + &#39;info/datasets&#39;, headers=self.params).json()
+        return r.json()
     except json.decoder.JSONDecodeError:
-        print(&#39;Get response &#39;, requests.get(self.url + &#39;info/datasets&#39;, headers=self.params))</code></pre>
+        print(&#39;Get response &#39;, r)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.download.download.Downloader.refresh"><code class="name flex">
@@ -1503,6 +1561,8 @@ Default: <code>'./data/raw_data/'</code></p>
     
 
     &#39;&#39;&#39;
+    if until is None:
+        until = datetime.now()
     save_path = reformat_path(save_path)
     if categories is None:
         raise TypeError(&#39;Please supply at least one category...&#39;)
@@ -1523,20 +1583,25 @@ Default: <code>'./data/raw_data/'</code></p>
             since = None
         else:
             data = pd.read_csv(file_path + &#39;.csv&#39;)
-            # add the following to avoid a duplicate of the last and first row
-            last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
-            since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[-1, 0])
-            if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
-                # change since to earliest date and overwrite all data for this category
-                since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
-                # if the earliest date is after until, then we error
+            if &#39;start_date&#39; in data.columns:
+                # add the following to avoid a duplicate of the last and first row
+                last_rows[category] = data[[&#39;start_date&#39;, &#39;id&#39;]].iloc[-1, :].to_numpy()
+                since = pd.to_datetime(data[&#39;start_date&#39;].loc[data[&#39;start_date&#39;].last_valid_index()])
                 if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
-                    raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39; \
-                                    &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                    # change since to earliest date and overwrite all data for this category
+                    since = pd.to_datetime(data[[&#39;start_date&#39;]].iloc[0, 0])
+                    # if the earliest date is after until, then we error
+                    if self.convert_to_ISO(since) &gt; self.convert_to_ISO(until):
+                        raise TypeError(&#39;Please check your inputs. For {} we found that you tried refreshing&#39; \
+                                        &#39;to a date earlier than the earliest date in the file.&#39;.format(category))
+                    else:
+                        mode_dict[category] = &#39;w&#39;
                 else:
-                    mode_dict[category] = &#39;w&#39;
+                    mode_dict[category] = &#39;a&#39;
+            
             else:
-                mode_dict[category] = &#39;a&#39;
+                since=None
+                mode_dict[category] = &#39;w&#39;
 
         export_dict[category] = (since, until)
 

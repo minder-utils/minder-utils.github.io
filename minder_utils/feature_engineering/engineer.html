@@ -83,6 +83,15 @@ class Feature_engineer:
             &#39;bathroom_urgent_reverse_percentage&#39;: &#39;Reverse percentile of the time to the bathroom&#39;,
             &#39;outlier_score_activity&#39;: &#39;Outlier score of the activity&#39;,
             &#39;rp_location_time_delta&#39;: &#39;Reverse percentile of the time between activities&#39;,
+            &#39;snore_freq&#39;: &#39;Number of snoring activities detected&#39;,
+            &#39;state_awake_freq&#39; : &#39;Number of awake sleep instances&#39;,
+            &#39;state_deep_freq&#39; : &#39;Number of deep sleep instances&#39;,
+            &#39;state_light_freq&#39; : &#39;Number of light sleep instances&#39;,
+            &#39;state_rem_freq&#39; : &#39;Number of REM sleep instances&#39;,
+            &#39;sleep_hr_mean&#39; : &#39;Mean of sleeping heart rate&#39;,
+            &#39;sleep_hr_std&#39; : &#39;Standard Deviation of sleeping heart rate&#39;,
+            &#39;sleep_rr_mean&#39; : &#39;Mean of sleeping respiratory rate&#39;,
+            &#39;sleep_rr_std&#39; : &#39;Standard Deviation of sleeping respiratory rate&#39;,
         }
 
     @property
@@ -92,7 +101,8 @@ class Feature_engineer:
         &#39;&#39;&#39;
         return {&#39;evently&#39;: [&#39;rp_location_time_delta&#39;], 
 
-                &#39;daily&#39;: [&#39;bathroom_night&#39;,
+                &#39;daily&#39;: [
+                          &#39;bathroom_night&#39;,
                           &#39;bathroom_daytime&#39;,
                           &#39;outlier_score_activity&#39;,
                           &#39;bathroom_night_ma&#39;,
@@ -101,7 +111,17 @@ class Feature_engineer:
                          #&#39;bathroom_urgent&#39;,
                           &#39;bathroom_urgent_reverse_percentage&#39;,
                           &#39;bathroom_daytime_ma_delta&#39;,
-                          &#39;entropy_rate_daily&#39;], 
+                          &#39;entropy_rate_daily&#39;,
+                          &#39;snore_freq&#39;,
+                          &#39;state_awake_freq&#39;,
+                          &#39;state_deep_freq&#39;,
+                          &#39;state_rem_freq&#39;,
+                          &#39;state_light_freq&#39;,
+                          &#39;sleep_hr_mean&#39;,
+                          &#39;sleep_hr_std&#39;,
+                          &#39;sleep_rr_mean&#39;,
+                          &#39;sleep_rr_std&#39;
+                          ], 
 
                 &#39;weekly&#39;: [&#39;body_temperature&#39;, 
                            &#39;entropy&#39;, 
@@ -173,6 +193,37 @@ class Feature_engineer:
 
 
     @property
+    @load_save(**feature_config[&#39;bedroom_activity&#39;][&#39;save&#39;])
+    def bedroom_activity(self):
+        return get_bedroom_activity(self.formatter.activity_data.sort_values(&#39;time&#39;), time_range=None, name=&#39;bedroom_activity&#39;)
+
+    @property
+    @load_save(**feature_config[&#39;bedroom_activity_ma&#39;][&#39;save&#39;])
+    def bedroom_activity_ma(self):
+
+        def get_moving_average_groupby(x):
+            x = get_moving_average(x, 
+                                  w=feature_config[&#39;bedroom_activity_ma&#39;][&#39;w&#39;], 
+                                  name=&#39;bedroom_activity_ma&#39;)
+            return x
+
+        return (self.bedroom_activity).groupby(&#39;id&#39;).apply(get_moving_average_groupby)
+
+
+    @property
+    @load_save(**feature_config[&#39;bedroom_activity_ma_delta&#39;][&#39;save&#39;])
+    def bedroom_activity_ma_delta(self):
+
+        def get_value_delta_groupby(x):
+            x = get_value_delta(x,
+                                name=&#39;bedroom_activity_ma_delta&#39;)
+            return x
+
+        return (self.bedroom_activity_ma).groupby(&#39;id&#39;).apply(get_value_delta_groupby)
+
+
+
+    @property
     @load_save(**feature_config[&#39;bathroom_urgent&#39;][&#39;save&#39;])
     def bathroom_urgent(self):
         return get_bathroom_delta(self.formatter.activity_data.sort_values(&#39;time&#39;), single_location_delta, &#39;bathroom_urgent&#39;)
@@ -187,6 +238,86 @@ class Feature_engineer:
             return x
         data[&#39;value&#39;] = data[&#39;value&#39;].apply(value_group_by)
         return data
+
+
+    @property
+    @load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+    def state_awake_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;state_AWAKE&#39;,  
+                                location_name=&#39;state_awake_freq&#39;,
+                                agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+    def state_light_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;state_LIGHT&#39;, 
+                                location_name=&#39;state_light_freq&#39;,
+                                agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+    def state_deep_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;state_DEEP&#39;, 
+                                location_name=&#39;state_deep_freq&#39;,
+                                agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+    def state_rem_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;state_REM&#39;,  
+                                location_name=&#39;state_rem_freq&#39;,
+                                agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;snore_freq&#39;][&#39;save&#39;])
+    def snore_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;snoring&#39;,  
+                                location_name=&#39;snore_freq&#39;,
+                                agg_func=feature_config[&#39;snore_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;bed_freq&#39;][&#39;save&#39;])
+    def bed_in_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;value_bed_in&#39;, 
+                                location_name=&#39;bed_in_freq&#39;,
+                                agg_func=feature_config[&#39;bed_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;bed_freq&#39;][&#39;save&#39;])
+    def bed_out_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;value_bed_out&#39;, 
+                                location_name=&#39;bed_out_freq&#39;, 
+                                agg_func=feature_config[&#39;bed_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_hr_mean&#39;][&#39;save&#39;])
+    def sleep_hr_mean(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;heart_rate&#39;, 
+                                location_name=&#39;sleep_hr_mean&#39;, 
+                                agg_func=feature_config[&#39;sleep_hr_mean&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_hr_std&#39;][&#39;save&#39;])
+    def sleep_hr_std(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;heart_rate&#39;, 
+                                location_name=&#39;sleep_hr_std&#39;, 
+                                agg_func=feature_config[&#39;sleep_hr_std&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_rr_mean&#39;][&#39;save&#39;])
+    def sleep_rr_mean(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;respiratory_rate&#39;, 
+                                location_name=&#39;sleep_rr_mean&#39;, 
+                                agg_func=feature_config[&#39;sleep_rr_mean&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_rr_std&#39;][&#39;save&#39;])
+    def sleep_rr_std(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;respiratory_rate&#39;, 
+                                location_name=&#39;sleep_rr_std&#39;, 
+                                agg_func=feature_config[&#39;sleep_rr_std&#39;][&#39;agg_type&#39;])
+
 
     @property
     @load_save(**feature_config[&#39;body_temperature&#39;][&#39;save&#39;])
@@ -425,6 +556,15 @@ class Feature_engineer:
             &#39;bathroom_urgent_reverse_percentage&#39;: &#39;Reverse percentile of the time to the bathroom&#39;,
             &#39;outlier_score_activity&#39;: &#39;Outlier score of the activity&#39;,
             &#39;rp_location_time_delta&#39;: &#39;Reverse percentile of the time between activities&#39;,
+            &#39;snore_freq&#39;: &#39;Number of snoring activities detected&#39;,
+            &#39;state_awake_freq&#39; : &#39;Number of awake sleep instances&#39;,
+            &#39;state_deep_freq&#39; : &#39;Number of deep sleep instances&#39;,
+            &#39;state_light_freq&#39; : &#39;Number of light sleep instances&#39;,
+            &#39;state_rem_freq&#39; : &#39;Number of REM sleep instances&#39;,
+            &#39;sleep_hr_mean&#39; : &#39;Mean of sleeping heart rate&#39;,
+            &#39;sleep_hr_std&#39; : &#39;Standard Deviation of sleeping heart rate&#39;,
+            &#39;sleep_rr_mean&#39; : &#39;Mean of sleeping respiratory rate&#39;,
+            &#39;sleep_rr_std&#39; : &#39;Standard Deviation of sleeping respiratory rate&#39;,
         }
 
     @property
@@ -434,7 +574,8 @@ class Feature_engineer:
         &#39;&#39;&#39;
         return {&#39;evently&#39;: [&#39;rp_location_time_delta&#39;], 
 
-                &#39;daily&#39;: [&#39;bathroom_night&#39;,
+                &#39;daily&#39;: [
+                          &#39;bathroom_night&#39;,
                           &#39;bathroom_daytime&#39;,
                           &#39;outlier_score_activity&#39;,
                           &#39;bathroom_night_ma&#39;,
@@ -443,7 +584,17 @@ class Feature_engineer:
                          #&#39;bathroom_urgent&#39;,
                           &#39;bathroom_urgent_reverse_percentage&#39;,
                           &#39;bathroom_daytime_ma_delta&#39;,
-                          &#39;entropy_rate_daily&#39;], 
+                          &#39;entropy_rate_daily&#39;,
+                          &#39;snore_freq&#39;,
+                          &#39;state_awake_freq&#39;,
+                          &#39;state_deep_freq&#39;,
+                          &#39;state_rem_freq&#39;,
+                          &#39;state_light_freq&#39;,
+                          &#39;sleep_hr_mean&#39;,
+                          &#39;sleep_hr_std&#39;,
+                          &#39;sleep_rr_mean&#39;,
+                          &#39;sleep_rr_std&#39;
+                          ], 
 
                 &#39;weekly&#39;: [&#39;body_temperature&#39;, 
                            &#39;entropy&#39;, 
@@ -515,6 +666,37 @@ class Feature_engineer:
 
 
     @property
+    @load_save(**feature_config[&#39;bedroom_activity&#39;][&#39;save&#39;])
+    def bedroom_activity(self):
+        return get_bedroom_activity(self.formatter.activity_data.sort_values(&#39;time&#39;), time_range=None, name=&#39;bedroom_activity&#39;)
+
+    @property
+    @load_save(**feature_config[&#39;bedroom_activity_ma&#39;][&#39;save&#39;])
+    def bedroom_activity_ma(self):
+
+        def get_moving_average_groupby(x):
+            x = get_moving_average(x, 
+                                  w=feature_config[&#39;bedroom_activity_ma&#39;][&#39;w&#39;], 
+                                  name=&#39;bedroom_activity_ma&#39;)
+            return x
+
+        return (self.bedroom_activity).groupby(&#39;id&#39;).apply(get_moving_average_groupby)
+
+
+    @property
+    @load_save(**feature_config[&#39;bedroom_activity_ma_delta&#39;][&#39;save&#39;])
+    def bedroom_activity_ma_delta(self):
+
+        def get_value_delta_groupby(x):
+            x = get_value_delta(x,
+                                name=&#39;bedroom_activity_ma_delta&#39;)
+            return x
+
+        return (self.bedroom_activity_ma).groupby(&#39;id&#39;).apply(get_value_delta_groupby)
+
+
+
+    @property
     @load_save(**feature_config[&#39;bathroom_urgent&#39;][&#39;save&#39;])
     def bathroom_urgent(self):
         return get_bathroom_delta(self.formatter.activity_data.sort_values(&#39;time&#39;), single_location_delta, &#39;bathroom_urgent&#39;)
@@ -529,6 +711,86 @@ class Feature_engineer:
             return x
         data[&#39;value&#39;] = data[&#39;value&#39;].apply(value_group_by)
         return data
+
+
+    @property
+    @load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+    def state_awake_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;state_AWAKE&#39;,  
+                                location_name=&#39;state_awake_freq&#39;,
+                                agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+    def state_light_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;state_LIGHT&#39;, 
+                                location_name=&#39;state_light_freq&#39;,
+                                agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+    def state_deep_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;state_DEEP&#39;, 
+                                location_name=&#39;state_deep_freq&#39;,
+                                agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+    def state_rem_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;state_REM&#39;,  
+                                location_name=&#39;state_rem_freq&#39;,
+                                agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;snore_freq&#39;][&#39;save&#39;])
+    def snore_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;snoring&#39;,  
+                                location_name=&#39;snore_freq&#39;,
+                                agg_func=feature_config[&#39;snore_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;bed_freq&#39;][&#39;save&#39;])
+    def bed_in_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;value_bed_in&#39;, 
+                                location_name=&#39;bed_in_freq&#39;,
+                                agg_func=feature_config[&#39;bed_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;bed_freq&#39;][&#39;save&#39;])
+    def bed_out_freq(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;value_bed_out&#39;, 
+                                location_name=&#39;bed_out_freq&#39;, 
+                                agg_func=feature_config[&#39;bed_freq&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_hr_mean&#39;][&#39;save&#39;])
+    def sleep_hr_mean(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;heart_rate&#39;, 
+                                location_name=&#39;sleep_hr_mean&#39;, 
+                                agg_func=feature_config[&#39;sleep_hr_mean&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_hr_std&#39;][&#39;save&#39;])
+    def sleep_hr_std(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;heart_rate&#39;, 
+                                location_name=&#39;sleep_hr_std&#39;, 
+                                agg_func=feature_config[&#39;sleep_hr_std&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_rr_mean&#39;][&#39;save&#39;])
+    def sleep_rr_mean(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;respiratory_rate&#39;, 
+                                location_name=&#39;sleep_rr_mean&#39;, 
+                                agg_func=feature_config[&#39;sleep_rr_mean&#39;][&#39;agg_type&#39;])
+    @property
+    @load_save(**feature_config[&#39;sleep_rr_std&#39;][&#39;save&#39;])
+    def sleep_rr_std(self):
+        return get_daily_agg(self.formatter.sleep_data, 
+                                value_name=&#39;respiratory_rate&#39;, 
+                                location_name=&#39;sleep_rr_std&#39;, 
+                                agg_func=feature_config[&#39;sleep_rr_std&#39;][&#39;agg_type&#39;])
+
 
     @property
     @load_save(**feature_config[&#39;body_temperature&#39;][&#39;save&#39;])
@@ -754,7 +1016,8 @@ def agg_info(self):
     &#39;&#39;&#39;
     return {&#39;evently&#39;: [&#39;rp_location_time_delta&#39;], 
 
-            &#39;daily&#39;: [&#39;bathroom_night&#39;,
+            &#39;daily&#39;: [
+                      &#39;bathroom_night&#39;,
                       &#39;bathroom_daytime&#39;,
                       &#39;outlier_score_activity&#39;,
                       &#39;bathroom_night_ma&#39;,
@@ -763,7 +1026,17 @@ def agg_info(self):
                      #&#39;bathroom_urgent&#39;,
                       &#39;bathroom_urgent_reverse_percentage&#39;,
                       &#39;bathroom_daytime_ma_delta&#39;,
-                      &#39;entropy_rate_daily&#39;], 
+                      &#39;entropy_rate_daily&#39;,
+                      &#39;snore_freq&#39;,
+                      &#39;state_awake_freq&#39;,
+                      &#39;state_deep_freq&#39;,
+                      &#39;state_rem_freq&#39;,
+                      &#39;state_light_freq&#39;,
+                      &#39;sleep_hr_mean&#39;,
+                      &#39;sleep_hr_std&#39;,
+                      &#39;sleep_rr_mean&#39;,
+                      &#39;sleep_rr_std&#39;
+                      ], 
 
             &#39;weekly&#39;: [&#39;body_temperature&#39;, 
                        &#39;entropy&#39;, 
@@ -906,6 +1179,90 @@ def bathroom_urgent_reverse_percentage(self):
     return data</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.bed_in_freq"><code class="name">var <span class="ident">bed_in_freq</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bed_freq&#39;][&#39;save&#39;])
+def bed_in_freq(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;value_bed_in&#39;, 
+                            location_name=&#39;bed_in_freq&#39;,
+                            agg_func=feature_config[&#39;bed_freq&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.bed_out_freq"><code class="name">var <span class="ident">bed_out_freq</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bed_freq&#39;][&#39;save&#39;])
+def bed_out_freq(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;value_bed_out&#39;, 
+                            location_name=&#39;bed_out_freq&#39;, 
+                            agg_func=feature_config[&#39;bed_freq&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.bedroom_activity"><code class="name">var <span class="ident">bedroom_activity</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bedroom_activity&#39;][&#39;save&#39;])
+def bedroom_activity(self):
+    return get_bedroom_activity(self.formatter.activity_data.sort_values(&#39;time&#39;), time_range=None, name=&#39;bedroom_activity&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.bedroom_activity_ma"><code class="name">var <span class="ident">bedroom_activity_ma</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bedroom_activity_ma&#39;][&#39;save&#39;])
+def bedroom_activity_ma(self):
+
+    def get_moving_average_groupby(x):
+        x = get_moving_average(x, 
+                              w=feature_config[&#39;bedroom_activity_ma&#39;][&#39;w&#39;], 
+                              name=&#39;bedroom_activity_ma&#39;)
+        return x
+
+    return (self.bedroom_activity).groupby(&#39;id&#39;).apply(get_moving_average_groupby)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.bedroom_activity_ma_delta"><code class="name">var <span class="ident">bedroom_activity_ma_delta</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;bedroom_activity_ma_delta&#39;][&#39;save&#39;])
+def bedroom_activity_ma_delta(self):
+
+    def get_value_delta_groupby(x):
+        x = get_value_delta(x,
+                            name=&#39;bedroom_activity_ma_delta&#39;)
+        return x
+
+    return (self.bedroom_activity_ma).groupby(&#39;id&#39;).apply(get_value_delta_groupby)</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.feature_engineering.engineer.Feature_engineer.body_temperature"><code class="name">var <span class="ident">body_temperature</span></code></dt>
 <dd>
 <div class="desc"></div>
@@ -992,6 +1349,15 @@ def info(self):
         &#39;bathroom_urgent_reverse_percentage&#39;: &#39;Reverse percentile of the time to the bathroom&#39;,
         &#39;outlier_score_activity&#39;: &#39;Outlier score of the activity&#39;,
         &#39;rp_location_time_delta&#39;: &#39;Reverse percentile of the time between activities&#39;,
+        &#39;snore_freq&#39;: &#39;Number of snoring activities detected&#39;,
+        &#39;state_awake_freq&#39; : &#39;Number of awake sleep instances&#39;,
+        &#39;state_deep_freq&#39; : &#39;Number of deep sleep instances&#39;,
+        &#39;state_light_freq&#39; : &#39;Number of light sleep instances&#39;,
+        &#39;state_rem_freq&#39; : &#39;Number of REM sleep instances&#39;,
+        &#39;sleep_hr_mean&#39; : &#39;Mean of sleeping heart rate&#39;,
+        &#39;sleep_hr_std&#39; : &#39;Standard Deviation of sleeping heart rate&#39;,
+        &#39;sleep_rr_mean&#39; : &#39;Mean of sleeping respiratory rate&#39;,
+        &#39;sleep_rr_std&#39; : &#39;Standard Deviation of sleeping respiratory rate&#39;,
     }</code></pre>
 </details>
 </dd>
@@ -1038,6 +1404,150 @@ def rp_location_time_delta(self):
                                           baseline_offset_days = feature_config[&#39;rp_location_time_delta&#39;][&#39;baseline_offset_days&#39;],
                                           all_loc_as_baseline = feature_config[&#39;rp_location_time_delta&#39;][&#39;all_loc_as_baseline&#39;],
                                           name=&#39;rp_location_time_delta&#39;)</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.sleep_hr_mean"><code class="name">var <span class="ident">sleep_hr_mean</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;sleep_hr_mean&#39;][&#39;save&#39;])
+def sleep_hr_mean(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;heart_rate&#39;, 
+                            location_name=&#39;sleep_hr_mean&#39;, 
+                            agg_func=feature_config[&#39;sleep_hr_mean&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.sleep_hr_std"><code class="name">var <span class="ident">sleep_hr_std</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;sleep_hr_std&#39;][&#39;save&#39;])
+def sleep_hr_std(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;heart_rate&#39;, 
+                            location_name=&#39;sleep_hr_std&#39;, 
+                            agg_func=feature_config[&#39;sleep_hr_std&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.sleep_rr_mean"><code class="name">var <span class="ident">sleep_rr_mean</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;sleep_rr_mean&#39;][&#39;save&#39;])
+def sleep_rr_mean(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;respiratory_rate&#39;, 
+                            location_name=&#39;sleep_rr_mean&#39;, 
+                            agg_func=feature_config[&#39;sleep_rr_mean&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.sleep_rr_std"><code class="name">var <span class="ident">sleep_rr_std</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;sleep_rr_std&#39;][&#39;save&#39;])
+def sleep_rr_std(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;respiratory_rate&#39;, 
+                            location_name=&#39;sleep_rr_std&#39;, 
+                            agg_func=feature_config[&#39;sleep_rr_std&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.snore_freq"><code class="name">var <span class="ident">snore_freq</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;snore_freq&#39;][&#39;save&#39;])
+def snore_freq(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;snoring&#39;,  
+                            location_name=&#39;snore_freq&#39;,
+                            agg_func=feature_config[&#39;snore_freq&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.state_awake_freq"><code class="name">var <span class="ident">state_awake_freq</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+def state_awake_freq(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;state_AWAKE&#39;,  
+                            location_name=&#39;state_awake_freq&#39;,
+                            agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.state_deep_freq"><code class="name">var <span class="ident">state_deep_freq</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+def state_deep_freq(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;state_DEEP&#39;, 
+                            location_name=&#39;state_deep_freq&#39;,
+                            agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.state_light_freq"><code class="name">var <span class="ident">state_light_freq</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+def state_light_freq(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;state_LIGHT&#39;, 
+                            location_name=&#39;state_light_freq&#39;,
+                            agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.engineer.Feature_engineer.state_rem_freq"><code class="name">var <span class="ident">state_rem_freq</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**feature_config[&#39;sleep_freq&#39;][&#39;save&#39;])
+def state_rem_freq(self):
+    return get_daily_agg(self.formatter.sleep_data, 
+                            value_name=&#39;state_REM&#39;,  
+                            location_name=&#39;state_rem_freq&#39;,
+                            agg_func=feature_config[&#39;sleep_freq&#39;][&#39;agg_type&#39;])</code></pre>
 </details>
 </dd>
 </dl>
@@ -1143,6 +1653,11 @@ def rp_location_time_delta(self):
 <li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.bathroom_night_ma_delta" href="#minder_utils.feature_engineering.engineer.Feature_engineer.bathroom_night_ma_delta">bathroom_night_ma_delta</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.bathroom_urgent" href="#minder_utils.feature_engineering.engineer.Feature_engineer.bathroom_urgent">bathroom_urgent</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.bathroom_urgent_reverse_percentage" href="#minder_utils.feature_engineering.engineer.Feature_engineer.bathroom_urgent_reverse_percentage">bathroom_urgent_reverse_percentage</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.bed_in_freq" href="#minder_utils.feature_engineering.engineer.Feature_engineer.bed_in_freq">bed_in_freq</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.bed_out_freq" href="#minder_utils.feature_engineering.engineer.Feature_engineer.bed_out_freq">bed_out_freq</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.bedroom_activity" href="#minder_utils.feature_engineering.engineer.Feature_engineer.bedroom_activity">bedroom_activity</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.bedroom_activity_ma" href="#minder_utils.feature_engineering.engineer.Feature_engineer.bedroom_activity_ma">bedroom_activity_ma</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.bedroom_activity_ma_delta" href="#minder_utils.feature_engineering.engineer.Feature_engineer.bedroom_activity_ma_delta">bedroom_activity_ma_delta</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.body_temperature" href="#minder_utils.feature_engineering.engineer.Feature_engineer.body_temperature">body_temperature</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.entropy" href="#minder_utils.feature_engineering.engineer.Feature_engineer.entropy">entropy</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.entropy_rate" href="#minder_utils.feature_engineering.engineer.Feature_engineer.entropy_rate">entropy_rate</a></code></li>
@@ -1151,6 +1666,15 @@ def rp_location_time_delta(self):
 <li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.outlier_score_activity" href="#minder_utils.feature_engineering.engineer.Feature_engineer.outlier_score_activity">outlier_score_activity</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.raw_activity" href="#minder_utils.feature_engineering.engineer.Feature_engineer.raw_activity">raw_activity</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.rp_location_time_delta" href="#minder_utils.feature_engineering.engineer.Feature_engineer.rp_location_time_delta">rp_location_time_delta</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.sleep_hr_mean" href="#minder_utils.feature_engineering.engineer.Feature_engineer.sleep_hr_mean">sleep_hr_mean</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.sleep_hr_std" href="#minder_utils.feature_engineering.engineer.Feature_engineer.sleep_hr_std">sleep_hr_std</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.sleep_rr_mean" href="#minder_utils.feature_engineering.engineer.Feature_engineer.sleep_rr_mean">sleep_rr_mean</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.sleep_rr_std" href="#minder_utils.feature_engineering.engineer.Feature_engineer.sleep_rr_std">sleep_rr_std</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.snore_freq" href="#minder_utils.feature_engineering.engineer.Feature_engineer.snore_freq">snore_freq</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.state_awake_freq" href="#minder_utils.feature_engineering.engineer.Feature_engineer.state_awake_freq">state_awake_freq</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.state_deep_freq" href="#minder_utils.feature_engineering.engineer.Feature_engineer.state_deep_freq">state_deep_freq</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.state_light_freq" href="#minder_utils.feature_engineering.engineer.Feature_engineer.state_light_freq">state_light_freq</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.engineer.Feature_engineer.state_rem_freq" href="#minder_utils.feature_engineering.engineer.Feature_engineer.state_rem_freq">state_rem_freq</a></code></li>
 </ul>
 </li>
 </ul>

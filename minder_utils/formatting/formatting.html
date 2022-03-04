@@ -50,40 +50,14 @@ class Formatting:
     def __init__(self, path=os.path.join(&#39;./data&#39;, &#39;raw_data&#39;), add_tihm=None):
         self.path = reformat_path(path)
         self.add_tihm = add_tihm
-        self.activity_nice_locations = {
-        &#39;hallway&#39;: &#39;Hallway&#39;, 
-        &#39;kitchen&#39;: &#39;Kitchen&#39;, 
-        &#39;lounge&#39;:&#39;Lounge&#39;, 
-        &#39;bathroom1&#39;: &#39;Bathroom&#39;, 
-        &#39;bedroom1&#39;:&#39;Bedroom&#39;,
-        &#39;kettle&#39;: &#39;Kettle&#39;,
-        &#39;toaster&#39;: &#39;Toaster&#39;,
-        &#39;fridge door&#39;: &#39;Fridge Door&#39;,
-        &#39;back door&#39;: &#39;Back Door&#39;,
-        &#39;front door&#39;: &#39;Front Door&#39;,
-        &#39;microwave&#39;: &#39;Microwave&#39;,
-        &#39;study&#39;: &#39;Study&#39;,
-        &#39;dining room&#39;: &#39;Dining Room&#39;,
-        &#39;living room&#39;: &#39;Living Room&#39;,
-        &#39;iron&#39;: &#39;Iron&#39;,
-        &#39;corridor1&#39;: &#39;Corridor&#39;,
-        &#39;WC1&#39;: &#39;WC&#39;,
-        &#39;main door&#39;: &#39;Main Door&#39;,
-        &#39;utility&#39;: &#39;Utility&#39;, 
-        &#39;office&#39;: &#39;Office&#39;, 
-        &#39;multi&#39;: &#39;Multi&#39;, 
-        &#39;conservatory&#39;: &#39;Conservatory&#39;,
-        &#39;garage&#39;: &#39;Garage&#39;, 
-        &#39;secondary&#39;: &#39;Secondary&#39;, 
-        &#39;cellar&#39;: &#39;Cellar&#39;
-                                                        }
+        self.activity_nice_locations = config[&#39;activity_nice_locations&#39;]
 
         categories_check = [&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;]
         if not np.all([os.path.exists(os.path.join(path, category + &#39;.csv&#39;)) for category in categories_check]):
             print(&#39;Downloading required files for formatting&#39;)
             dl = Downloader()
             dl.export(categories=[&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;],
-                      reload=True, since=None, until=None, save_path=path, append = False)
+                      reload=True, since=None, until=None, save_path=path, append=False)
             print(&#39;Required files downloaded&#39;)
 
         self.device_type = \
@@ -97,7 +71,7 @@ class Formatting:
         if add_tihm:
             data = self.process_data(&#39;physiological&#39;)
             tihm_data = format_tihm_data()
-            return pd.concat([data, tihm_data[&#39;physiological&#39;]])
+            return label_dataframe(pd.concat([data, tihm_data[&#39;physiological&#39;]]))
         return label_dataframe(self.process_data(&#39;physiological&#39;).drop_duplicates())
 
     @property
@@ -107,7 +81,7 @@ class Formatting:
         if add_tihm:
             data = self.process_data(&#39;activity&#39;)
             tihm_data = format_tihm_data()
-            return pd.concat([data, tihm_data[&#39;activity&#39;]]).drop_duplicates().sort_values(&#39;time&#39;)
+            return label_dataframe(pd.concat([data, tihm_data[&#39;activity&#39;]]).drop_duplicates().sort_values(&#39;time&#39;))
         return label_dataframe(self.process_data(&#39;activity&#39;)).sort_values(&#39;time&#39;)
 
     @property
@@ -115,8 +89,13 @@ class Formatting:
     def environmental_data(self):
         return label_dataframe(self.process_data(&#39;environmental&#39;))
 
+    @property
+    @load_save(**config[&#39;sleep&#39;][&#39;save&#39;])
+    def sleep_data(self):
+        return label_dataframe(self.process_data(&#39;sleep&#39;)).sort_values(&#39;time&#39;).reset_index(drop=True)
+
     def process_data(self, datatype):
-        assert datatype in [&#39;physiological&#39;, &#39;activity&#39;, &#39;environmental&#39;], &#39;not a valid type&#39;
+        assert datatype in [&#39;physiological&#39;, &#39;activity&#39;, &#39;environmental&#39;, &#39;sleep&#39;], &#39;not a valid type&#39;
         process_func = getattr(self, &#39;process_{}_data&#39;.format(datatype))
         dataframe = pd.DataFrame(columns=self.config[datatype][&#39;columns&#39;])
         for name in iter_dir(self.path):
@@ -127,6 +106,54 @@ class Formatting:
             end_time = time.time()
             print(&#39;Finished in {:.2f} seconds&#39;.format(end_time - start_time))
         return dataframe
+
+    def process_sleep_data(self, name, df):
+        &#39;&#39;&#39;
+        This function will process the sleep data.
+
+        &#39;&#39;&#39;
+        col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;]
+        categorical_columns = self.config[&#39;sleep&#39;][&#39;categorical_columns&#39;]
+        value_columns = self.config[&#39;sleep&#39;][&#39;value_columns&#39;]
+        data_adding = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
+        categorical_columns = [column for column in categorical_columns if column in list(data_adding.columns)]
+        if len(categorical_columns) != 0:
+            data_cat = data_adding[col_filter+categorical_columns].copy()
+            data_cat = pd.melt(data_cat.merge(
+                                                pd.get_dummies(data_cat[categorical_columns]),
+                                                left_index=True, right_index=True
+                                                            ).drop(categorical_columns,
+                                                                    axis=1),
+                                id_vars=col_filter,
+                                var_name=&#39;location&#39;,
+                                value_name=&#39;value&#39;)
+            data_cat = data_cat[data_cat.value != 0]
+            data_cat = data_cat[data_cat[&#39;value&#39;].notna()]
+            data_cat.value = data_cat.value.astype(float)
+        else:
+            data_cat = None
+
+        value_columns = [column for column in value_columns if column in list(data_adding.columns)]
+        if len(value_columns) != 0:
+            data_val = data_adding[col_filter+value_columns].copy()
+            data_val = pd.melt(data_val,
+                            id_vars=col_filter,
+                            var_name=&#39;location&#39;,
+                            value_name=&#39;value&#39;)
+            data_val = data_val[data_val[&#39;value&#39;].notna()]
+            data_val.value = data_val.value.astype(float)
+        else:
+            data_val = None
+
+        if (data_val is None) and (data_cat is None):
+            return df
+
+        data_out = pd.concat([data_cat, data_val])
+
+        data_out.columns = self.config[&#39;sleep&#39;][&#39;columns&#39;]
+        data_out.time = pd.to_datetime(data_out.time, utc=True)
+
+        return pd.concat([df, data_out])
 
     def process_physiological_data(self, name, df):
         &#34;&#34;&#34;
@@ -142,6 +169,7 @@ class Formatting:
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;]
         data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
+        data = data[data.start_date != &#39;start_date&#39;]
         data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
         try:
             data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
@@ -149,6 +177,7 @@ class Formatting:
             data.device_type += &#39;-&gt;&#39; + name[4:]
         data.start_date = pd.to_datetime(data.start_date).dt.date
         data = data[col_filter]
+        data.value = data.value.astype(float)
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;]).mean().reset_index()
         data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
         data.location = data.location.apply(lambda x: x.split(&#39;-&gt;&#39;)[-1])
@@ -170,6 +199,7 @@ class Formatting:
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
         data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
+        data = data[data.start_date != &#39;start_date&#39;]
         data = data[data[&#39;location_name&#39;] != &#39;location_name&#39;]
         data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
         data.columns = self.config[&#39;activity&#39;][&#39;columns&#39;]
@@ -197,6 +227,7 @@ class Formatting:
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;]).mean().reset_index()
         data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
         data.time = pd.to_datetime(data.time, utc=True)
+        data[&#39;type&#39;] = name
         return df.append(data)
 
     @staticmethod
@@ -310,40 +341,14 @@ if __name__ == &#39;__main__&#39;:
     def __init__(self, path=os.path.join(&#39;./data&#39;, &#39;raw_data&#39;), add_tihm=None):
         self.path = reformat_path(path)
         self.add_tihm = add_tihm
-        self.activity_nice_locations = {
-        &#39;hallway&#39;: &#39;Hallway&#39;, 
-        &#39;kitchen&#39;: &#39;Kitchen&#39;, 
-        &#39;lounge&#39;:&#39;Lounge&#39;, 
-        &#39;bathroom1&#39;: &#39;Bathroom&#39;, 
-        &#39;bedroom1&#39;:&#39;Bedroom&#39;,
-        &#39;kettle&#39;: &#39;Kettle&#39;,
-        &#39;toaster&#39;: &#39;Toaster&#39;,
-        &#39;fridge door&#39;: &#39;Fridge Door&#39;,
-        &#39;back door&#39;: &#39;Back Door&#39;,
-        &#39;front door&#39;: &#39;Front Door&#39;,
-        &#39;microwave&#39;: &#39;Microwave&#39;,
-        &#39;study&#39;: &#39;Study&#39;,
-        &#39;dining room&#39;: &#39;Dining Room&#39;,
-        &#39;living room&#39;: &#39;Living Room&#39;,
-        &#39;iron&#39;: &#39;Iron&#39;,
-        &#39;corridor1&#39;: &#39;Corridor&#39;,
-        &#39;WC1&#39;: &#39;WC&#39;,
-        &#39;main door&#39;: &#39;Main Door&#39;,
-        &#39;utility&#39;: &#39;Utility&#39;, 
-        &#39;office&#39;: &#39;Office&#39;, 
-        &#39;multi&#39;: &#39;Multi&#39;, 
-        &#39;conservatory&#39;: &#39;Conservatory&#39;,
-        &#39;garage&#39;: &#39;Garage&#39;, 
-        &#39;secondary&#39;: &#39;Secondary&#39;, 
-        &#39;cellar&#39;: &#39;Cellar&#39;
-                                                        }
+        self.activity_nice_locations = config[&#39;activity_nice_locations&#39;]
 
         categories_check = [&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;]
         if not np.all([os.path.exists(os.path.join(path, category + &#39;.csv&#39;)) for category in categories_check]):
             print(&#39;Downloading required files for formatting&#39;)
             dl = Downloader()
             dl.export(categories=[&#39;device_types&#39;, &#39;homes&#39;, &#39;patients&#39;],
-                      reload=True, since=None, until=None, save_path=path, append = False)
+                      reload=True, since=None, until=None, save_path=path, append=False)
             print(&#39;Required files downloaded&#39;)
 
         self.device_type = \
@@ -357,7 +362,7 @@ if __name__ == &#39;__main__&#39;:
         if add_tihm:
             data = self.process_data(&#39;physiological&#39;)
             tihm_data = format_tihm_data()
-            return pd.concat([data, tihm_data[&#39;physiological&#39;]])
+            return label_dataframe(pd.concat([data, tihm_data[&#39;physiological&#39;]]))
         return label_dataframe(self.process_data(&#39;physiological&#39;).drop_duplicates())
 
     @property
@@ -367,7 +372,7 @@ if __name__ == &#39;__main__&#39;:
         if add_tihm:
             data = self.process_data(&#39;activity&#39;)
             tihm_data = format_tihm_data()
-            return pd.concat([data, tihm_data[&#39;activity&#39;]]).drop_duplicates().sort_values(&#39;time&#39;)
+            return label_dataframe(pd.concat([data, tihm_data[&#39;activity&#39;]]).drop_duplicates().sort_values(&#39;time&#39;))
         return label_dataframe(self.process_data(&#39;activity&#39;)).sort_values(&#39;time&#39;)
 
     @property
@@ -375,8 +380,13 @@ if __name__ == &#39;__main__&#39;:
     def environmental_data(self):
         return label_dataframe(self.process_data(&#39;environmental&#39;))
 
+    @property
+    @load_save(**config[&#39;sleep&#39;][&#39;save&#39;])
+    def sleep_data(self):
+        return label_dataframe(self.process_data(&#39;sleep&#39;)).sort_values(&#39;time&#39;).reset_index(drop=True)
+
     def process_data(self, datatype):
-        assert datatype in [&#39;physiological&#39;, &#39;activity&#39;, &#39;environmental&#39;], &#39;not a valid type&#39;
+        assert datatype in [&#39;physiological&#39;, &#39;activity&#39;, &#39;environmental&#39;, &#39;sleep&#39;], &#39;not a valid type&#39;
         process_func = getattr(self, &#39;process_{}_data&#39;.format(datatype))
         dataframe = pd.DataFrame(columns=self.config[datatype][&#39;columns&#39;])
         for name in iter_dir(self.path):
@@ -387,6 +397,54 @@ if __name__ == &#39;__main__&#39;:
             end_time = time.time()
             print(&#39;Finished in {:.2f} seconds&#39;.format(end_time - start_time))
         return dataframe
+
+    def process_sleep_data(self, name, df):
+        &#39;&#39;&#39;
+        This function will process the sleep data.
+
+        &#39;&#39;&#39;
+        col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;]
+        categorical_columns = self.config[&#39;sleep&#39;][&#39;categorical_columns&#39;]
+        value_columns = self.config[&#39;sleep&#39;][&#39;value_columns&#39;]
+        data_adding = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
+        categorical_columns = [column for column in categorical_columns if column in list(data_adding.columns)]
+        if len(categorical_columns) != 0:
+            data_cat = data_adding[col_filter+categorical_columns].copy()
+            data_cat = pd.melt(data_cat.merge(
+                                                pd.get_dummies(data_cat[categorical_columns]),
+                                                left_index=True, right_index=True
+                                                            ).drop(categorical_columns,
+                                                                    axis=1),
+                                id_vars=col_filter,
+                                var_name=&#39;location&#39;,
+                                value_name=&#39;value&#39;)
+            data_cat = data_cat[data_cat.value != 0]
+            data_cat = data_cat[data_cat[&#39;value&#39;].notna()]
+            data_cat.value = data_cat.value.astype(float)
+        else:
+            data_cat = None
+
+        value_columns = [column for column in value_columns if column in list(data_adding.columns)]
+        if len(value_columns) != 0:
+            data_val = data_adding[col_filter+value_columns].copy()
+            data_val = pd.melt(data_val,
+                            id_vars=col_filter,
+                            var_name=&#39;location&#39;,
+                            value_name=&#39;value&#39;)
+            data_val = data_val[data_val[&#39;value&#39;].notna()]
+            data_val.value = data_val.value.astype(float)
+        else:
+            data_val = None
+
+        if (data_val is None) and (data_cat is None):
+            return df
+
+        data_out = pd.concat([data_cat, data_val])
+
+        data_out.columns = self.config[&#39;sleep&#39;][&#39;columns&#39;]
+        data_out.time = pd.to_datetime(data_out.time, utc=True)
+
+        return pd.concat([df, data_out])
 
     def process_physiological_data(self, name, df):
         &#34;&#34;&#34;
@@ -402,6 +460,7 @@ if __name__ == &#39;__main__&#39;:
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;]
         data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
+        data = data[data.start_date != &#39;start_date&#39;]
         data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
         try:
             data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
@@ -409,6 +468,7 @@ if __name__ == &#39;__main__&#39;:
             data.device_type += &#39;-&gt;&#39; + name[4:]
         data.start_date = pd.to_datetime(data.start_date).dt.date
         data = data[col_filter]
+        data.value = data.value.astype(float)
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;]).mean().reset_index()
         data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
         data.location = data.location.apply(lambda x: x.split(&#39;-&gt;&#39;)[-1])
@@ -430,6 +490,7 @@ if __name__ == &#39;__main__&#39;:
         &#34;&#34;&#34;
         col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
         data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
+        data = data[data.start_date != &#39;start_date&#39;]
         data = data[data[&#39;location_name&#39;] != &#39;location_name&#39;]
         data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
         data.columns = self.config[&#39;activity&#39;][&#39;columns&#39;]
@@ -457,6 +518,7 @@ if __name__ == &#39;__main__&#39;:
         data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;]).mean().reset_index()
         data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
         data.time = pd.to_datetime(data.time, utc=True)
+        data[&#39;type&#39;] = name
         return df.append(data)
 
     @staticmethod
@@ -623,7 +685,7 @@ def activity_data(self):
     if add_tihm:
         data = self.process_data(&#39;activity&#39;)
         tihm_data = format_tihm_data()
-        return pd.concat([data, tihm_data[&#39;activity&#39;]]).drop_duplicates().sort_values(&#39;time&#39;)
+        return label_dataframe(pd.concat([data, tihm_data[&#39;activity&#39;]]).drop_duplicates().sort_values(&#39;time&#39;))
     return label_dataframe(self.process_data(&#39;activity&#39;)).sort_values(&#39;time&#39;)</code></pre>
 </details>
 </dd>
@@ -654,8 +716,21 @@ def physiological_data(self):
     if add_tihm:
         data = self.process_data(&#39;physiological&#39;)
         tihm_data = format_tihm_data()
-        return pd.concat([data, tihm_data[&#39;physiological&#39;]])
+        return label_dataframe(pd.concat([data, tihm_data[&#39;physiological&#39;]]))
     return label_dataframe(self.process_data(&#39;physiological&#39;).drop_duplicates())</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.formatting.formatting.Formatting.sleep_data"><code class="name">var <span class="ident">sleep_data</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@load_save(**config[&#39;sleep&#39;][&#39;save&#39;])
+def sleep_data(self):
+    return label_dataframe(self.process_data(&#39;sleep&#39;)).sort_values(&#39;time&#39;).reset_index(drop=True)</code></pre>
 </details>
 </dd>
 </dl>
@@ -694,6 +769,7 @@ the data must contains ['patient_id', 'start_date', 'location_name', 'value']
     &#34;&#34;&#34;
     col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;, &#39;value&#39;]
     data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
+    data = data[data.start_date != &#39;start_date&#39;]
     data = data[data[&#39;location_name&#39;] != &#39;location_name&#39;]
     data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
     data.columns = self.config[&#39;activity&#39;][&#39;columns&#39;]
@@ -711,7 +787,7 @@ the data must contains ['patient_id', 'start_date', 'location_name', 'value']
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def process_data(self, datatype):
-    assert datatype in [&#39;physiological&#39;, &#39;activity&#39;, &#39;environmental&#39;], &#39;not a valid type&#39;
+    assert datatype in [&#39;physiological&#39;, &#39;activity&#39;, &#39;environmental&#39;, &#39;sleep&#39;], &#39;not a valid type&#39;
     process_func = getattr(self, &#39;process_{}_data&#39;.format(datatype))
     dataframe = pd.DataFrame(columns=self.config[datatype][&#39;columns&#39;])
     for name in iter_dir(self.path):
@@ -778,6 +854,7 @@ data: the data must contains ['patient_id', 'start_date', 'location_name', 'devi
     data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;location_name&#39;]).mean().reset_index()
     data.columns = self.config[&#39;environmental&#39;][&#39;columns&#39;]
     data.time = pd.to_datetime(data.time, utc=True)
+    data[&#39;type&#39;] = name
     return df.append(data)</code></pre>
 </details>
 </dd>
@@ -870,6 +947,7 @@ data: the data must contains ['patient_id', 'start_date', 'device_type', 'value'
     &#34;&#34;&#34;
     col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;, &#39;value&#39;]
     data = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
+    data = data[data.start_date != &#39;start_date&#39;]
     data.loc[:, &#39;device_type&#39;] = data.device_type.map(self.device_type)
     try:
         data = getattr(self, &#39;process_&#39; + name)(data)[col_filter]
@@ -877,6 +955,7 @@ data: the data must contains ['patient_id', 'start_date', 'device_type', 'value'
         data.device_type += &#39;-&gt;&#39; + name[4:]
     data.start_date = pd.to_datetime(data.start_date).dt.date
     data = data[col_filter]
+    data.value = data.value.astype(float)
     data = data.groupby([&#39;patient_id&#39;, &#39;start_date&#39;, &#39;device_type&#39;]).mean().reset_index()
     data.columns = self.config[&#39;physiological&#39;][&#39;columns&#39;]
     data.location = data.location.apply(lambda x: x.split(&#39;-&gt;&#39;)[-1])
@@ -924,6 +1003,64 @@ need to be process by NLP maybe
     return False</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.formatting.formatting.Formatting.process_sleep_data"><code class="name flex">
+<span>def <span class="ident">process_sleep_data</span></span>(<span>self, name, df)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function will process the sleep data.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_sleep_data(self, name, df):
+    &#39;&#39;&#39;
+    This function will process the sleep data.
+
+    &#39;&#39;&#39;
+    col_filter = [&#39;patient_id&#39;, &#39;start_date&#39;]
+    categorical_columns = self.config[&#39;sleep&#39;][&#39;categorical_columns&#39;]
+    value_columns = self.config[&#39;sleep&#39;][&#39;value_columns&#39;]
+    data_adding = pd.read_csv(os.path.join(self.path, name + &#39;.csv&#39;))
+    categorical_columns = [column for column in categorical_columns if column in list(data_adding.columns)]
+    if len(categorical_columns) != 0:
+        data_cat = data_adding[col_filter+categorical_columns].copy()
+        data_cat = pd.melt(data_cat.merge(
+                                            pd.get_dummies(data_cat[categorical_columns]),
+                                            left_index=True, right_index=True
+                                                        ).drop(categorical_columns,
+                                                                axis=1),
+                            id_vars=col_filter,
+                            var_name=&#39;location&#39;,
+                            value_name=&#39;value&#39;)
+        data_cat = data_cat[data_cat.value != 0]
+        data_cat = data_cat[data_cat[&#39;value&#39;].notna()]
+        data_cat.value = data_cat.value.astype(float)
+    else:
+        data_cat = None
+
+    value_columns = [column for column in value_columns if column in list(data_adding.columns)]
+    if len(value_columns) != 0:
+        data_val = data_adding[col_filter+value_columns].copy()
+        data_val = pd.melt(data_val,
+                        id_vars=col_filter,
+                        var_name=&#39;location&#39;,
+                        value_name=&#39;value&#39;)
+        data_val = data_val[data_val[&#39;value&#39;].notna()]
+        data_val.value = data_val.value.astype(float)
+    else:
+        data_val = None
+
+    if (data_val is None) and (data_cat is None):
+        return df
+
+    data_out = pd.concat([data_cat, data_val])
+
+    data_out.columns = self.config[&#39;sleep&#39;][&#39;columns&#39;]
+    data_out.time = pd.to_datetime(data_out.time, utc=True)
+
+    return pd.concat([df, data_out])</code></pre>
+</details>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -967,6 +1104,8 @@ need to be process by NLP maybe
 <li><code><a title="minder_utils.formatting.formatting.Formatting.process_raw_behavioural" href="#minder_utils.formatting.formatting.Formatting.process_raw_behavioural">process_raw_behavioural</a></code></li>
 <li><code><a title="minder_utils.formatting.formatting.Formatting.process_raw_blood_pressure" href="#minder_utils.formatting.formatting.Formatting.process_raw_blood_pressure">process_raw_blood_pressure</a></code></li>
 <li><code><a title="minder_utils.formatting.formatting.Formatting.process_raw_door_sensor" href="#minder_utils.formatting.formatting.Formatting.process_raw_door_sensor">process_raw_door_sensor</a></code></li>
+<li><code><a title="minder_utils.formatting.formatting.Formatting.process_sleep_data" href="#minder_utils.formatting.formatting.Formatting.process_sleep_data">process_sleep_data</a></code></li>
+<li><code><a title="minder_utils.formatting.formatting.Formatting.sleep_data" href="#minder_utils.formatting.formatting.Formatting.sleep_data">sleep_data</a></code></li>
 </ul>
 </li>
 </ul>

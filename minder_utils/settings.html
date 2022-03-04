@@ -30,7 +30,7 @@
 <pre><code class="python">import json
 import pandas as pd
 import datetime as DT
-from minder_utils.configurations import data_path, dates_path, token_path, delta_path, tihm_data_path
+from minder_utils.configurations import data_path, dates_path, token_path, delta_path, tihm_data_path, dates_path_backup
 
 
 def token_save(token):
@@ -76,6 +76,19 @@ def set_delta(delta=1):
         file_write.write(str(delta))
     print(&#39;Delta Saved&#39;)
     return
+
+
+def date_backup(reload):
+    if reload:
+        with open(dates_path_backup) as json_file:
+            date_dict = json.load(json_file)
+        with open(dates_path, &#39;w&#39;) as file_write:
+            json.dump(date_dict, file_write, default=str)
+    else:
+        with open(dates_path) as json_file:
+            date_dict = json.load(json_file)
+        with open(dates_path_backup, &#39;w&#39;) as file_write:
+            json.dump(date_dict, file_write, default=str)
 
 
 def dates_save(refresh=False):
@@ -131,7 +144,7 @@ def dates_save(refresh=False):
         date_dict[&#39;current&#39;][&#39;until&#39;] = today
     with open(dates_path, &#39;w&#39;) as file_write:
         json.dump(date_dict, file_write, default=str)
-
+    date_backup(False)
     print(&#39;Dates Saved&#39;)
 
     return
@@ -208,6 +221,28 @@ def set_tihm_dir(path=&#39;./data/&#39;):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="minder_utils.settings.date_backup"><code class="name flex">
+<span>def <span class="ident">date_backup</span></span>(<span>reload)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def date_backup(reload):
+    if reload:
+        with open(dates_path_backup) as json_file:
+            date_dict = json.load(json_file)
+        with open(dates_path, &#39;w&#39;) as file_write:
+            json.dump(date_dict, file_write, default=str)
+    else:
+        with open(dates_path) as json_file:
+            date_dict = json.load(json_file)
+        with open(dates_path_backup, &#39;w&#39;) as file_write:
+            json.dump(date_dict, file_write, default=str)</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.settings.dates_save"><code class="name flex">
 <span>def <span class="ident">dates_save</span></span>(<span>refresh=False)</span>
 </code></dt>
@@ -290,7 +325,7 @@ Default: <code>False</code>.</li>
         date_dict[&#39;current&#39;][&#39;until&#39;] = today
     with open(dates_path, &#39;w&#39;) as file_write:
         json.dump(date_dict, file_write, default=str)
-
+    date_backup(False)
     print(&#39;Dates Saved&#39;)
 
     return</code></pre>
@@ -496,7 +531,8 @@ This is the user token that can be used to access minder.</li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
+<ul class="two-column">
+<li><code><a title="minder_utils.settings.date_backup" href="#minder_utils.settings.date_backup">date_backup</a></code></li>
 <li><code><a title="minder_utils.settings.dates_save" href="#minder_utils.settings.dates_save">dates_save</a></code></li>
 <li><code><a title="minder_utils.settings.set_data_dir" href="#minder_utils.settings.set_data_dir">set_data_dir</a></code></li>
 <li><code><a title="minder_utils.settings.set_delta" href="#minder_utils.settings.set_delta">set_delta</a></code></li>

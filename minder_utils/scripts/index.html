@@ -184,28 +184,36 @@ This class will
             save_path = os.path.join(self.default_dir, period, &#39;npy&#39;, data_type)
             save_mkdir(save_path)
             attr = &#39;get_{}_data&#39;.format(data_type)
-            activity_data, physiological_data, environmental_data, p_ids, dates = getattr(dataloader, attr)()
+            activity_data, physiological_data, environmental_data, p_ids, labels, dates = getattr(dataloader, attr)()
             np.save(os.path.join(save_path, &#39;activity.npy&#39;.format(data_type)), activity_data)
             np.save(os.path.join(save_path, &#39;physiological.npy&#39;.format(data_type)), physiological_data)
             np.save(os.path.join(save_path, &#39;environmental.npy&#39;.format(data_type)), environmental_data)
             np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
             if data_type == &#39;labelled&#39;:
-                np.save(os.path.join(save_path, &#39;label.npy&#39;), dates)
-            else:
-                np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
+                np.save(os.path.join(save_path, &#39;label.npy&#39;), labels)
+            np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)
 
     def refresh(self, refresh_period=None):
         if refresh_period is None:
             refresh_period = [&#39;current&#39;]
-        date_dict = self.get_dates()
+        try:
+            date_dict = self.get_dates()
+        except FileNotFoundError:
+            print(&#39;Dates file does not exist, start to initialise&#39;)
+            self.initialise()
+            return
         if date_dict[&#39;current&#39;][&#39;until&#39;] == DT.date.today() - DT.timedelta(days=1):
             print(&#39;Data is up-to-date&#39;)
             return
         dates_save(refresh=False)
         date_dict = self.get_dates()
-        if date_dict[&#39;gap&#39;][&#39;until&#39;] &gt; date_dict[&#39;gap&#39;][&#39;since&#39;]:
-            self.download(&#39;gap&#39;)
-        self.download(&#39;current&#39;)
+        try:
+            if date_dict[&#39;gap&#39;][&#39;until&#39;] &gt; date_dict[&#39;gap&#39;][&#39;since&#39;]:
+                self.download(&#39;gap&#39;)
+            self.download(&#39;current&#39;)
+        except TypeError:
+            date_backup(True)
+            return False
         self.collate()
         for folder in refresh_period:
             self.format(folder)
@@ -510,15 +518,14 @@ def previous_unlabelled_data(self):
         save_path = os.path.join(self.default_dir, period, &#39;npy&#39;, data_type)
         save_mkdir(save_path)
         attr = &#39;get_{}_data&#39;.format(data_type)
-        activity_data, physiological_data, environmental_data, p_ids, dates = getattr(dataloader, attr)()
+        activity_data, physiological_data, environmental_data, p_ids, labels, dates = getattr(dataloader, attr)()
         np.save(os.path.join(save_path, &#39;activity.npy&#39;.format(data_type)), activity_data)
         np.save(os.path.join(save_path, &#39;physiological.npy&#39;.format(data_type)), physiological_data)
         np.save(os.path.join(save_path, &#39;environmental.npy&#39;.format(data_type)), environmental_data)
         np.save(os.path.join(save_path, &#39;patient_id.npy&#39;), p_ids)
         if data_type == &#39;labelled&#39;:
-            np.save(os.path.join(save_path, &#39;label.npy&#39;), dates)
-        else:
-            np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)</code></pre>
+            np.save(os.path.join(save_path, &#39;label.npy&#39;), labels)
+        np.save(os.path.join(save_path, &#39;dates.npy&#39;), dates)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.scripts.Weekly_dataloader.initialise"><code class="name flex">
@@ -553,15 +560,24 @@ def previous_unlabelled_data(self):
 <pre><code class="python">def refresh(self, refresh_period=None):
     if refresh_period is None:
         refresh_period = [&#39;current&#39;]
-    date_dict = self.get_dates()
+    try:
+        date_dict = self.get_dates()
+    except FileNotFoundError:
+        print(&#39;Dates file does not exist, start to initialise&#39;)
+        self.initialise()
+        return
     if date_dict[&#39;current&#39;][&#39;until&#39;] == DT.date.today() - DT.timedelta(days=1):
         print(&#39;Data is up-to-date&#39;)
         return
     dates_save(refresh=False)
     date_dict = self.get_dates()
-    if date_dict[&#39;gap&#39;][&#39;until&#39;] &gt; date_dict[&#39;gap&#39;][&#39;since&#39;]:
-        self.download(&#39;gap&#39;)
-    self.download(&#39;current&#39;)
+    try:
+        if date_dict[&#39;gap&#39;][&#39;until&#39;] &gt; date_dict[&#39;gap&#39;][&#39;since&#39;]:
+            self.download(&#39;gap&#39;)
+        self.download(&#39;current&#39;)
+    except TypeError:
+        date_backup(True)
+        return False
     self.collate()
     for folder in refresh_period:
         self.format(folder)

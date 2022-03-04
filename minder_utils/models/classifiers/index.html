@@ -154,7 +154,7 @@ __all__ = [&#39;Classifiers&#39;]</code></pre>
         return tree.DecisionTreeClassifier()
 
     def knn(self):
-        return KNeighborsClassifier()
+        return KNeighborsClassifier(n_neighbors=4)
 
     def __name__(self):
         return self.model_type</code></pre>
@@ -301,7 +301,7 @@ def methods(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def knn(self):
-    return KNeighborsClassifier()</code></pre>
+    return KNeighborsClassifier(n_neighbors=4)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.models.classifiers.Classifiers.lr"><code class="name flex">

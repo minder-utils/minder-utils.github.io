@@ -140,8 +140,28 @@ def get_value_delta(df:pd.DataFrame, name):
 
 
 
+def get_location_activity(data, location, time_range=None, name=None):
+    data = data[data.location == location][[&#39;id&#39;, &#39;time&#39;, &#39;value&#39;]]
+    data.time = pd.to_datetime(data.time)
+    if time_range is None:
+        data = data.set_index(&#39;time&#39;).reset_index()
+    else:
+        data = data.set_index(&#39;time&#39;).between_time(*time_range).reset_index()
+    data.time = data.time.dt.date
+    data = data.groupby([&#39;id&#39;, &#39;time&#39;])[&#39;value&#39;].sum().reset_index()
+    data[&#39;week&#39;] = compute_week_number(data.time)
+    data[&#39;location&#39;] = name if not name is None else location 
+    return data
 
-def get_bathroom_activity(data, time_range, name):
+
+def get_bathroom_activity(data, time_range=None, name=None):
+
+    data = get_location_activity(data=data, 
+                                  location=&#39;bathroom1&#39;,
+                                  time_range=time_range, 
+                                  name=name)
+
+    &#39;&#39;&#39;
     data = data[data.location == &#39;bathroom1&#39;][[&#39;id&#39;, &#39;time&#39;, &#39;value&#39;]]
     data.time = pd.to_datetime(data.time)
     data = data.set_index(&#39;time&#39;).between_time(*time_range).reset_index()
@@ -149,7 +169,15 @@ def get_bathroom_activity(data, time_range, name):
     data = data.groupby([&#39;id&#39;, &#39;time&#39;])[&#39;value&#39;].sum().reset_index()
     data[&#39;week&#39;] = compute_week_number(data.time)
     data[&#39;location&#39;] = name
+    &#39;&#39;&#39;    
+
     return data
+
+def get_bedroom_activity(data, time_range=None, name=None):
+    return get_location_activity(data=data, 
+                                  location=&#39;bedroom1&#39;,
+                                  time_range=time_range, 
+                                  name=name)
 
 
 def get_body_temperature(data):
@@ -391,6 +419,20 @@ def get_subject_rp_location_delta(data,
     out[&#39;value&#39;] = values
 
 
+    return out
+
+
+def get_daily_agg(data, value_name, location_name, agg_func):
+    data_out = data[data.location == value_name].copy()
+    grouper = pd.Grouper(key = &#39;time&#39;, freq = &#39;1d&#39;, dropna = False)
+    columns_agg = [&#39;id&#39;, &#39;location&#39;]
+    columns_agg.append(grouper)
+    out =  data_out.groupby(columns_agg).agg(agg_func).reset_index()[[&#39;id&#39;,
+                                                                        &#39;time&#39;, 
+                                                                        &#39;location&#39;, 
+                                                                        &#39;value&#39;]].copy()
+    out[&#39;week&#39;] = compute_week_number(out[&#39;time&#39;])
+    out[&#39;location&#39;] = location_name
     return out</code></pre>
 </details>
 </section>
@@ -402,7 +444,7 @@ def get_subject_rp_location_delta(data,
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="minder_utils.feature_engineering.adding_features.get_bathroom_activity"><code class="name flex">
-<span>def <span class="ident">get_bathroom_activity</span></span>(<span>data, time_range, name)</span>
+<span>def <span class="ident">get_bathroom_activity</span></span>(<span>data, time_range=None, name=None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -410,7 +452,14 @@ def get_subject_rp_location_delta(data,
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_bathroom_activity(data, time_range, name):
+<pre><code class="python">def get_bathroom_activity(data, time_range=None, name=None):
+
+    data = get_location_activity(data=data, 
+                                  location=&#39;bathroom1&#39;,
+                                  time_range=time_range, 
+                                  name=name)
+
+    &#39;&#39;&#39;
     data = data[data.location == &#39;bathroom1&#39;][[&#39;id&#39;, &#39;time&#39;, &#39;value&#39;]]
     data.time = pd.to_datetime(data.time)
     data = data.set_index(&#39;time&#39;).between_time(*time_range).reset_index()
@@ -418,6 +467,8 @@ def get_subject_rp_location_delta(data,
     data = data.groupby([&#39;id&#39;, &#39;time&#39;])[&#39;value&#39;].sum().reset_index()
     data[&#39;week&#39;] = compute_week_number(data.time)
     data[&#39;location&#39;] = name
+    &#39;&#39;&#39;    
+
     return data</code></pre>
 </details>
 </dd>
@@ -477,6 +528,22 @@ def get_subject_rp_location_delta(data,
     return results</code></pre>
 </details>
 </dd>
+<dt id="minder_utils.feature_engineering.adding_features.get_bedroom_activity"><code class="name flex">
+<span>def <span class="ident">get_bedroom_activity</span></span>(<span>data, time_range=None, name=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_bedroom_activity(data, time_range=None, name=None):
+    return get_location_activity(data=data, 
+                                  location=&#39;bedroom1&#39;,
+                                  time_range=time_range, 
+                                  name=name)</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.feature_engineering.adding_features.get_body_temperature"><code class="name flex">
 <span>def <span class="ident">get_body_temperature</span></span>(<span>data)</span>
 </code></dt>
@@ -493,6 +560,29 @@ def get_subject_rp_location_delta(data,
     data[&#39;week&#39;] = compute_week_number(data.time)
     data[&#39;location&#39;] = &#39;body_temperature&#39;
     return data</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.adding_features.get_daily_agg"><code class="name flex">
+<span>def <span class="ident">get_daily_agg</span></span>(<span>data, value_name, location_name, agg_func)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_daily_agg(data, value_name, location_name, agg_func):
+    data_out = data[data.location == value_name].copy()
+    grouper = pd.Grouper(key = &#39;time&#39;, freq = &#39;1d&#39;, dropna = False)
+    columns_agg = [&#39;id&#39;, &#39;location&#39;]
+    columns_agg.append(grouper)
+    out =  data_out.groupby(columns_agg).agg(agg_func).reset_index()[[&#39;id&#39;,
+                                                                        &#39;time&#39;, 
+                                                                        &#39;location&#39;, 
+                                                                        &#39;value&#39;]].copy()
+    out[&#39;week&#39;] = compute_week_number(out[&#39;time&#39;])
+    out[&#39;location&#39;] = location_name
+    return out</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.feature_engineering.adding_features.get_entropy_rate"><code class="name flex">
@@ -585,6 +675,29 @@ This is a dataframe, in which the entropy rate is located in the <code>'value'</
     df[&#39;location&#39;] = name
 
     return df</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.feature_engineering.adding_features.get_location_activity"><code class="name flex">
+<span>def <span class="ident">get_location_activity</span></span>(<span>data, location, time_range=None, name=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_location_activity(data, location, time_range=None, name=None):
+    data = data[data.location == location][[&#39;id&#39;, &#39;time&#39;, &#39;value&#39;]]
+    data.time = pd.to_datetime(data.time)
+    if time_range is None:
+        data = data.set_index(&#39;time&#39;).reset_index()
+    else:
+        data = data.set_index(&#39;time&#39;).between_time(*time_range).reset_index()
+    data.time = data.time.dt.date
+    data = data.groupby([&#39;id&#39;, &#39;time&#39;])[&#39;value&#39;].sum().reset_index()
+    data[&#39;week&#39;] = compute_week_number(data.time)
+    data[&#39;location&#39;] = name if not name is None else location 
+    return data</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.feature_engineering.adding_features.get_moving_average"><code class="name flex">
@@ -977,8 +1090,11 @@ will be a missing value in the first row, since delta can not be calculated here
 <li><code><a title="minder_utils.feature_engineering.adding_features.get_bathroom_activity" href="#minder_utils.feature_engineering.adding_features.get_bathroom_activity">get_bathroom_activity</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.adding_features.get_bathroom_delta" href="#minder_utils.feature_engineering.adding_features.get_bathroom_delta">get_bathroom_delta</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.adding_features.get_bathroom_delta_v1" href="#minder_utils.feature_engineering.adding_features.get_bathroom_delta_v1">get_bathroom_delta_v1</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.adding_features.get_bedroom_activity" href="#minder_utils.feature_engineering.adding_features.get_bedroom_activity">get_bedroom_activity</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.adding_features.get_body_temperature" href="#minder_utils.feature_engineering.adding_features.get_body_temperature">get_body_temperature</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.adding_features.get_daily_agg" href="#minder_utils.feature_engineering.adding_features.get_daily_agg">get_daily_agg</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.adding_features.get_entropy_rate" href="#minder_utils.feature_engineering.adding_features.get_entropy_rate">get_entropy_rate</a></code></li>
+<li><code><a title="minder_utils.feature_engineering.adding_features.get_location_activity" href="#minder_utils.feature_engineering.adding_features.get_location_activity">get_location_activity</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.adding_features.get_moving_average" href="#minder_utils.feature_engineering.adding_features.get_moving_average">get_moving_average</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.adding_features.get_outlier_freq" href="#minder_utils.feature_engineering.adding_features.get_outlier_freq">get_outlier_freq</a></code></li>
 <li><code><a title="minder_utils.feature_engineering.adding_features.get_subject_rp_location_delta" href="#minder_utils.feature_engineering.adding_features.get_subject_rp_location_delta">get_subject_rp_location_delta</a></code></li>

@@ -174,7 +174,7 @@ Parameters</p>
 </details>
 </dd>
 <dt id="minder_utils.dataloader.process_data"><code class="name flex">
-<span>def <span class="ident">process_data</span></span>(<span>data, unlabelled_data, num_days_extended=0, flatten=True)</span>
+<span>def <span class="ident">process_data</span></span>(<span>data, unlabelled_data, num_days_extended=0, flatten=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This function is to process the data from dataloader and make it easy for
@@ -195,7 +195,7 @@ flatten: bool, flatten the activity data or not.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def process_data(data, unlabelled_data, num_days_extended=0, flatten=True):
+<pre><code class="python">def process_data(data, unlabelled_data, num_days_extended=0, flatten=False):
     &#39;&#39;&#39;
     This function is to process the data from dataloader and make it easy for
     the models to use
@@ -211,9 +211,10 @@ flatten: bool, flatten the activity data or not.</p>
     -------
 
     &#39;&#39;&#39;
-    X, y, p_ids = data[&#39;activity&#39;], data[&#39;uti_labels&#39;], data[&#39;p_ids&#39;]
+    X, y, p_ids, dates = data[&#39;activity&#39;], data[&#39;uti_labels&#39;], data[&#39;p_ids&#39;], data[&#39;dates&#39;]
     X_truncated = []
     y_truncated = []
+    dates_truncated = []
     p_ids_truncated = []
     for idx in range(len(X)):
         truncated_len = 1 + num_days_extended * 2
@@ -221,18 +222,19 @@ flatten: bool, flatten the activity data or not.</p>
             X_truncated.append(X[idx][: truncated_len])
             y_truncated.append(y[idx][: truncated_len])
             p_ids_truncated.append(p_ids[idx][: truncated_len])
-    X, y, p_ids = np.array(X_truncated), np.array(y_truncated), np.array(p_ids_truncated)
+            dates_truncated.append(dates[idx])
+    X, y, dates, p_ids = np.array(X_truncated), np.array(y_truncated), np.array(dates_truncated), np.array(p_ids_truncated)
 
     if flatten:
-        X = X.reshape(X.shape[0], 3, 8, 14)
-        y = y.reshape(y.shape[0], -1)
+        X = X.reshape(-1, 3, 8, 14)
+        y = y.reshape(-1, )
         y[y &gt; 0] = 1
         y[y &lt; 0] = -1
     else:
         X = X.reshape(X.shape[0], X.shape[1], 3, 8, 14)
 
     unlabelled_data = unlabelled_data.reshape(unlabelled_data.shape[0], 3, 8, 14)
-    return unlabelled_data, X, y, p_ids</code></pre>
+    return unlabelled_data, X, y, dates, p_ids</code></pre>
 </details>
 </dd>
 </dl>
@@ -326,14 +328,15 @@ the validated date will be labelled as UTI</li>
     @property
     @load_save(**config[&#39;labelled_data&#39;][&#39;save&#39;])
     def labelled_data(self):
-        activity_data, physiological_data, environmental_data, patient_ids, uti_labels = \
+        activity_data, physiological_data, environmental_data, patient_ids, uti_labels, labelled_dates = \
             self.get_labelled_data(normalise=False)
         return {
             &#39;activity&#39;: activity_data,
             &#39;phy&#39;: physiological_data,
             &#39;env&#39;: environmental_data,
             &#39;p_ids&#39;: patient_ids,
-            &#39;uti_labels&#39;: uti_labels
+            &#39;uti_labels&#39;: uti_labels,
+            &#39;dates&#39;: labelled_dates
         }
 
     @property
@@ -352,7 +355,7 @@ the validated date will be labelled as UTI</li>
     def get_labelled_data(self, normalise=False):
         # get p ids
         p_ids = self.labelled_df.index.get_level_values(0).unique()
-        activity_data, uti_labels, patient_ids, physiological_data, environmental_data = [], [], [], [], []
+        activity_data, uti_labels, patient_ids, physiological_data, environmental_data, labelled_dates = [], [], [], [], [], []
         for idx in range(len(p_ids)):
             # get data of patient
             data = self.labelled_df.loc[p_ids[idx]]
@@ -371,6 +374,7 @@ the validated date will be labelled as UTI</li>
                     env_data.append(self.get_data(self.environmental, p_ids[idx], p_date, &#39;environmental&#39;))
                     labels.append(int(valid) if valid else -1)
                     patient.append(p_ids[idx])
+                    labelled_dates.append(date)
                     for i in range(1, self.max_days + 1):
                         for symbol in [-1, 1]:
                             f_date = p_date - datetime.timedelta(i) * symbol
@@ -397,8 +401,9 @@ the validated date will be labelled as UTI</li>
         patient_ids = np.array(patient_ids)
         physiological_data = np.array(physiological_data)
         environmental_data = np.array(environmental_data)
+        labelled_dates = np.array(labelled_dates)
 
-        return activity_data, physiological_data, environmental_data, patient_ids, uti_labels
+        return activity_data, physiological_data, environmental_data, patient_ids, uti_labels, labelled_dates
 
     def get_unlabelled_data(self, normalise=False, date=&#39;2021-03-01&#39;):
         &#39;&#39;&#39;
@@ -448,7 +453,7 @@ the validated date will be labelled as UTI</li>
                 outputs_p_ids.append(p_ids[idx])
                 outputs_dates.append(date)
         return np.array(outputs), np.array(phy_data), np.array(env_data), \
-               np.array(outputs_p_ids), np.array(outputs_dates)
+               np.array(outputs_p_ids), None, np.array(outputs_dates)
 
     @staticmethod
     def laplace_smooth(i, lam=3, denominator=1):
@@ -458,8 +463,11 @@ the validated date will be labelled as UTI</li>
     def get_data(df, p_id, date, datatype):
         if df is None:
             return
-        return df.loc[(p_id, date, config[datatype][&#39;sensors&#39;])] \
-            .sort_values(&#39;location&#39;, key=lambda x: x.map(config[datatype][&#39;sort_dict&#39;]))[&#39;value&#39;].to_numpy()</code></pre>
+        try:
+            return df.loc[(p_id, date, config[datatype][&#39;sensors&#39;])] \
+                .sort_values(&#39;location&#39;, key=lambda x: x.map(config[datatype][&#39;sort_dict&#39;]))[&#39;value&#39;].to_numpy()
+        except KeyError:
+            return [0.] * len(config[datatype][&#39;sensors&#39;])</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
@@ -476,8 +484,11 @@ the validated date will be labelled as UTI</li>
 def get_data(df, p_id, date, datatype):
     if df is None:
         return
-    return df.loc[(p_id, date, config[datatype][&#39;sensors&#39;])] \
-        .sort_values(&#39;location&#39;, key=lambda x: x.map(config[datatype][&#39;sort_dict&#39;]))[&#39;value&#39;].to_numpy()</code></pre>
+    try:
+        return df.loc[(p_id, date, config[datatype][&#39;sensors&#39;])] \
+            .sort_values(&#39;location&#39;, key=lambda x: x.map(config[datatype][&#39;sort_dict&#39;]))[&#39;value&#39;].to_numpy()
+    except KeyError:
+        return [0.] * len(config[datatype][&#39;sensors&#39;])</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.dataloader.Dataloader.laplace_smooth"><code class="name flex">
@@ -507,14 +518,15 @@ def laplace_smooth(i, lam=3, denominator=1):
 <pre><code class="python">@property
 @load_save(**config[&#39;labelled_data&#39;][&#39;save&#39;])
 def labelled_data(self):
-    activity_data, physiological_data, environmental_data, patient_ids, uti_labels = \
+    activity_data, physiological_data, environmental_data, patient_ids, uti_labels, labelled_dates = \
         self.get_labelled_data(normalise=False)
     return {
         &#39;activity&#39;: activity_data,
         &#39;phy&#39;: physiological_data,
         &#39;env&#39;: environmental_data,
         &#39;p_ids&#39;: patient_ids,
-        &#39;uti_labels&#39;: uti_labels
+        &#39;uti_labels&#39;: uti_labels,
+        &#39;dates&#39;: labelled_dates
     }</code></pre>
 </details>
 </dd>
@@ -554,7 +566,7 @@ def unlabelled_data(self):
 <pre><code class="python">def get_labelled_data(self, normalise=False):
     # get p ids
     p_ids = self.labelled_df.index.get_level_values(0).unique()
-    activity_data, uti_labels, patient_ids, physiological_data, environmental_data = [], [], [], [], []
+    activity_data, uti_labels, patient_ids, physiological_data, environmental_data, labelled_dates = [], [], [], [], [], []
     for idx in range(len(p_ids)):
         # get data of patient
         data = self.labelled_df.loc[p_ids[idx]]
@@ -573,6 +585,7 @@ def unlabelled_data(self):
                 env_data.append(self.get_data(self.environmental, p_ids[idx], p_date, &#39;environmental&#39;))
                 labels.append(int(valid) if valid else -1)
                 patient.append(p_ids[idx])
+                labelled_dates.append(date)
                 for i in range(1, self.max_days + 1):
                     for symbol in [-1, 1]:
                         f_date = p_date - datetime.timedelta(i) * symbol
@@ -599,8 +612,9 @@ def unlabelled_data(self):
     patient_ids = np.array(patient_ids)
     physiological_data = np.array(physiological_data)
     environmental_data = np.array(environmental_data)
+    labelled_dates = np.array(labelled_dates)
 
-    return activity_data, physiological_data, environmental_data, patient_ids, uti_labels</code></pre>
+    return activity_data, physiological_data, environmental_data, patient_ids, uti_labels, labelled_dates</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.dataloader.Dataloader.get_unlabelled_data"><code class="name flex">
@@ -669,7 +683,7 @@ Parameters</p>
             outputs_p_ids.append(p_ids[idx])
             outputs_dates.append(date)
     return np.array(outputs), np.array(phy_data), np.array(env_data), \
-           np.array(outputs_p_ids), np.array(outputs_dates)</code></pre>
+           np.array(outputs_p_ids), None, np.array(outputs_dates)</code></pre>
 </details>
 </dd>
 </dl>

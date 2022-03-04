@@ -30,17 +30,23 @@
 <pre><code class="python">import numpy as np
 
 
+class Outlier_Detector:
+    def __init__(self, method=&#39;grubbs&#39;):
+        pass
+
+
 class ZScore:
     def __init__(self):
         return
 
     def fit(self, X):
-        self.mean = np.mean(X)
-        self.std = np.std(X)
+        self.mean = np.mean(X, axis=0)
+        self.std = np.std(X, axis=0)
+        self.std[self.std == 0] = np.nan
         return
 
     def decision_function(self, X):
-        return np.mean((X - self.mean) / self.std)</code></pre>
+        return np.nanmean((X - self.mean) / self.std)</code></pre>
 </details>
 </section>
 <section>
@@ -52,6 +58,21 @@ class ZScore:
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="minder_utils.models.outlier_detection.OutlierModels.Outlier_Detector"><code class="flex name class">
+<span>class <span class="ident">Outlier_Detector</span></span>
+<span>(</span><span>method='grubbs')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Outlier_Detector:
+    def __init__(self, method=&#39;grubbs&#39;):
+        pass</code></pre>
+</details>
+</dd>
 <dt id="minder_utils.models.outlier_detection.OutlierModels.ZScore"><code class="flex name class">
 <span>class <span class="ident">ZScore</span></span>
 </code></dt>
@@ -66,12 +87,13 @@ class ZScore:
         return
 
     def fit(self, X):
-        self.mean = np.mean(X)
-        self.std = np.std(X)
+        self.mean = np.mean(X, axis=0)
+        self.std = np.std(X, axis=0)
+        self.std[self.std == 0] = np.nan
         return
 
     def decision_function(self, X):
-        return np.mean((X - self.mean) / self.std)</code></pre>
+        return np.nanmean((X - self.mean) / self.std)</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -85,7 +107,7 @@ class ZScore:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def decision_function(self, X):
-    return np.mean((X - self.mean) / self.std)</code></pre>
+    return np.nanmean((X - self.mean) / self.std)</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.models.outlier_detection.OutlierModels.ZScore.fit"><code class="name flex">
@@ -98,8 +120,9 @@ class ZScore:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def fit(self, X):
-    self.mean = np.mean(X)
-    self.std = np.std(X)
+    self.mean = np.mean(X, axis=0)
+    self.std = np.std(X, axis=0)
+    self.std[self.std == 0] = np.nan
     return</code></pre>
 </details>
 </dd>
@@ -126,6 +149,9 @@ class ZScore:
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
+<li>
+<h4><code><a title="minder_utils.models.outlier_detection.OutlierModels.Outlier_Detector" href="#minder_utils.models.outlier_detection.OutlierModels.Outlier_Detector">Outlier_Detector</a></code></h4>
+</li>
 <li>
 <h4><code><a title="minder_utils.models.outlier_detection.OutlierModels.ZScore" href="#minder_utils.models.outlier_detection.OutlierModels.ZScore">ZScore</a></code></h4>
 <ul class="">

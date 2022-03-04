@@ -95,6 +95,7 @@ def standardise_physiological_environmental(df, date_range, shared_id=None):
     df.time = pd.to_datetime(df.time)
     df = df.groupby([&#39;id&#39;, &#39;location&#39;]).apply(lambda x: x.set_index(&#39;time&#39;)
                                                                   .resample(&#39;D&#39;).mean()).reset_index().fillna(0)
+    df.time = pd.to_datetime(df.time).dt.date
     idx = pd.MultiIndex.from_product((df.id.unique(), date_range, df.location.unique()), names=[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;])
     return df.set_index([&#39;id&#39;, &#39;time&#39;, &#39;location&#39;]).reindex(idx, fill_value=0)\
         .reset_index().pivot_table(index=[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;], values=&#39;value&#39;)
@@ -204,6 +205,7 @@ def normalized(a, axis=-1, order=2):
     df.time = pd.to_datetime(df.time)
     df = df.groupby([&#39;id&#39;, &#39;location&#39;]).apply(lambda x: x.set_index(&#39;time&#39;)
                                                                   .resample(&#39;D&#39;).mean()).reset_index().fillna(0)
+    df.time = pd.to_datetime(df.time).dt.date
     idx = pd.MultiIndex.from_product((df.id.unique(), date_range, df.location.unique()), names=[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;])
     return df.set_index([&#39;id&#39;, &#39;time&#39;, &#39;location&#39;]).reindex(idx, fill_value=0)\
         .reset_index().pivot_table(index=[&#39;id&#39;, &#39;time&#39;, &#39;location&#39;], values=&#39;value&#39;)</code></pre>

@@ -42,10 +42,18 @@ import datetime
 def load_manual_labels():
 
     # import python function from path:
+
     with open(data_path, &#39;r&#39;) as file_read:
         path = file_read.read()
-        path_path = Path(reformat_path(path + &#39;/validated_date.py&#39;))
-    dri_data_util_validate = SourceFileLoader(&#39;dri_data_util_validate&#39;, reformat_path(path + &#39;/validated_date.py&#39;)).load_module()
+
+    path_path = Path(reformat_path(path + &#39;/validated_date.py&#39;))
+    
+    try:
+        dri_data_util_validate = SourceFileLoader(&#39;dri_data_util_validate&#39;, reformat_path(path + &#39;/validated_date.py&#39;)).load_module()
+    except FileNotFoundError:
+        print(&#39;Manual label file not found, you might be missing labels!!&#39;)
+        return None
+    
     from dri_data_util_validate import validated_date
 
     return validated_date
@@ -93,10 +101,13 @@ def label_dataframe(unlabelled_df, save_path=&#39;./data/raw_data/&#39;, days_ei
     df.valid = map_url_to_flag(df.valid)
     df.date = pd.to_datetime(df.date).dt.date
     df = df.dropna()
-    manual_label = validated_date(True)
-    #manual_label[&#39;patient id&#39;] = map_numeric_ids(manual_label[&#39;patient id&#39;], True)
-    label_df = pd.concat([manual_label, df])
-    label_df = label_df.drop_duplicates()
+    if not validated_date is None:
+        manual_label = validated_date(True)
+        #manual_label[&#39;patient id&#39;] = map_numeric_ids(manual_label[&#39;patient id&#39;], True)
+        label_df = pd.concat([manual_label, df])
+        label_df = label_df.drop_duplicates().copy()
+    else:
+        label_df = df.drop_duplicates().copy()
     if not days_either_side == 0:
         def dates_either_side_group_by(x):
             date = pd.to_datetime(x[&#39;date&#39;].values[0])
@@ -109,6 +120,7 @@ def label_dataframe(unlabelled_df, save_path=&#39;./data/raw_data/&#39;, days_ei
         label_df = label_df.groupby([&#39;patient id&#39;, &#39;date&#39;, &#39;valid&#39;]).apply(dates_either_side_group_by).reset_index(drop=True)
     label_df[&#39;time&#39;] = label_df[&#39;patient id&#39;].astype(str) + label_df[&#39;date&#39;].astype(str)
     mapping = label_df[[&#39;time&#39;, &#39;valid&#39;]].set_index(&#39;time&#39;).to_dict()[&#39;valid&#39;]
+    unlabelled_df[&#39;time&#39;] = pd.to_datetime(unlabelled_df[&#39;time&#39;])
     unlabelled_df[&#39;valid&#39;] = unlabelled_df.id.astype(str) + unlabelled_df.time.dt.date.astype(str)
     unlabelled_df[&#39;valid&#39;] = unlabelled_df[&#39;valid&#39;].map(mapping)
     return unlabelled_df
@@ -359,10 +371,13 @@ which contains the labels.</li>
     df.valid = map_url_to_flag(df.valid)
     df.date = pd.to_datetime(df.date).dt.date
     df = df.dropna()
-    manual_label = validated_date(True)
-    #manual_label[&#39;patient id&#39;] = map_numeric_ids(manual_label[&#39;patient id&#39;], True)
-    label_df = pd.concat([manual_label, df])
-    label_df = label_df.drop_duplicates()
+    if not validated_date is None:
+        manual_label = validated_date(True)
+        #manual_label[&#39;patient id&#39;] = map_numeric_ids(manual_label[&#39;patient id&#39;], True)
+        label_df = pd.concat([manual_label, df])
+        label_df = label_df.drop_duplicates().copy()
+    else:
+        label_df = df.drop_duplicates().copy()
     if not days_either_side == 0:
         def dates_either_side_group_by(x):
             date = pd.to_datetime(x[&#39;date&#39;].values[0])
@@ -375,6 +390,7 @@ which contains the labels.</li>
         label_df = label_df.groupby([&#39;patient id&#39;, &#39;date&#39;, &#39;valid&#39;]).apply(dates_either_side_group_by).reset_index(drop=True)
     label_df[&#39;time&#39;] = label_df[&#39;patient id&#39;].astype(str) + label_df[&#39;date&#39;].astype(str)
     mapping = label_df[[&#39;time&#39;, &#39;valid&#39;]].set_index(&#39;time&#39;).to_dict()[&#39;valid&#39;]
+    unlabelled_df[&#39;time&#39;] = pd.to_datetime(unlabelled_df[&#39;time&#39;])
     unlabelled_df[&#39;valid&#39;] = unlabelled_df.id.astype(str) + unlabelled_df.time.dt.date.astype(str)
     unlabelled_df[&#39;valid&#39;] = unlabelled_df[&#39;valid&#39;].map(mapping)
     return unlabelled_df</code></pre>
@@ -392,10 +408,18 @@ which contains the labels.</li>
 <pre><code class="python">def load_manual_labels():
 
     # import python function from path:
+
     with open(data_path, &#39;r&#39;) as file_read:
         path = file_read.read()
-        path_path = Path(reformat_path(path + &#39;/validated_date.py&#39;))
-    dri_data_util_validate = SourceFileLoader(&#39;dri_data_util_validate&#39;, reformat_path(path + &#39;/validated_date.py&#39;)).load_module()
+
+    path_path = Path(reformat_path(path + &#39;/validated_date.py&#39;))
+    
+    try:
+        dri_data_util_validate = SourceFileLoader(&#39;dri_data_util_validate&#39;, reformat_path(path + &#39;/validated_date.py&#39;)).load_module()
+    except FileNotFoundError:
+        print(&#39;Manual label file not found, you might be missing labels!!&#39;)
+        return None
+    
     from dri_data_util_validate import validated_date
 
     return validated_date</code></pre>

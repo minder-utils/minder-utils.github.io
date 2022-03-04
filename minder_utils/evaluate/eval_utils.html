@@ -30,7 +30,7 @@
 <pre><code class="python">from sklearn.metrics import f1_score, accuracy_score
 from sklearn.metrics import confusion_matrix
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from ..formatting.format_util import y_to_categorical
 
 
@@ -76,7 +76,163 @@ def split_by_ids(X, y, patient_ids, cat=True, valid_only=True, stratify=True, se
                X[np.isin(patient_ids, test_ids)][test_filter], y_to_categorical(y[np.isin(patient_ids, test_ids)][
                    test_filter])
     return X[np.isin(patient_ids, train_ids)], y[np.isin(patient_ids, train_ids)], \
-           X[np.isin(patient_ids, test_ids)], y[np.isin(patient_ids, test_ids)]</code></pre>
+           X[np.isin(patient_ids, test_ids)], y[np.isin(patient_ids, test_ids)]
+
+
+
+class StratifiedKFoldPids:
+    def __init__(self, n_splits=5, shuffle=False, random_state=None):
+        &#39;&#39;&#39;
+        This splits the data so that no train and test 
+        split contain the same pid. They will contain 
+        roughly the same number of positive 
+        and negative samples.
+
+        This is based on: It will function in the same way.
+        https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html
+
+
+        Arguments
+        ---------
+        
+        - ```n_splits```: ```int```, optional:
+            The number of splits. 
+            Defaults to ```5```.
+        
+        - ```shuffle```: ```bool```, optional:
+            Whether to shuffle the order of the pids before 
+            making the splits. 
+            Defaults to ```False```.
+        
+        - ```random_state```: ```_type_```, optional:
+            The random state for the random processes in the class. 
+            Defaults to ```None```.
+        
+        
+        
+        
+        &#39;&#39;&#39;
+        self.n_splits = n_splits
+        self.shuffle = shuffle
+        self.random_state = random_state
+        return
+
+
+    def get_n_splits(self):
+        &#39;&#39;&#39;
+        Returns the number of splits
+        
+
+        Returns
+        --------
+        
+        - ```out```: ```int``` : 
+            The number of splits
+        
+        
+        &#39;&#39;&#39;
+        return self.n_splits
+
+
+    def split_by_ids(self, y, pids, seed=0):
+        &#39;&#39;&#39;
+        An internal function that given a set of 
+        labels and PIDs corresponding to the labels,
+        this function can return the pid values that
+        should be assigned to the training or testing 
+        set for each split.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - ```y```: ```array```: 
+            Labels.
+        
+        - ```pids```: ```array```: 
+            PIDs corresponding to ```y```.
+        
+        - ```seed```: ```int```, optional:
+            The random seed for the random processes. 
+            Defaults to ```0```.
+        
+        
+        
+        Returns
+        --------
+        
+        - ```out```: ```_type_``` : 
+            PID values that should be assigned 
+            to the training or testing set for each split.
+        
+        
+        &#39;&#39;&#39;
+        labels = np.copy(y)
+        labels[labels == 0] = -1
+        labels = labels.reshape(-1, )
+        pids = pids.reshape(-1, )
+        # make sure the train and test set got both positive and negative patients
+        y_p_id = []
+        for p_id in np.unique(pids):
+            _y = np.unique(y[pids == p_id])
+            rng = np.random.default_rng(seed)
+            y_p_id.append(int(_y[0]) if len(_y) &lt; 2 else rng.integers(0,2))
+            seed += 1
+        y_p_id = np.array(y_p_id)
+        y_p_id[y_p_id &lt; 0] = 0
+        splitter = StratifiedKFold(n_splits=self.n_splits, 
+                                    shuffle=self.shuffle, 
+                                    random_state=seed if self.shuffle else None)
+        splits = list(splitter.split(np.unique(pids), y=y_p_id))
+        return [[np.unique(pids)[train_idx], np.unique(pids)[test_idx]] for train_idx, test_idx in splits]
+
+
+    def split(self, X, y, pids):
+        &#39;&#39;&#39;
+        This function produces the splits that can be used for training 
+        and testing.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - ```X```: ```array```: 
+            X input. This isn&#39;t used and so anything can be passed here.
+        
+        - ```y```: ```array```: 
+            The labels. This is used to stratify the data.
+        
+        - ```pids```: ```_type_```: 
+            The PIDs that is used to split the data.
+        
+        
+        
+        Returns
+        --------
+        
+        - ```out```: ```list``` : 
+            List of train-test splits. This 
+            list has length equal to ```n_splits```.
+        
+        
+        &#39;&#39;&#39;
+        rng = np.random.default_rng(self.random_state)
+        seed = rng.integers(0,1e6)
+        list_of_splits_pids = self.split_by_ids(y=y, pids=pids, seed=seed)
+        list_of_splits = []
+        for train_pids, test_pids in list_of_splits_pids:
+            
+            train_idx_new = np.arange(len(pids))[np.isin(pids, train_pids)]
+            test_idx_new = np.arange(len(pids))[np.isin(pids, test_pids)]
+
+            list_of_splits.append([
+                train_idx_new,
+                test_idx_new,
+            ])
+            
+        return list_of_splits</code></pre>
 </details>
 </section>
 <section>
@@ -152,6 +308,398 @@ def split_by_ids(X, y, patient_ids, cat=True, valid_only=True, stratify=True, se
 </dl>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="minder_utils.evaluate.eval_utils.StratifiedKFoldPids"><code class="flex name class">
+<span>class <span class="ident">StratifiedKFoldPids</span></span>
+<span>(</span><span>n_splits=5, shuffle=False, random_state=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This splits the data so that no train and test
+split contain the same pid. They will contain
+roughly the same number of positive
+and negative samples.</p>
+<p>This is based on: It will function in the same way.
+<a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html">https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html</a></p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p><code>n_splits</code>: <code>int</code>, optional:
+The number of splits.
+Defaults to <code>5</code>.</p>
+</li>
+<li>
+<p><code>shuffle</code>: <code>bool</code>, optional:
+Whether to shuffle the order of the pids before
+making the splits.
+Defaults to <code>False</code>.</p>
+</li>
+<li>
+<p><code>random_state</code>: <code>_type_</code>, optional:
+The random state for the random processes in the class.
+Defaults to <code>None</code>.</p>
+</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class StratifiedKFoldPids:
+    def __init__(self, n_splits=5, shuffle=False, random_state=None):
+        &#39;&#39;&#39;
+        This splits the data so that no train and test 
+        split contain the same pid. They will contain 
+        roughly the same number of positive 
+        and negative samples.
+
+        This is based on: It will function in the same way.
+        https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html
+
+
+        Arguments
+        ---------
+        
+        - ```n_splits```: ```int```, optional:
+            The number of splits. 
+            Defaults to ```5```.
+        
+        - ```shuffle```: ```bool```, optional:
+            Whether to shuffle the order of the pids before 
+            making the splits. 
+            Defaults to ```False```.
+        
+        - ```random_state```: ```_type_```, optional:
+            The random state for the random processes in the class. 
+            Defaults to ```None```.
+        
+        
+        
+        
+        &#39;&#39;&#39;
+        self.n_splits = n_splits
+        self.shuffle = shuffle
+        self.random_state = random_state
+        return
+
+
+    def get_n_splits(self):
+        &#39;&#39;&#39;
+        Returns the number of splits
+        
+
+        Returns
+        --------
+        
+        - ```out```: ```int``` : 
+            The number of splits
+        
+        
+        &#39;&#39;&#39;
+        return self.n_splits
+
+
+    def split_by_ids(self, y, pids, seed=0):
+        &#39;&#39;&#39;
+        An internal function that given a set of 
+        labels and PIDs corresponding to the labels,
+        this function can return the pid values that
+        should be assigned to the training or testing 
+        set for each split.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - ```y```: ```array```: 
+            Labels.
+        
+        - ```pids```: ```array```: 
+            PIDs corresponding to ```y```.
+        
+        - ```seed```: ```int```, optional:
+            The random seed for the random processes. 
+            Defaults to ```0```.
+        
+        
+        
+        Returns
+        --------
+        
+        - ```out```: ```_type_``` : 
+            PID values that should be assigned 
+            to the training or testing set for each split.
+        
+        
+        &#39;&#39;&#39;
+        labels = np.copy(y)
+        labels[labels == 0] = -1
+        labels = labels.reshape(-1, )
+        pids = pids.reshape(-1, )
+        # make sure the train and test set got both positive and negative patients
+        y_p_id = []
+        for p_id in np.unique(pids):
+            _y = np.unique(y[pids == p_id])
+            rng = np.random.default_rng(seed)
+            y_p_id.append(int(_y[0]) if len(_y) &lt; 2 else rng.integers(0,2))
+            seed += 1
+        y_p_id = np.array(y_p_id)
+        y_p_id[y_p_id &lt; 0] = 0
+        splitter = StratifiedKFold(n_splits=self.n_splits, 
+                                    shuffle=self.shuffle, 
+                                    random_state=seed if self.shuffle else None)
+        splits = list(splitter.split(np.unique(pids), y=y_p_id))
+        return [[np.unique(pids)[train_idx], np.unique(pids)[test_idx]] for train_idx, test_idx in splits]
+
+
+    def split(self, X, y, pids):
+        &#39;&#39;&#39;
+        This function produces the splits that can be used for training 
+        and testing.
+        
+        
+        
+        Arguments
+        ---------
+        
+        - ```X```: ```array```: 
+            X input. This isn&#39;t used and so anything can be passed here.
+        
+        - ```y```: ```array```: 
+            The labels. This is used to stratify the data.
+        
+        - ```pids```: ```_type_```: 
+            The PIDs that is used to split the data.
+        
+        
+        
+        Returns
+        --------
+        
+        - ```out```: ```list``` : 
+            List of train-test splits. This 
+            list has length equal to ```n_splits```.
+        
+        
+        &#39;&#39;&#39;
+        rng = np.random.default_rng(self.random_state)
+        seed = rng.integers(0,1e6)
+        list_of_splits_pids = self.split_by_ids(y=y, pids=pids, seed=seed)
+        list_of_splits = []
+        for train_pids, test_pids in list_of_splits_pids:
+            
+            train_idx_new = np.arange(len(pids))[np.isin(pids, train_pids)]
+            test_idx_new = np.arange(len(pids))[np.isin(pids, test_pids)]
+
+            list_of_splits.append([
+                train_idx_new,
+                test_idx_new,
+            ])
+            
+        return list_of_splits</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="minder_utils.evaluate.eval_utils.StratifiedKFoldPids.get_n_splits"><code class="name flex">
+<span>def <span class="ident">get_n_splits</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the number of splits</p>
+<h2 id="returns">Returns</h2>
+<ul>
+<li><code>out</code>: <code>int</code> :
+The number of splits</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_n_splits(self):
+    &#39;&#39;&#39;
+    Returns the number of splits
+    
+
+    Returns
+    --------
+    
+    - ```out```: ```int``` : 
+        The number of splits
+    
+    
+    &#39;&#39;&#39;
+    return self.n_splits</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.evaluate.eval_utils.StratifiedKFoldPids.split"><code class="name flex">
+<span>def <span class="ident">split</span></span>(<span>self, X, y, pids)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This function produces the splits that can be used for training
+and testing.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p><code>X</code>: <code>array</code>:
+X input. This isn't used and so anything can be passed here.</p>
+</li>
+<li>
+<p><code>y</code>: <code>array</code>:
+The labels. This is used to stratify the data.</p>
+</li>
+<li>
+<p><code>pids</code>: <code>_type_</code>:
+The PIDs that is used to split the data.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li><code>out</code>: <code>list</code> :
+List of train-test splits. This
+list has length equal to <code>n_splits</code>.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def split(self, X, y, pids):
+    &#39;&#39;&#39;
+    This function produces the splits that can be used for training 
+    and testing.
+    
+    
+    
+    Arguments
+    ---------
+    
+    - ```X```: ```array```: 
+        X input. This isn&#39;t used and so anything can be passed here.
+    
+    - ```y```: ```array```: 
+        The labels. This is used to stratify the data.
+    
+    - ```pids```: ```_type_```: 
+        The PIDs that is used to split the data.
+    
+    
+    
+    Returns
+    --------
+    
+    - ```out```: ```list``` : 
+        List of train-test splits. This 
+        list has length equal to ```n_splits```.
+    
+    
+    &#39;&#39;&#39;
+    rng = np.random.default_rng(self.random_state)
+    seed = rng.integers(0,1e6)
+    list_of_splits_pids = self.split_by_ids(y=y, pids=pids, seed=seed)
+    list_of_splits = []
+    for train_pids, test_pids in list_of_splits_pids:
+        
+        train_idx_new = np.arange(len(pids))[np.isin(pids, train_pids)]
+        test_idx_new = np.arange(len(pids))[np.isin(pids, test_pids)]
+
+        list_of_splits.append([
+            train_idx_new,
+            test_idx_new,
+        ])
+        
+    return list_of_splits</code></pre>
+</details>
+</dd>
+<dt id="minder_utils.evaluate.eval_utils.StratifiedKFoldPids.split_by_ids"><code class="name flex">
+<span>def <span class="ident">split_by_ids</span></span>(<span>self, y, pids, seed=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An internal function that given a set of
+labels and PIDs corresponding to the labels,
+this function can return the pid values that
+should be assigned to the training or testing
+set for each split.</p>
+<h2 id="arguments">Arguments</h2>
+<ul>
+<li>
+<p><code>y</code>: <code>array</code>:
+Labels.</p>
+</li>
+<li>
+<p><code>pids</code>: <code>array</code>:
+PIDs corresponding to <code>y</code>.</p>
+</li>
+<li>
+<p><code>seed</code>: <code>int</code>, optional:
+The random seed for the random processes.
+Defaults to <code>0</code>.</p>
+</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<ul>
+<li><code>out</code>: <code>_type_</code> :
+PID values that should be assigned
+to the training or testing set for each split.</li>
+</ul></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def split_by_ids(self, y, pids, seed=0):
+    &#39;&#39;&#39;
+    An internal function that given a set of 
+    labels and PIDs corresponding to the labels,
+    this function can return the pid values that
+    should be assigned to the training or testing 
+    set for each split.
+    
+    
+    
+    Arguments
+    ---------
+    
+    - ```y```: ```array```: 
+        Labels.
+    
+    - ```pids```: ```array```: 
+        PIDs corresponding to ```y```.
+    
+    - ```seed```: ```int```, optional:
+        The random seed for the random processes. 
+        Defaults to ```0```.
+    
+    
+    
+    Returns
+    --------
+    
+    - ```out```: ```_type_``` : 
+        PID values that should be assigned 
+        to the training or testing set for each split.
+    
+    
+    &#39;&#39;&#39;
+    labels = np.copy(y)
+    labels[labels == 0] = -1
+    labels = labels.reshape(-1, )
+    pids = pids.reshape(-1, )
+    # make sure the train and test set got both positive and negative patients
+    y_p_id = []
+    for p_id in np.unique(pids):
+        _y = np.unique(y[pids == p_id])
+        rng = np.random.default_rng(seed)
+        y_p_id.append(int(_y[0]) if len(_y) &lt; 2 else rng.integers(0,2))
+        seed += 1
+    y_p_id = np.array(y_p_id)
+    y_p_id[y_p_id &lt; 0] = 0
+    splitter = StratifiedKFold(n_splits=self.n_splits, 
+                                shuffle=self.shuffle, 
+                                random_state=seed if self.shuffle else None)
+    splits = list(splitter.split(np.unique(pids), y=y_p_id))
+    return [[np.unique(pids)[train_idx], np.unique(pids)[test_idx]] for train_idx, test_idx in splits]</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -174,6 +722,18 @@ def split_by_ids(X, y, patient_ids, cat=True, valid_only=True, stratify=True, se
 <ul class="">
 <li><code><a title="minder_utils.evaluate.eval_utils.get_scores" href="#minder_utils.evaluate.eval_utils.get_scores">get_scores</a></code></li>
 <li><code><a title="minder_utils.evaluate.eval_utils.split_by_ids" href="#minder_utils.evaluate.eval_utils.split_by_ids">split_by_ids</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="minder_utils.evaluate.eval_utils.StratifiedKFoldPids" href="#minder_utils.evaluate.eval_utils.StratifiedKFoldPids">StratifiedKFoldPids</a></code></h4>
+<ul class="">
+<li><code><a title="minder_utils.evaluate.eval_utils.StratifiedKFoldPids.get_n_splits" href="#minder_utils.evaluate.eval_utils.StratifiedKFoldPids.get_n_splits">get_n_splits</a></code></li>
+<li><code><a title="minder_utils.evaluate.eval_utils.StratifiedKFoldPids.split" href="#minder_utils.evaluate.eval_utils.StratifiedKFoldPids.split">split</a></code></li>
+<li><code><a title="minder_utils.evaluate.eval_utils.StratifiedKFoldPids.split_by_ids" href="#minder_utils.evaluate.eval_utils.StratifiedKFoldPids.split_by_ids">split_by_ids</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

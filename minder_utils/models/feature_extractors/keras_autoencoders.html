@@ -30,12 +30,12 @@
 <pre><code class="python">from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Input, Conv2D, Flatten
 from tensorflow.keras.callbacks import EarlyStopping
-import numpy as np
-from ...formatting.format_util import normalise
+import os
+from tensorflow import keras
 
 
 def get_ae_model(model_type=&#39;nn&#39;, input_dim=(8, 14, 3), encoding_dim=24 * 7):
-    if model_type is &#39;nn&#39;:
+    if model_type == &#39;nn&#39;:
         input_layer = Flatten()(Input(shape=(input_dim,)))
         encoded = Dense(256, activation=&#39;relu&#39;)(input_layer)
         encoded = Dense(512, activation=&#39;relu&#39;)(encoded)
@@ -45,7 +45,7 @@ def get_ae_model(model_type=&#39;nn&#39;, input_dim=(8, 14, 3), encoding_dim=24 
         decoded = Dense(input_dim, activation=&#39;sigmoid&#39;)(decoded)
         encoder = Model(input_layer, encoded)
         autoencoder = Model(input_layer, decoded)
-    elif model_type is &#39;cnn&#39;:
+    elif model_type == &#39;cnn&#39;:
         input_layer = Input(shape=input_dim)
         encoded = Conv2D(4, (3, 3), activation=&#39;relu&#39;, padding=&#39;same&#39;)(input_layer)
         encoded = Conv2D(3, (3, 3), activation=&#39;relu&#39;, padding=&#39;same&#39;)(encoded)
@@ -61,13 +61,20 @@ def get_ae_model(model_type=&#39;nn&#39;, input_dim=(8, 14, 3), encoding_dim=24 
 
 
 class Extractor:
-    def __init__(self):
+    def __init__(self, save_path=None):
         self.callbacks = [EarlyStopping(monitor=&#39;loss&#39;, patience=3)]
         self.epochs = 100
         self.batch_size = 512
         self.existing_models = {}
+        self.save_path = save_path
 
     def train(self, data, model_type, normalisation=None):
+        if self.save_path is not None:
+            try:
+                encoder = keras.models.load_model(os.path.join(self.save_path, model_type + str(normalisation)))
+                self.existing_models[model_type + str(normalisation)] = encoder
+            except (OSError, FileNotFoundError):
+                pass
         if model_type + str(normalisation) in self.existing_models:
             return
         print(&#39;Train Extractor: &#39;, model_type, normalisation)
@@ -81,6 +88,7 @@ class Extractor:
             data = data.transpose(0, 2, 3, 1)
         model.fit(data, data, epochs=self.epochs, batch_size=self.batch_size, callbacks=self.callbacks, verbose=0)
         self.existing_models[model_type + str(normalisation)] = encoder
+        encoder.save(os.path.join(self.save_path, model_type + str(normalisation)))
 
     def transform(self, data, model_type, normalisation=None):
         if model_type == &#39;nn&#39;:
@@ -108,7 +116,7 @@ class Extractor:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_ae_model(model_type=&#39;nn&#39;, input_dim=(8, 14, 3), encoding_dim=24 * 7):
-    if model_type is &#39;nn&#39;:
+    if model_type == &#39;nn&#39;:
         input_layer = Flatten()(Input(shape=(input_dim,)))
         encoded = Dense(256, activation=&#39;relu&#39;)(input_layer)
         encoded = Dense(512, activation=&#39;relu&#39;)(encoded)
@@ -118,7 +126,7 @@ class Extractor:
         decoded = Dense(input_dim, activation=&#39;sigmoid&#39;)(decoded)
         encoder = Model(input_layer, encoded)
         autoencoder = Model(input_layer, decoded)
-    elif model_type is &#39;cnn&#39;:
+    elif model_type == &#39;cnn&#39;:
         input_layer = Input(shape=input_dim)
         encoded = Conv2D(4, (3, 3), activation=&#39;relu&#39;, padding=&#39;same&#39;)(input_layer)
         encoded = Conv2D(3, (3, 3), activation=&#39;relu&#39;, padding=&#39;same&#39;)(encoded)
@@ -140,6 +148,7 @@ class Extractor:
 <dl>
 <dt id="minder_utils.models.feature_extractors.keras_autoencoders.Extractor"><code class="flex name class">
 <span>class <span class="ident">Extractor</span></span>
+<span>(</span><span>save_path=None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -148,13 +157,20 @@ class Extractor:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Extractor:
-    def __init__(self):
+    def __init__(self, save_path=None):
         self.callbacks = [EarlyStopping(monitor=&#39;loss&#39;, patience=3)]
         self.epochs = 100
         self.batch_size = 512
         self.existing_models = {}
+        self.save_path = save_path
 
     def train(self, data, model_type, normalisation=None):
+        if self.save_path is not None:
+            try:
+                encoder = keras.models.load_model(os.path.join(self.save_path, model_type + str(normalisation)))
+                self.existing_models[model_type + str(normalisation)] = encoder
+            except (OSError, FileNotFoundError):
+                pass
         if model_type + str(normalisation) in self.existing_models:
             return
         print(&#39;Train Extractor: &#39;, model_type, normalisation)
@@ -168,6 +184,7 @@ class Extractor:
             data = data.transpose(0, 2, 3, 1)
         model.fit(data, data, epochs=self.epochs, batch_size=self.batch_size, callbacks=self.callbacks, verbose=0)
         self.existing_models[model_type + str(normalisation)] = encoder
+        encoder.save(os.path.join(self.save_path, model_type + str(normalisation)))
 
     def transform(self, data, model_type, normalisation=None):
         if model_type == &#39;nn&#39;:
@@ -189,6 +206,12 @@ class Extractor:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def train(self, data, model_type, normalisation=None):
+    if self.save_path is not None:
+        try:
+            encoder = keras.models.load_model(os.path.join(self.save_path, model_type + str(normalisation)))
+            self.existing_models[model_type + str(normalisation)] = encoder
+        except (OSError, FileNotFoundError):
+            pass
     if model_type + str(normalisation) in self.existing_models:
         return
     print(&#39;Train Extractor: &#39;, model_type, normalisation)
@@ -201,7 +224,8 @@ class Extractor:
         # data = data.reshape([data.shape[0], 8, 14, 3])
         data = data.transpose(0, 2, 3, 1)
     model.fit(data, data, epochs=self.epochs, batch_size=self.batch_size, callbacks=self.callbacks, verbose=0)
-    self.existing_models[model_type + str(normalisation)] = encoder</code></pre>
+    self.existing_models[model_type + str(normalisation)] = encoder
+    encoder.save(os.path.join(self.save_path, model_type + str(normalisation)))</code></pre>
 </details>
 </dd>
 <dt id="minder_utils.models.feature_extractors.keras_autoencoders.Extractor.transform"><code class="name flex">
